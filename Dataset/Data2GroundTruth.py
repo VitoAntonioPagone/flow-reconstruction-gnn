@@ -21,7 +21,7 @@ def interpolate_data(input_folder, output_folder):
         y_grid = np.linspace(data['y'].min(), data['y'].max(), grid_size)
         X_grid, Y_grid = np.meshgrid(x_grid, y_grid)
 
-        grid_data = {}
+        grid_data = {} 
         for feature in data.columns:
             if feature not in ['x', 'y']:
                 grid_data[feature] = griddata(

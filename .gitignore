@@ -2,3 +2,6 @@
 .vscode
 .idea
 MLP/Dataset
+Dataset
+Convolutional_AutoEncoder/__pycache__
+.DS_Store

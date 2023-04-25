@@ -1,5 +1,5 @@
 *.f000*
 .vscode
 .idea
-dataset
+dataset/*
 .DS_Store

@@ -1,23 +1,22 @@
 import numpy as np
 import glob
 import os
+from pathlib import Path
 
 
 PERCENT_TO_REMOVE = 50
-INPUT_TRAIN_DIR = 'Dataset/train_npz/'
-INPUT_TEST_DIR = 'Dataset/test_npz/'
-OUTPUT_TRAIN_DIR = f'Dataset/train_npz_{PERCENT_TO_REMOVE}/'
-OUTPUT_TEST_DIR = f'Dataset/test_npz_{PERCENT_TO_REMOVE}/'
-OUTPUT_TRAIN_LABELS_DIR = f'Dataset/train_labels_npz_{PERCENT_TO_REMOVE}/'
-OUTPUT_TEST_LABELS_DIR = f'Dataset/test_labels_npz_{PERCENT_TO_REMOVE}/'
+INPUT_TRAIN_DIR = 'dataset/npz_data/train/'
+INPUT_TEST_DIR = 'dataset/npz_data/test/'
+OUTPUT_TRAIN_INPUTS_DIR = f'dataset/train_data/train_inputs_{PERCENT_TO_REMOVE}/'
+OUTPUT_TEST_INPUTS_DIR = f'dataset/train_data/test_inputs_{PERCENT_TO_REMOVE}/'
+OUTPUT_TRAIN_LABELS_DIR = f'dataset/train_data/train_labels_{PERCENT_TO_REMOVE}/'
+OUTPUT_TEST_LABELS_DIR = f'dataset/train_data/test_labels_{PERCENT_TO_REMOVE}/'
 
 
-def create_train_labels(input_dir, output_dir_train, output_dir_labels, percent_to_remove):
-    if not os.path.exists(output_dir_train):
-        os.makedirs(output_dir_train)
-
-    if not os.path.exists(output_dir_labels):
-        os.makedirs(output_dir_labels)
+def create_inputs_labels(input_dir, output_dir_input, output_dir_labels, percent_to_remove):
+    # Create folders if they don't exist
+    Path(output_dir_input).mkdir(parents=True, exist_ok=True)
+    Path(output_dir_labels).mkdir(parents=True, exist_ok=True)
 
     npz_files = glob.glob(input_dir + '*.npz')
     for npz_file in npz_files:
@@ -40,14 +39,14 @@ def create_train_labels(input_dir, output_dir_train, output_dir_labels, percent_
         train_data = np.stack(features_reduced, axis=-1)
 
         file_name = os.path.splitext(os.path.basename(npz_file))[0]
-        np.save(output_dir_train + file_name + '_train.npy', train_data)
+        np.save(output_dir_input + file_name + '_input.npy', train_data)
 
         label_data = np.stack([data[feature_name] for feature_name in data.files], axis=-1)
         np.save(output_dir_labels + file_name + '_label.npy', label_data)
 
-    print(f"Files saved in {output_dir_train} and {output_dir_labels}.")
+    print(f"Files saved in {output_dir_input} and {output_dir_labels}.")
 
 
 if __name__ == "__main__":
-    create_train_labels(INPUT_TRAIN_DIR, OUTPUT_TRAIN_DIR, OUTPUT_TRAIN_LABELS_DIR, PERCENT_TO_REMOVE)
-    create_train_labels(INPUT_TEST_DIR, OUTPUT_TEST_DIR, OUTPUT_TEST_LABELS_DIR, PERCENT_TO_REMOVE)
+    create_inputs_labels(INPUT_TRAIN_DIR, OUTPUT_TRAIN_INPUTS_DIR, OUTPUT_TRAIN_LABELS_DIR, PERCENT_TO_REMOVE)
+    create_inputs_labels(INPUT_TEST_DIR, OUTPUT_TEST_INPUTS_DIR, OUTPUT_TEST_LABELS_DIR, PERCENT_TO_REMOVE)

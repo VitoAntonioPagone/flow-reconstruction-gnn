@@ -3,13 +3,14 @@ import glob
 import numpy as np
 import vtk as vtk
 from scipy.interpolate import griddata
+from pathlib import Path
 
 
 GRID_SIZE = 256
-INPUT_TRAIN_FODLER = 'dataset/original_data/train'
-OUTPUT_TRAIN_FOLDER = 'dataset/train_npz'
-INPUT_TEST_FOLDER = 'dataset/original_data/test'
-OUTPUT_TEST_FOLDER = 'dataset/test_npz'
+INPUT_TRAIN_FODLER = 'dataset/original_data/train/'
+OUTPUT_TRAIN_FOLDER = 'dataset/npz_data/train/'
+INPUT_TEST_FOLDER = 'dataset/original_data/test/'
+OUTPUT_TEST_FOLDER = 'dataset/npz_data/test/'
 
 
 def read_vtp_slice(file_name):
@@ -44,6 +45,7 @@ def interpolate_data(input_folder, output_folder):
         y_grid = np.linspace(min(data['y']), max(data['y']), GRID_SIZE)
         X_grid, Y_grid = np.meshgrid(x_grid, y_grid)
 
+        # Grid data
         grid_data = {} 
         for feature in data.keys():
             if feature not in ['x', 'y']:
@@ -51,6 +53,9 @@ def interpolate_data(input_folder, output_folder):
                     np.array([data['x'], data['y']]).transpose(), data[feature],
                     (X_grid, Y_grid), method='nearest'
                 )
+
+        # Create outptut folder if it doesn't exist
+        Path(output_folder).mkdir(parents=True, exist_ok=True)
 
         output_file_name = f'interpolated_{os.path.splitext(filename)[0]}.npz'
         output_file = os.path.join(output_folder, output_file_name)

@@ -3,3 +3,5 @@ pymech
 scipy
 pandas
 matplotlib
+torch
+natsort

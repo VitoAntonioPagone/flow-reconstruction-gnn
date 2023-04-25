@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 # Replace the filename with the path to your NPZ file
-LABEL = 'Dataset/train/train-labels-50/interpolated_cyc11_CAD605_Y0_Z0_X0_label.npy'
-TRAIN = 'Dataset/train/train-50/interpolated_cyc11_CAD605_Y0_Z0_X0_train.npy'
+INPUT = 'dataset/train_npz_50/interpolated_cyc11_CAD605_Y0_Z0_X0_train.npy'
+LABEL = 'dataset/train_labels_npz_50/interpolated_cyc11_CAD605_Y0_Z0_X0_label.npy'
 
 
 def plot_npy_channels(file1, file2):
@@ -31,4 +32,4 @@ def plot_npy_channels(file1, file2):
 
 
 if __name__ == "__main__":
-    plot_npy_channels(LABEL, TRAIN)
+    plot_npy_channels(INPUT, LABEL)

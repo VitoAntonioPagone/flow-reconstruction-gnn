@@ -6,6 +6,12 @@ import vtk
 from vtk.util import numpy_support
 
 
+INPUT_TRAIN_FODLER = 'Dataset/train/vtp_files'
+OUTPUT_TRAIN_FOLDER = 'Dataset/train/csvs'
+INPUT_TEST_FOLDER = 'Dataset/test/vtp_files'
+OUTPUT_TEST_FOLDER = 'Dataset/test/csvs'
+
+
 def vtk_to_csv(input_folder, output_folder):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -58,18 +64,6 @@ def vtk_to_csv(input_folder, output_folder):
         print(f"Converted {fnamevtk} to {output_file}")
 
 
-input_train_folder = (
-    'Dataset/train/vtp_files'
-)
-output_train_folder = (
-    'Dataset/train/csvs'
-)
-input_test_folder = (
-    'Dataset/test/vtp_files'
-)
-output_test_folder = (
-    'Dataset/test/csvs'
-)
-
-vtk_to_csv(input_train_folder, output_train_folder)
-vtk_to_csv(input_test_folder, output_test_folder)
+if __name__ == "__main__":
+    vtk_to_csv(INPUT_TRAIN_FODLER, OUTPUT_TRAIN_FOLDER)
+    vtk_to_csv(INPUT_TEST_FOLDER, OUTPUT_TEST_FOLDER)

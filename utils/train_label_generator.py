@@ -3,6 +3,15 @@ import glob
 import os
 
 
+PERCENT_TO_REMOVE = 50
+INPUT_TRAIN_DIR = 'Dataset/train_npz/'
+INPUT_TEST_DIR = 'Dataset/test_npz/'
+OUTPUT_TRAIN_DIR = f'Dataset/train_npz_{PERCENT_TO_REMOVE}/'
+OUTPUT_TEST_DIR = f'Dataset/test_npz_{PERCENT_TO_REMOVE}/'
+OUTPUT_TRAIN_LABELS_DIR = f'Dataset/train_labels_npz_{PERCENT_TO_REMOVE}/'
+OUTPUT_TEST_LABELS_DIR = f'Dataset/test_labels_npz_{PERCENT_TO_REMOVE}/'
+
+
 def create_train_labels(input_dir, output_dir_train, output_dir_labels, percent_to_remove):
     if not os.path.exists(output_dir_train):
         os.makedirs(output_dir_train)
@@ -39,16 +48,6 @@ def create_train_labels(input_dir, output_dir_train, output_dir_labels, percent_
     print(f"Files saved in {output_dir_train} and {output_dir_labels}.")
 
 
-percent_to_remove = 50
-
-input_train_dir = 'Dataset/train/ground_truth/'
-input_test_dir = 'Dataset/test/ground_truth/'
-
-output_train_dir = f'Dataset/train/train-{percent_to_remove}/'
-output_test_dir = f'Dataset/test/test-{percent_to_remove}/'
-
-output_train_labels_dir = f'Dataset/train/train-labels-{percent_to_remove}/'
-output_test_labels_dir = f'Dataset/test/test-labels-{percent_to_remove}/'
-
-create_train_labels(input_train_dir, output_train_dir, output_train_labels_dir, percent_to_remove)
-create_train_labels(input_test_dir, output_test_dir, output_test_labels_dir, percent_to_remove)
+if __name__ == "__main__":
+    create_train_labels(INPUT_TRAIN_DIR, OUTPUT_TRAIN_DIR, OUTPUT_TRAIN_LABELS_DIR, PERCENT_TO_REMOVE)
+    create_train_labels(INPUT_TEST_DIR, OUTPUT_TEST_DIR, OUTPUT_TEST_LABELS_DIR, PERCENT_TO_REMOVE)

@@ -1,2 +1,5 @@
 numpy
 pymech
+scipy
+pandas
+matplotlib

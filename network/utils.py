@@ -1,7 +1,7 @@
 import torch
-import torchvision
-from network.dataset import FlowDataset
+from network.datasets import FlowDataset
 from torch.utils.data import DataLoader
+from network.losses import MaskedMSELoss
 
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
@@ -15,20 +15,17 @@ def load_checkpoint(checkpoint, model):
 
 
 def get_loaders(
-    train_dir,
-    train_maskdir,
-    val_dir,
-    val_maskdir,
+    train_inputs_dir,
+    train_labels_dir,
+    val_inputs_dir,
+    val_labels_dir,
     batch_size,
-    train_transform,
-    val_transform,
     num_workers=4,
     pin_memory=True,
 ):
     train_ds = FlowDataset(
-        image_dir=train_dir,
-        mask_dir=train_maskdir,
-        transform=train_transform,
+        input_dir=train_inputs_dir,
+        label_dir=train_labels_dir,
     )
 
     train_loader = DataLoader(
@@ -40,9 +37,8 @@ def get_loaders(
     )
 
     val_ds = FlowDataset(
-        image_dir=val_dir,
-        mask_dir=val_maskdir,
-        transform=val_transform,
+        input_dir=val_inputs_dir,
+        label_dir=val_labels_dir,
     )
 
     val_loader = DataLoader(
@@ -57,44 +53,18 @@ def get_loaders(
 
 
 def check_accuracy(loader, model, device="cuda"):
-    num_correct = 0
-    num_pixels = 0
-    dice_score = 0
     model.eval()
 
     with torch.no_grad():
-        for x, y in loader:
+        for x, y, mask in loader:
             x = x.to(device)
-            y = y.to(device).unsqueeze(1)
-            # folder = "saved_images/"
-            # torchvision.utils.save_image(y, f"{folder}0.jpg")
-            preds = torch.sigmoid(model(x))
-            preds = (preds > 0.5).float()
-            num_correct += (preds == y).sum()
-            num_pixels += torch.numel(preds)
-            dice_score += (2 * (preds * y).sum()) / (
-                (preds + y).sum() + 1e-8
-            )
-
-    print(
-        f"Got {num_correct}/{num_pixels} with acc {num_correct/num_pixels*100:.2f}"
-    )
-    print(f"Dice score: {dice_score/len(loader)}")
-    model.train()
-
-
-def save_predictions_as_imgs(
-    loader, model, folder="saved_images/", device="cuda"
-):
-    model.eval()
-    for idx, (x, y) in enumerate(loader):
-        x = x.to(device=device)
-        with torch.no_grad():
-            preds = torch.sigmoid(model(x))
-            preds = (preds > 0.5).float()
-        torchvision.utils.save_image(
-            preds, f"{folder}/pred_{idx}.png"
-        )
-        torchvision.utils.save_image(y.unsqueeze(1), f"{folder}{idx}.png")
+            y = y.to(device)
+            mask = mask.to(device)
+            x_with_mask = torch.cat((x, mask), dim=1)
+            preds = model(x_with_mask)
+            loss_fn = MaskedMSELoss()
+            loss = loss_fn(preds, y, mask)
+        print(f"Validation Loss: {loss.item():.4f}")
 
     model.train()
+

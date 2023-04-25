@@ -40,3 +40,4 @@ def tran_val_split(train_dir, val_dir):
 if __name__ == "__main__":
     tran_val_split(INPUT_TRAIN_INPUTS_DIR, OUTPUT_VAL_INPUTS_DIR)
     tran_val_split(INPUT_TRAIN_LABELS_DIR, OUTPUT_VAL_LABELS_DIR)
+

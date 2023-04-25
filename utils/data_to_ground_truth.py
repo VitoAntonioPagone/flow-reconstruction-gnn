@@ -7,10 +7,10 @@ from pathlib import Path
 
 
 GRID_SIZE = 256
-INPUT_TRAIN_FODLER = 'dataset/original_data/train/'
-OUTPUT_TRAIN_FOLDER = 'dataset/npz_data/train/'
-INPUT_TEST_FOLDER = 'dataset/original_data/test/'
-OUTPUT_TEST_FOLDER = 'dataset/npz_data/test/'
+INPUT_TRAIN_DIR = 'dataset/original_data/train/'
+OUTPUT_TRAIN_DIR = 'dataset/npz_data/train/'
+INPUT_TEST_DIR = 'dataset/original_data/test/'
+OUTPUT_TEST_DIR = 'dataset/npz_data/test/'
 
 
 def read_vtp_slice(file_name):
@@ -63,5 +63,5 @@ def interpolate_data(input_folder, output_folder):
 
 
 if __name__ == "__main__":
-    interpolate_data(INPUT_TRAIN_FODLER, OUTPUT_TRAIN_FOLDER)
-    interpolate_data(INPUT_TEST_FOLDER, OUTPUT_TEST_FOLDER)
+    interpolate_data(INPUT_TRAIN_DIR, OUTPUT_TRAIN_DIR)
+    interpolate_data(INPUT_TEST_DIR, OUTPUT_TEST_DIR)

@@ -1,3 +1,21 @@
-*.f000*
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+build
+
+# Visual studio and InteliJ
 .vscode
 .idea
+
+# Network states
+*.tar
+network/__pycache__/
+
+# NEK files
+*.f000*
+
+
+# MAC
+.DS_Store

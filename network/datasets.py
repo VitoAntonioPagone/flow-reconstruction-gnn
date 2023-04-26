@@ -9,7 +9,7 @@ class FlowDataset(Dataset):
         self.input_dir = input_dir
         self.label_dir = label_dir
         self.labels = sorted(os.listdir(label_dir))
-        self.inputs = [re.sub('_label.npy$', '_input.npy', f) for f in self.labels]
+        self.inputs = [re.sub('_label.npy$', '_input.npy', f) for f in self.labels ]  
         self.add_mask = add_mask
 
     def __len__(self):

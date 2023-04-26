@@ -2,14 +2,14 @@ import os
 from torch.utils.data import Dataset
 import torch
 import numpy as np
-
+import re
 
 class FlowDataset(Dataset):
     def __init__(self, input_dir, label_dir, add_mask=False):
         self.input_dir = input_dir
         self.label_dir = label_dir
-        self.inputs = os.listdir(input_dir)
-        self.labels = os.listdir(label_dir)
+        self.labels = sorted(os.listdir(label_dir))
+        self.inputs = [re.sub('_label.npy$', '_input.npy', f) for f in self.labels]
         self.add_mask = add_mask
 
     def __len__(self):

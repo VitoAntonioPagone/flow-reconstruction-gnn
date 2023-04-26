@@ -1,15 +1,15 @@
 import torch
 import matplotlib.pyplot as plt
-from network.datasets import FlowDataset
-from network.models import ConvAutoEncoder
-from network.utils import load_checkpoint
+from datasets import FlowDataset
+from models import ConvAutoEncoder
+from utils import load_checkpoint
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_FILE = 'network/trained_models/my_checkpoint.pth.tar'
-TEST_INPUTS_DIR = 'dataset/train_data/test_inputs_50/'
-TEST_LABELS_DIR = 'dataset/train_data/test_labels_50/'
-TEST_FILE_NUM = 0
+CHECKPOINT_FILE = 'flow_reconstruction/network/trained_models/my_checkpoint.pth.tar'
+TEST_INPUTS_DIR = 'flow_reconstruction/dataset/train_data/test_inputs_50/'
+TEST_LABELS_DIR = 'flow_reconstruction/dataset/train_data/test_labels_50/'
+TEST_FILE_NUM = 5
 
 
 def reconstruct_flow(model, input_tensor, missing_mask_tensor):

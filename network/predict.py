@@ -39,27 +39,30 @@ def predict():
     reconstructed_flow_tensor = reconstruct_flow(model, test_input_tensor, test_missing_mask_tensor)
     reconstructed_flow_tensor = reconstructed_flow_tensor.cpu()  # Move the tensor back to CPU for visualization
 
-    # Plot the original input tensor, ground truth label tensor, and the reconstructed flow tensor
-    fig, axes = plt.subplots(3, 4, figsize=(20, 12))
+    fig, axes = plt.subplots(3, 4, figsize=(12, 8), dpi=100)  
+    fig.subplots_adjust(hspace=0.5, wspace=0.5)  
 
     for i in range(4):
         # Plot the input tensor
         im1 = axes[0, i].imshow(test_input_tensor[0, i], cmap='jet', aspect='auto')
-        axes[0, i].set_title(f"Input Tensor - Channel {i + 1}")
-        fig.colorbar(im1, ax=axes[0, i])
+        axes[0, i].set_title(f"Input Tensor - Channel {i + 1}", fontsize=10)
+        cbar1 = fig.colorbar(im1, ax=axes[0, i], shrink=0.6)
+        cbar1.ax.tick_params(labelsize=8)
 
         # Plot the ground truth label tensor
         im2 = axes[1, i].imshow(test_label_tensor[0, i], cmap='jet', aspect='auto')
-        axes[1, i].set_title(f"Ground Truth Label Tensor - Channel {i + 1}")
-        fig.colorbar(im2, ax=axes[1, i])
+        axes[1, i].set_title(f"Ground Truth Label Tensor - Channel {i + 1}", fontsize=10)
+        cbar2 = fig.colorbar(im2, ax=axes[1, i], shrink=0.6)
+        cbar2.ax.tick_params(labelsize=8)
 
         # Plot the reconstructed flow tensor
         im3 = axes[2, i].imshow(reconstructed_flow_tensor[0, i], cmap='jet', aspect='auto')
-        axes[2, i].set_title(f"Reconstructed Flow Tensor - Channel {i + 1}")
-        fig.colorbar(im3, ax=axes[2, i])
+        axes[2, i].set_title(f"Reconstructed Flow Tensor - Channel {i + 1}", fontsize=10)
+        cbar3 = fig.colorbar(im3, ax=axes[2, i], shrink=0.6)
+        cbar3.ax.tick_params(labelsize=8)
 
+    plt.tight_layout(pad=2)  
     plt.show()
-
 
 if __name__ == "__main__":
     predict()

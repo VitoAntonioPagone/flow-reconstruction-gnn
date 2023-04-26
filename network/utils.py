@@ -1,7 +1,7 @@
 import torch
-from network.datasets import FlowDataset
+from datasets import FlowDataset
 from torch.utils.data import DataLoader
-from network.losses import MaskedMSELoss
+from losses import MaskedMSELoss
 
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):

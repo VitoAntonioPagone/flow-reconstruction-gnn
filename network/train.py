@@ -1,11 +1,11 @@
 import torch
 from torch.optim import Adam
-from network.models import (
+from models import (
     UNet,
     ConvAutoEncoder)
-from network.losses import MaskedMSELoss
+from losses import MaskedMSELoss
 from tqdm import tqdm
-from network.utils import (
+from utils import (
     load_checkpoint,
     save_checkpoint,
     get_loaders,
@@ -20,7 +20,7 @@ NUM_WORKERS = 6
 PIN_MEMORY = True
 LEARNING_RATE = 0.001
 SHUFFLE = True
-NUM_EPOCHS = 5
+NUM_EPOCHS = 50
 LOAD_MODEL = False
 CHECKPOINT_FILE = 'network/trained_models/my_checkpoint.pth.tar'
 TRAIN_INPUTS_DIR = 'dataset/train_data/train_inputs_50/'

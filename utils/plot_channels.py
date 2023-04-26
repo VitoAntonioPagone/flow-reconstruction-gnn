@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 INPUT = 'flow_reconstruction/dataset/train_data/train_inputs_50/interpolated_cyc11_CAD605_Y0_Z0_X0_input.npy'
 LABEL = 'flow_reconstruction/dataset/train_data/train_labels_50/interpolated_cyc11_CAD605_Y0_Z0_X0_label.npy'
 
-
+ 
 def plot_npy_channels(file1, file2):
     data1 = np.load(file1)
     data2 = np.load(file2)

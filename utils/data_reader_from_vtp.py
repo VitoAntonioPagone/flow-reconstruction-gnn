@@ -6,10 +6,10 @@ import vtk
 from vtk.util import numpy_support
 
 
-INPUT_TRAIN_FODLER = 'flow_reconstruction/Dataset/train/vtp_files'
-OUTPUT_TRAIN_FOLDER = 'flow_reconstruction/Dataset/train/csvs'
-INPUT_TEST_FOLDER = 'flow_reconstruction/Dataset/test/vtp_files'
-OUTPUT_TEST_FOLDER = 'flow_reconstruction/Dataset/test/csvs'
+INPUT_TRAIN_FODLER = 'flow_reconstruction/dataset/train/vtp_files'
+OUTPUT_TRAIN_FOLDER = 'flow_reconstruction/dataset/train/csvs'
+INPUT_TEST_FOLDER = 'flow_reconstruction/dataset/test/vtp_files'
+OUTPUT_TEST_FOLDER = 'flow_reconstruction/dataset/test/csvs'
 
 
 def vtk_to_csv(input_folder, output_folder):

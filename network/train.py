@@ -22,12 +22,12 @@ PIN_MEMORY = True
 LEARNING_RATE = 0.001
 SHUFFLE = True
 NUM_EPOCHS = 2
-LOAD_MODEL = False
-CHECKPOINT_FILE = '/Users/vitoantonio/Desktop/feature_AutoEncoder/flow_reconstruction/network/trained_models/my_checkpoint.pth.tar'
-TRAIN_INPUTS_DIR = '/Users/vitoantonio/Desktop/feature_AutoEncoder/flow_reconstruction/dataset/train_data/train_inputs_50'
-TRAIN_LABELS_DIR = '/Users/vitoantonio/Desktop/feature_AutoEncoder/flow_reconstruction/dataset/train_data/train_labels_50'
-VAL_INPUTS_DIR = '/Users/vitoantonio/Desktop/feature_AutoEncoder/flow_reconstruction/dataset/train_data/val_inputs_50'
-VAL_LABELS_DIR = '/Users/vitoantonio/Desktop/feature_AutoEncoder/flow_reconstruction/dataset/train_data/val_labels_50'
+LOAD_MODEL = True
+CHECKPOINT_FILE = 'flow_reconstruction/network/trained_models/my_checkpoint.pth.tar'
+TRAIN_INPUTS_DIR = 'flow_reconstruction/dataset/train_data/train_inputs_50'
+TRAIN_LABELS_DIR = 'flow_reconstruction/dataset/train_data/train_labels_50'
+VAL_INPUTS_DIR = 'flow_reconstruction/dataset/train_data/val_inputs_50'
+VAL_LABELS_DIR = 'flow_reconstruction/dataset/train_data/val_labels_50'
 
 
 def train_fn(loader, model, optimizer, loss_fn, scaler):

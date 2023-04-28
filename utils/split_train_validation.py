@@ -7,10 +7,10 @@ import glob
 
 RANDOM_SEED = 1337
 TRAIN_SPLIT = 0.9
-INPUT_TRAIN_INPUTS_DIR = 'dataset/train_data/train_inputs_50/'
-OUTPUT_VAL_INPUTS_DIR = 'dataset/train_data/val_inputs_50/'
-INPUT_TRAIN_LABELS_DIR = 'dataset/train_data/train_labels_50/'
-OUTPUT_VAL_LABELS_DIR = 'dataset/train_data/val_labels_50/'
+INPUT_TRAIN_INPUTS_DIR = 'flow_reconstruction/dataset/train_data/train_inputs_50/'
+OUTPUT_VAL_INPUTS_DIR = 'flow_reconstruction/dataset/train_data/val_inputs_50/'
+INPUT_TRAIN_LABELS_DIR = 'flow_reconstruction/dataset/train_data/train_labels_50/'
+OUTPUT_VAL_LABELS_DIR = 'flow_reconstruction/dataset/train_data/val_labels_50/'
 
 
 def tran_val_split(train_dir, val_dir):

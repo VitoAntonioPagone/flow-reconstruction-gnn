@@ -2,6 +2,7 @@ import torch
 from datasets import FlowDataset
 from torch.utils.data import DataLoader
 from losses import MaskedMSELoss
+import matplotlib.pyplot as plt
 
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
@@ -67,4 +68,13 @@ def check_accuracy(loader, model, device="cuda"):
         print(f"Validation Loss: {loss.item():.4f}")
 
     model.train()
+
+def plot_losses(train_losses, val_losses):
+    plt.figure()
+    plt.plot(train_losses, label="Training Loss")
+    plt.plot(val_losses, label="Validation Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.show()
 

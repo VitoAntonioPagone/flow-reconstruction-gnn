@@ -5,12 +5,12 @@ from pathlib import Path
 
 
 PERCENT_TO_REMOVE = 50
-INPUT_TRAIN_DIR = 'dataset/npz_data/train/'
-INPUT_TEST_DIR = 'dataset/npz_data/test/'
-OUTPUT_TRAIN_INPUTS_DIR = f'dataset/train_data/train_inputs_{PERCENT_TO_REMOVE}/'
-OUTPUT_TEST_INPUTS_DIR = f'dataset/train_data/test_inputs_{PERCENT_TO_REMOVE}/'
-OUTPUT_TRAIN_LABELS_DIR = f'dataset/train_data/train_labels_{PERCENT_TO_REMOVE}/'
-OUTPUT_TEST_LABELS_DIR = f'dataset/train_data/test_labels_{PERCENT_TO_REMOVE}/'
+INPUT_TRAIN_DIR = 'flow_reconstruction/dataset/npz_data/train/'
+INPUT_TEST_DIR = 'flow_reconstruction/dataset/npz_data/test/'
+OUTPUT_TRAIN_INPUTS_DIR = f'flow_reconstruction/dataset/train_data/train_inputs_{PERCENT_TO_REMOVE}/'
+OUTPUT_TEST_INPUTS_DIR = f'flow_reconstruction/dataset/train_data/test_inputs_{PERCENT_TO_REMOVE}/'
+OUTPUT_TRAIN_LABELS_DIR = f'flow_reconstruction/dataset/train_data/train_labels_{PERCENT_TO_REMOVE}/'
+OUTPUT_TEST_LABELS_DIR = f'flow_reconstruction/dataset/train_data/test_labels_{PERCENT_TO_REMOVE}/'
 
 
 def create_inputs_labels(input_dir, output_dir_input, output_dir_labels, percent_to_remove):

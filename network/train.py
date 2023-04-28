@@ -10,17 +10,18 @@ from utils import (
     save_checkpoint,
     get_loaders,
     check_accuracy,
+    plot_losses
 )
 
 
 # Hyper-parameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 8
+BATCH_SIZE = 32
 NUM_WORKERS = 6
 PIN_MEMORY = True
 LEARNING_RATE = 0.001
 SHUFFLE = True
-NUM_EPOCHS = 50
+NUM_EPOCHS = 2
 LOAD_MODEL = False
 CHECKPOINT_FILE = '/Users/vitoantonio/Desktop/feature_AutoEncoder/flow_reconstruction/network/trained_models/my_checkpoint.pth.tar'
 TRAIN_INPUTS_DIR = '/Users/vitoantonio/Desktop/feature_AutoEncoder/flow_reconstruction/dataset/train_data/train_inputs_50'
@@ -31,6 +32,7 @@ VAL_LABELS_DIR = '/Users/vitoantonio/Desktop/feature_AutoEncoder/flow_reconstruc
 
 def train_fn(loader, model, optimizer, loss_fn, scaler):
     loop = tqdm(loader)
+    losses = []
 
     for batch_idx, (inputs, labels, mask) in enumerate(loop):
         inputs = inputs.to(device=DEVICE)
@@ -51,9 +53,13 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
 
         # update tqdm loop
         loop.set_postfix(loss=loss.item())
+        losses.append(loss.item())
+
+    return sum(losses) / len(losses)
 
 
 def train():
+    
     print(f"Selected device: {DEVICE}")
 
     # model = UNet(in_channels=5, out_channels=4).to(DEVICE)
@@ -76,8 +82,12 @@ def train():
     check_accuracy(val_loader, model, device=DEVICE)
     scaler = torch.cuda.amp.GradScaler()
 
+    train_losses = []
+    val_losses = []
+
     for epoch in range(NUM_EPOCHS):
-        train_fn(train_loader, model, optimizer, loss_fn, scaler)
+        train_loss = train_fn(train_loader, model, optimizer, loss_fn, scaler)
+        train_losses.append(train_loss)
 
         # save model
         checkpoint_state = {
@@ -87,7 +97,11 @@ def train():
         save_checkpoint(checkpoint_state, CHECKPOINT_FILE)
 
         # check accuracy
-        check_accuracy(val_loader, model, device=DEVICE)
+        val_loss = check_accuracy(val_loader, model, device=DEVICE)
+        val_losses.append(val_loss)
+
+    plot_losses(train_losses, val_losses)
+
 
 
 if __name__ == "__main__":

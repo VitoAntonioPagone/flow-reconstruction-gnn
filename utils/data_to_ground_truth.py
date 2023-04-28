@@ -7,10 +7,10 @@ from pathlib import Path
 
 
 GRID_SIZE = 256
-INPUT_TRAIN_DIR = 'dataset/original_data/train/'
-OUTPUT_TRAIN_DIR = 'dataset/npz_data/train/'
-INPUT_TEST_DIR = 'dataset/original_data/test/'
-OUTPUT_TEST_DIR = 'dataset/npz_data/test/'
+INPUT_TRAIN_DIR = 'flow_reconstruction/dataset/original_data/train/'
+OUTPUT_TRAIN_DIR = 'flow_reconstruction/dataset/npz_data/train/'
+INPUT_TEST_DIR = 'flow_reconstruction/dataset/original_data/test/'
+OUTPUT_TEST_DIR = 'flow_reconstruction/dataset/npz_data/test/'
 
 
 def read_vtp_slice(file_name):

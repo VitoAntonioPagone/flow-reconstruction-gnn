@@ -35,7 +35,7 @@ def predict():
     test_missing_mask_tensor = test_missing_mask_tensor.unsqueeze(0)
     # Load pre-trained model
     model = ConvAutoEncoder().to(DEVICE)
-    load_checkpoint(torch.load(CHECKPOINT_FILE), model)
+    load_checkpoint(torch.load(CHECKPOINT_FILE, map_location=torch.device('cpu')), model)  
     reconstructed_flow_tensor = reconstruct_flow(model, test_input_tensor, test_missing_mask_tensor)
     reconstructed_flow_tensor = reconstructed_flow_tensor.cpu()  # Move the tensor back to CPU for visualization
 

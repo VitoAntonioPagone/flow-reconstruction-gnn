@@ -92,10 +92,21 @@ class ConvAutoEncoder(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(2, 2)
         )
+        self.encoder4 = nn.Sequential(
+            nn.Conv2d(128, 1024, kernel_size=3, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2)
+        )
 
         # Decoder
+        self.decoder4 = nn.Sequential(
+            nn.ConvTranspose2d(1024, 128, kernel_size=2, stride=2),
+            nn.BatchNorm2d(128),
+            nn.ReLU()
+        )
         self.decoder3 = nn.Sequential(
-            nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2),
+            nn.ConvTranspose2d(256, 64, kernel_size=2, stride=2),
             nn.BatchNorm2d(64),
             nn.ReLU()
         )
@@ -108,14 +119,17 @@ class ConvAutoEncoder(nn.Module):
             nn.ConvTranspose2d(64, 4, kernel_size=2, stride=2),
             nn.Sigmoid()
         )
-        self.final_conv = nn.ConvTranspose2d(4, 4, kernel_size=3, stride=1, padding=1) # Added this layer
+        self.final_conv = nn.ConvTranspose2d(4, 4, kernel_size=3, stride=1, padding=1)
 
     def forward(self, x):
         enc1 = self.encoder1(x)
         enc2 = self.encoder2(enc1)
         enc3 = self.encoder3(enc2)
+        enc4 = self.encoder4(enc3)
 
-        dec3 = self.decoder3(enc3)
+        dec4 = self.decoder4(enc4)
+        dec4 = torch.cat((dec4, enc3), dim=1)  # Skip connection
+        dec3 = self.decoder3(dec4)
         dec3 = torch.cat((dec3, enc2), dim=1)  # Skip connection
         dec2 = self.decoder2(dec3)
         dec2 = torch.cat((dec2, enc1), dim=1)  # Skip connection

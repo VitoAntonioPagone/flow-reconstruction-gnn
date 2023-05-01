@@ -6,6 +6,7 @@ import vtk
 from vtk.util import numpy_support
 
 
+
 INPUT_TRAIN_FODLER = 'flow_reconstruction/dataset/train/vtp_files'
 OUTPUT_TRAIN_FOLDER = 'flow_reconstruction/dataset/train/csvs'
 INPUT_TEST_FOLDER = 'flow_reconstruction/dataset/test/vtp_files'

@@ -33,3 +33,16 @@ class FlowDataset(Dataset):
             input_tensor = torch.cat((input_tensor, missing_mask_tensor), dim=0)
 
         return input_tensor, label_tensor, missing_mask_tensor
+    
+
+class MLPDataset(Dataset):
+    def __init__(self, data_file):
+        data = np.load(data_file)
+        self.inputs = torch.tensor(data['data'][:, :3], dtype=torch.float32)
+        self.labels = torch.tensor(data['data'][:, 3:], dtype=torch.float32)
+
+    def __len__(self):
+        return len(self.inputs)
+
+    def __getitem__(self, idx):
+        return self.inputs[idx], self.labels[idx]

@@ -3,7 +3,7 @@ from datasets import FlowDataset, MLPDataset
 from torch.utils.data import DataLoader
 from losses import MaskedMSELoss
 import matplotlib.pyplot as plt
-
+import torch.nn as nn
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
@@ -136,3 +136,20 @@ def initialize_weights(model):
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
     return print('Weights initialized with Glorot (Xavier) initializer, bias initialized to zero')
+
+def print_mlp_characteristics(model):
+    print("Multi-Layer Perceptron Summary:")
+    print("---------------------------------")
+    print(model)
+    print("---------------------------------")
+    print("Number of parameters: {}".format(sum(p.numel() for p in model.parameters())))
+    print("Number of layers: {}".format(len(model.layers)))
+    print("Layer-wise architecture:")
+    for i, layer in enumerate(model.layers):
+        print("Layer {} - {}".format(i+1, layer))
+
+def print_autoencoder_dashboard(model):
+    print("ConvAutoEncoder Architecture:\n")
+
+    for name, module in model.named_children():
+        print(f"{name}: {module}\n")

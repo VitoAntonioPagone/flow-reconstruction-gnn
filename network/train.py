@@ -16,7 +16,9 @@ from utils import (
     plot_losses,
     check_accuracy_mlp,
     get_loaders_mlp,
-    initialize_weights
+    initialize_weights,
+    print_mlp_characteristics,
+    print_autoencoder_dashboard
 )
 
 # Hyper-parameters
@@ -36,10 +38,11 @@ VAL_LABELS_DIR = 'flow_reconstruction/dataset/train_data/val_labels_50'
 
 # MLP parameters
 MLP_INPUT_SIZE = 3
-MLP_HIDDEN_SIZE1 = 64
-MLP_HIDDEN_SIZE2 = 256
-MLP_HIDDEN_SIZE3 = 256
-MLP_HIDDEN_SIZE4 = 64
+MLP_HIDDEN_SIZE1 = 512
+MLP_HIDDEN_SIZE2 = 1024
+MLP_HIDDEN_SIZE3 = 2048
+MLP_HIDDEN_SIZE4 = 1024
+MLP_HIDDEN_SIZE5 = 512
 MLP_OUTPUT_SIZE = 3
 MLP_LEARNING_RATE = 0.001
 MLP_NUM_EPOCHS = 100
@@ -84,6 +87,7 @@ def train_unet_conv_autoencoder():
 
     # model = UNet(in_channels=5, out_channels=4).to(DEVICE)
     model = ConvAutoEncoder().to(DEVICE)
+    print_autoencoder_dashboard(model)
     initialize_weights(model)
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
     loss_fn = MaskedMSELoss()
@@ -126,7 +130,8 @@ def train_unet_conv_autoencoder():
 
 def main_mlp():
     # Create the MLP model
-    model = MLP(MLP_INPUT_SIZE, MLP_HIDDEN_SIZE1, MLP_HIDDEN_SIZE2, MLP_HIDDEN_SIZE3, MLP_HIDDEN_SIZE4, MLP_OUTPUT_SIZE)
+    model = MLP(MLP_INPUT_SIZE, MLP_HIDDEN_SIZE1, MLP_HIDDEN_SIZE2, MLP_HIDDEN_SIZE3, MLP_HIDDEN_SIZE4,MLP_HIDDEN_SIZE5, MLP_OUTPUT_SIZE)
+    print_mlp_characteristics(model)
     initialize_weights(model)
 
     if torch.cuda.is_available():
@@ -187,7 +192,7 @@ def main_mlp():
 
 
 if __name__ == "__main__":
-    model_to_train = "MLP"
+    model_to_train = "ConvAutoEncoder"
 
     if model_to_train == "MLP":
         main_mlp()

@@ -139,29 +139,39 @@ class ConvAutoEncoder(nn.Module):
         return x
 
 class MLP(nn.Module):
-    def __init__(self, input_size, hidden_size1, hidden_size2, hidden_size3, hidden_size4, output_size):
+    def __init__(self, input_size, hidden_size1, hidden_size2, hidden_size3, hidden_size4, hidden_size5, output_size, dropout_prob=0.5):
         super(MLP, self).__init__()
         self.layers = nn.Sequential(
             nn.Linear(input_size, hidden_size1),
+            nn.BatchNorm1d(hidden_size1),
             nn.ReLU(),
+            nn.Dropout(dropout_prob),
+
             nn.Linear(hidden_size1, hidden_size2),
+            nn.BatchNorm1d(hidden_size2),
             nn.ReLU(),
+            nn.Dropout(dropout_prob),
+
             nn.Linear(hidden_size2, hidden_size3),
+            nn.BatchNorm1d(hidden_size3),
             nn.ReLU(),
+            nn.Dropout(dropout_prob),
+
             nn.Linear(hidden_size3, hidden_size4),
+            nn.BatchNorm1d(hidden_size4),
             nn.ReLU(),
-            nn.Linear(hidden_size4, hidden_size3),
+            nn.Dropout(dropout_prob),
+
+            nn.Linear(hidden_size4, hidden_size5),
+            nn.BatchNorm1d(hidden_size5),
             nn.ReLU(),
-            nn.Linear(hidden_size3, hidden_size2),
-            nn.ReLU(),
-            nn.Linear(hidden_size2, hidden_size1),
-            nn.ReLU(),
-            nn.Linear(hidden_size1, output_size)
+            nn.Dropout(dropout_prob),
+
+            nn.Linear(hidden_size5, output_size)
         )
 
     def forward(self, x):
         return self.layers(x)
-
 
 class DilatedConvAutoEncoder(nn.Module):
     def __init__(self):

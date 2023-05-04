@@ -3,6 +3,11 @@ import glob
 import numpy as np
 import vtk
 
+TRAIN_INPUT_FOLDER = "flow_reconstruction/dataset_mlp/original_data/train"
+TRAIN_OUTPUT_FOLDER = "flow_reconstruction/dataset_mlp/original_data/npz_data/train"
+TEST_INPUT_FOLDER = "flow_reconstruction/dataset_mlp/original_data/test"
+TEST_OUTPUT_FOLDER = "flow_reconstruction/dataset_mlp/original_data/npz_data/test"
+
 def read_vtp_slice(file_name):
     reader = vtk.vtkXMLPolyDataReader()
     reader.SetFileName(file_name)
@@ -28,7 +33,6 @@ def vtp_to_npz(input_folder, output_folder):
         output_file = os.path.join(output_folder, os.path.splitext(os.path.basename(vtp_file))[0] + ".npz")
         np.savez(output_file, **data)
 
-
 # Convert train and test vtp files to npz files
-vtp_to_npz("flow_reconstruction/dataset_mlp/original_data/train", "flow_reconstruction/dataset_mlp/original_data/npz_data/train")
-vtp_to_npz("flow_reconstruction/dataset_mlp/original_data/test", "flow_reconstruction/dataset_mlp/original_data/npz_data/test")
+vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
+vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)

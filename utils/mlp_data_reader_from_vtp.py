@@ -19,8 +19,8 @@ def read_vtp_slice(file_name):
 
     return data_out
 
-input_dir = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/original_data/test'
-output_dir = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_mlp/npz_data/test/'
+input_dir = 'flow_reconstruction/dataset/original_data/test'
+output_dir = 'flow_reconstruction/dataset_mlp/npz_data/test/'
 
 # Create the output directory if it does not exist
 os.makedirs(output_dir, exist_ok=True)

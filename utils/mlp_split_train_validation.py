@@ -6,8 +6,8 @@ import numpy as np
 
 RANDOM_SEED = 1337
 VALIDATION_SPLIT = 0.1
-TRAIN_DIR = 'flow_reconstruction/dataset_mlp/npz_data/train/'
-VALIDATION_DIR = 'flow_reconstruction/dataset_mlp/npz_data/validation/'
+TRAIN_DIR = 'flow_reconstruction/dataset_mlp/original_data/npz_data/test/'
+VALIDATION_DIR = 'flow_reconstruction/dataset_mlp/original_data/npz_data/validation/'
 
 
 def train_validation_split(train_dir, validation_dir):

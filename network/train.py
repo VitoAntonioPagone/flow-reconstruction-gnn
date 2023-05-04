@@ -21,6 +21,9 @@ from utils import (
     print_autoencoder_dashboard
 )
 
+MODEL_TO_TRAIN = "MLP"
+
+
 # Hyper-parameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 32
@@ -192,11 +195,9 @@ def main_mlp():
 
 
 def main():
-    model_to_train = input("Enter the model to train ('MLP', 'UNet', 'ConvAutoEncoder', or 'DilatedConvAutoEncoder'): ")
-
-    if model_to_train == "MLP":
+    if MODEL_TO_TRAIN == "MLP":
         main_mlp()
-    elif model_to_train == "UNet" or model_to_train == "ConvAutoEncoder" or model_to_train == "DilatedConvAutoEncoder":
+    elif MODEL_TO_TRAIN == "UNet" or MODEL_TO_TRAIN == "ConvAutoEncoder" or MODEL_TO_TRAIN == "DilatedConvAutoEncoder":
         train_unet_conv_autoencoder()
     else:
         print("Invalid model_to_train value. Please choose 'MLP', 'UNet', 'ConvAutoEncoder', or 'DilatedConvAutoEncoder'.")

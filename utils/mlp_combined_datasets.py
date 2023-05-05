@@ -2,19 +2,20 @@ import os
 import numpy as np
 
 # Set the paths to original train, test, and validation folders
-train_input_dir = "flow_reconstruction/dataset_mlp/original_data/npz_data/train/"
-test_input_dir = "flow_reconstruction/dataset_mlp/original_data/npz_data/test/"
-val_input_dir = "flow_reconstruction/dataset_mlp/original_data/npz_data/validation/"
+TRAIN_INPUT_DIR = "flow_reconstruction/dataset_mlp/original_data/npz_data/train/"
+TEST_INPUT_DIR = "flow_reconstruction/dataset_mlp/original_data/npz_data/test/"
+VAL_INPUT_DIR = "flow_reconstruction/dataset_mlp/original_data/npz_data/validation/"
 
 # Set the paths to the output folders
-train_output_dir = "flow_reconstruction/dataset_mlp/train_data/train_combined/"
-test_output_dir = "flow_reconstruction/dataset_mlp/train_data/test_combined/"
-val_output_dir = "flow_reconstruction/dataset_mlp/train_data/validation_combined/"
+TRAIN_OUTPUT_DIR = "flow_reconstruction/dataset_mlp/train_data/train_combined/"
+TEST_OUTPUT_DIR = "flow_reconstruction/dataset_mlp/train_data/test_combined/"
+VAL_OUTPUT_DIR = "flow_reconstruction/dataset_mlp/train_data/validation_combined/"
 
 # Create output directories if they do not exist
-os.makedirs(train_output_dir, exist_ok=True)
-os.makedirs(test_output_dir, exist_ok=True)
-os.makedirs(val_output_dir, exist_ok=True)
+os.makedirs(TRAIN_OUTPUT_DIR, exist_ok=True)
+os.makedirs(TEST_OUTPUT_DIR, exist_ok=True)
+os.makedirs(VAL_OUTPUT_DIR, exist_ok=True)
+
 
 # Define a function to concatenate data from a list of .npz files
 def concatenate_npz_files(npz_files, input_dir):
@@ -37,7 +38,8 @@ def process_data(input_dir, output_dir):
     np.savez_compressed(output_file, data=combined_data)
     print(f"Combined file: {output_file}")
 
+
 # Process data for train, test, and validation folders
-process_data(train_input_dir, train_output_dir)
-process_data(test_input_dir, test_output_dir)
-process_data(val_input_dir, val_output_dir)
+process_data(TRAIN_INPUT_DIR, TRAIN_OUTPUT_DIR)
+process_data(TEST_INPUT_DIR, TEST_OUTPUT_DIR)
+process_data(VAL_INPUT_DIR, VAL_OUTPUT_DIR)

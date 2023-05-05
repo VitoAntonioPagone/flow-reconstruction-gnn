@@ -6,7 +6,10 @@ from models import (
     ConvAutoEncoder,
     DilatedConvAutoEncoder,
     MLP)
-from losses import MaskedMSELoss, NavierStokesLoss
+from losses import (
+    MaskedMSELoss, 
+    NavierStokesLoss,
+    CentralNavierStokesLoss)
 from tqdm import tqdm
 from utils import (
     load_checkpoint,
@@ -50,8 +53,8 @@ MLP_OUTPUT_SIZE = 3
 MLP_LEARNING_RATE = 0.001
 MLP_NUM_EPOCHS = 100
 MLP_BATCH_SIZE = 64
-MLP_TRAIN_DATA_FILE = "flow_reconstruction/dataset_mlp/train_data/train_combined/combined_data.npz"
-MLP_VAL_DATA_FILE   = "flow_reconstruction/dataset_mlp/train_data/validation_combined/combined_data.npz"
+MLP_TRAIN_DATA_FILE = "flow_reconstruction/dataset_mlp/train_data_reduced/train_combined/extracted_data1.npz"
+MLP_VAL_DATA_FILE   = "flow_reconstruction/dataset_mlp/train_data_reduced/validation_combined/extracted_data2.npz"
 MLP_CHECKPOINT_FILE = 'flow_reconstruction/network/trained_models/mlp_checkpoint.pth.tar'
 MLP_ALPHA = 1e-4
 LOAD_MLP_MODEL = False
@@ -145,9 +148,6 @@ def main_mlp():
         print("CUDA is not available, using CPU.")
     
     model.to(device)
-    # Load the data
-    train_data_file = "/Users/vitoantonio/Desktop/feature_AutoEncoder/flow_reconstruction/dataset_mlp/train_data/train_combined/combined_data_10000.npz"
-    val_data_file   = "/Users/vitoantonio/Desktop/feature_AutoEncoder/flow_reconstruction/dataset_mlp/train_data/validation_combined/combined_data_10000.npz"
     train_loader, val_loader = get_loaders_mlp(
         MLP_TRAIN_DATA_FILE,
         MLP_VAL_DATA_FILE, 
@@ -158,7 +158,7 @@ def main_mlp():
 
     # Define the loss function and the optimizer
     mse_loss = nn.MSELoss()
-    navier_stokes_loss = NavierStokesLoss(model)
+    navier_stokes_loss = CentralNavierStokesLoss(model)
     optimizer = Adam(model.parameters(), lr=MLP_LEARNING_RATE)
 
     train_losses = []

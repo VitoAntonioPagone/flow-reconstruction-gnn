@@ -9,8 +9,10 @@ from pathlib import Path
 GRID_SIZE = 256
 INPUT_TRAIN_DIR = 'flow_reconstruction/dataset/original_data/train/'
 OUTPUT_TRAIN_DIR = 'flow_reconstruction/dataset/npz_data/train/'
+OUTPUT_TRAIN_DIR_NEW = 'flow_reconstruction/dataset_mlp/npz_data/train/'
 INPUT_TEST_DIR = 'flow_reconstruction/dataset/original_data/test/'
 OUTPUT_TEST_DIR = 'flow_reconstruction/dataset/npz_data/test/'
+OUTPUT_TEST_DIR_NEW = 'flow_reconstruction/dataset_mlp/npz_data/test/'
 
 
 def read_vtp_slice(file_name):
@@ -30,10 +32,7 @@ def read_vtp_slice(file_name):
     return data_out
 
 
-def interpolate_data(input_folder, output_folder):
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-
+def interpolate_data(input_folder, *output_folders):
     vtp_files = glob.glob(os.path.join(input_folder, '*.vtp'))
     for vtp_file in vtp_files:
         filename = os.path.basename(vtp_file)
@@ -54,14 +53,17 @@ def interpolate_data(input_folder, output_folder):
                     (X_grid, Y_grid), method='nearest'
                 )
 
-        # Create outptut folder if it doesn't exist
-        Path(output_folder).mkdir(parents=True, exist_ok=True)
+        # Save output to all specified output folders
+        for output_folder in output_folders:
+            # Create output folder if it doesn't exist
+            Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-        output_file_name = f'interpolated_{os.path.splitext(filename)[0]}.npz'
-        output_file = os.path.join(output_folder, output_file_name)
-        np.savez_compressed(output_file, **grid_data)
-
+            output_file_name = f'interpolated_{os.path.splitext(filename)[0]}.npz'
+            output_file = os.path.join(output_folder, output_file_name)
+            np.savez_compressed(output_file, **grid_data)
 
 if __name__ == "__main__":
+    interpolate_data(INPUT_TRAIN_DIR, OUTPUT_TRAIN_DIR, OUTPUT_TRAIN_DIR_NEW)
+    interpolate_data(INPUT_TEST_DIR, OUTPUT_TEST_DIR, OUTPUT_TEST_DIR_NEW)
     interpolate_data(INPUT_TRAIN_DIR, OUTPUT_TRAIN_DIR)
     interpolate_data(INPUT_TEST_DIR, OUTPUT_TEST_DIR)

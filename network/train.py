@@ -5,7 +5,8 @@ from models import (
     UNet,
     ConvAutoEncoder,
     DilatedConvAutoEncoder,
-    MLP)
+    MLP,
+    SEConvAutoEncoder)
 from losses import (
     MaskedMSELoss, 
     NavierStokesLoss,
@@ -23,9 +24,6 @@ from utils import (
     print_mlp_characteristics,
     print_autoencoder_dashboard
 )
-
-MODEL_TO_TRAIN = "MLP"
-
 
 # Hyper-parameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -92,7 +90,7 @@ def train_unet_conv_autoencoder():
     print(f"Selected device: {DEVICE}")
 
     # model = UNet(in_channels=5, out_channels=4).to(DEVICE)
-    model = ConvAutoEncoder().to(DEVICE)
+    model = SEConvAutoEncoder().to(DEVICE)
     print_autoencoder_dashboard(model)
     initialize_weights(model)
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
@@ -133,74 +131,5 @@ def train_unet_conv_autoencoder():
 
     plot_losses(train_losses, val_losses)
 
-
-def main_mlp():
-    # Create the MLP model
-    model = MLP(MLP_INPUT_SIZE, MLP_HIDDEN_SIZE1, MLP_HIDDEN_SIZE2, MLP_HIDDEN_SIZE3, MLP_HIDDEN_SIZE4,MLP_HIDDEN_SIZE5, MLP_OUTPUT_SIZE)
-    print_mlp_characteristics(model)
-    initialize_weights(model)
-
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-        print("CUDA is available, using GPU.")
-    else:
-        device = torch.device("cpu")
-        print("CUDA is not available, using CPU.")
-    
-    model.to(device)
-    train_loader, val_loader = get_loaders_mlp(
-        MLP_TRAIN_DATA_FILE,
-        MLP_VAL_DATA_FILE, 
-        MLP_BATCH_SIZE)
-    
-    if LOAD_MLP_MODEL:
-        load_checkpoint(torch.load(MLP_CHECKPOINT_FILE), model)
-
-    # Define the loss function and the optimizer
-    mse_loss = nn.MSELoss()
-    navier_stokes_loss = CentralNavierStokesLoss(model)
-    optimizer = Adam(model.parameters(), lr=MLP_LEARNING_RATE)
-
-    train_losses = []
-    val_losses = []
-
-    for epoch in range(MLP_NUM_EPOCHS):
-        for inputs, labels in train_loader:
-            inputs, labels = inputs.to(device), labels.to(device)
-
-            # Forward pass
-            outputs = model(inputs)
-            loss_mse = mse_loss(outputs, labels)
-            loss_ns = navier_stokes_loss.forward(outputs, *torch.split(inputs, 1, dim=1))
-            loss = loss_mse + MLP_ALPHA * loss_ns
-
-            # Backward pass and optimization
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-        print(f"Epoch [{epoch + 1}/{MLP_NUM_EPOCHS}], Loss: {loss.item():.4f}")
-
-        # Save the checkpoint at the end of each epoch
-        checkpoint_state = {
-            "state_dict": model.state_dict(),
-            "optimizer": optimizer.state_dict(),
-        }
-        save_checkpoint(checkpoint_state, MLP_CHECKPOINT_FILE)
-
-        train_losses.append(loss.item())
-        check_accuracy_mlp(val_loader, model, mse_loss, navier_stokes_loss, MLP_ALPHA, device)
-        val_losses.append(loss.item())
-
-
-
-def main():
-    if MODEL_TO_TRAIN == "MLP":
-        main_mlp()
-    elif MODEL_TO_TRAIN == "UNet" or MODEL_TO_TRAIN == "ConvAutoEncoder" or MODEL_TO_TRAIN == "DilatedConvAutoEncoder":
-        train_unet_conv_autoencoder()
-    else:
-        print("Invalid model_to_train value. Please choose 'MLP', 'UNet', 'ConvAutoEncoder', or 'DilatedConvAutoEncoder'.")
-
 if __name__ == "__main__":
-    main()
+    train_unet_conv_autoencoder()

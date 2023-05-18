@@ -9,8 +9,7 @@ from models import (
     SEConvAutoEncoder)
 from losses import (
     MaskedMSELoss, 
-    NavierStokesLoss,
-    CentralNavierStokesLoss)
+    NavierStokesLoss)
 from tqdm import tqdm
 from utils import (
     load_checkpoint,
@@ -18,8 +17,6 @@ from utils import (
     get_loaders,
     check_accuracy,
     plot_losses,
-    check_accuracy_mlp,
-    get_loaders_mlp,
     initialize_weights,
     print_mlp_characteristics,
     print_autoencoder_dashboard
@@ -39,25 +36,9 @@ TRAIN_INPUTS_DIR = 'flow_reconstruction/dataset/train_data/train_inputs_50'
 TRAIN_LABELS_DIR = 'flow_reconstruction/dataset/train_data/train_labels_50'
 VAL_INPUTS_DIR = 'flow_reconstruction/dataset/train_data/val_inputs_50'
 VAL_LABELS_DIR = 'flow_reconstruction/dataset/train_data/val_labels_50'
+ALPHA = 1  # set this to the desired value
 
-# MLP parameters
-MLP_INPUT_SIZE = 3
-MLP_HIDDEN_SIZE1 = 512
-MLP_HIDDEN_SIZE2 = 1024
-MLP_HIDDEN_SIZE3 = 2048
-MLP_HIDDEN_SIZE4 = 1024
-MLP_HIDDEN_SIZE5 = 512
-MLP_OUTPUT_SIZE = 3
-MLP_LEARNING_RATE = 0.001
-MLP_NUM_EPOCHS = 100
-MLP_BATCH_SIZE = 64
-MLP_TRAIN_DATA_FILE = "flow_reconstruction/dataset_mlp/train_data_reduced/train_combined/extracted_data1.npz"
-MLP_VAL_DATA_FILE   = "flow_reconstruction/dataset_mlp/train_data_reduced/validation_combined/extracted_data2.npz"
-MLP_CHECKPOINT_FILE = 'flow_reconstruction/network/trained_models/mlp_checkpoint.pth.tar'
-MLP_ALPHA = 1e-4
-LOAD_MLP_MODEL = False
-
-def train_fn(loader, model, optimizer, loss_fn, scaler):
+def train_fn(loader, model, optimizer, loss_fn, ns_loss, alpha, scaler):
     loop = tqdm(loader)
     losses = []
 
@@ -70,7 +51,12 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
         with torch.cuda.amp.autocast():
             inputs_with_mask = torch.cat((inputs, mask), dim=1)
             outputs = model(inputs_with_mask)
-            loss = loss_fn(outputs, labels, mask)
+            masked_loss = loss_fn(outputs, labels, mask)
+            ns_loss_value = ns_loss(outputs)
+            loss = masked_loss + alpha * ns_loss_value
+
+        # print the Navier-Stokes and L2 losses separately
+        print(f"Navier-Stokes Loss: {ns_loss_value.item()}, Masked L2 Loss: {masked_loss.item()}")
 
         # backward
         optimizer.zero_grad()
@@ -85,16 +71,17 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
     return sum(losses) / len(losses)
 
 
+
 def train_unet_conv_autoencoder():
-    
+
     print(f"Selected device: {DEVICE}")
 
-    # model = UNet(in_channels=5, out_channels=4).to(DEVICE)
-    model = SEConvAutoEncoder().to(DEVICE)
+    model = ConvAutoEncoder().to(DEVICE)
     print_autoencoder_dashboard(model)
     initialize_weights(model)
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
     loss_fn = MaskedMSELoss()
+    ns_loss = NavierStokesLoss().to(DEVICE)
 
     train_loader, val_loader = get_loaders(
         TRAIN_INPUTS_DIR,
@@ -115,7 +102,7 @@ def train_unet_conv_autoencoder():
     val_losses = []
 
     for epoch in range(NUM_EPOCHS):
-        train_loss = train_fn(train_loader, model, optimizer, loss_fn, scaler)
+        train_loss = train_fn(train_loader, model, optimizer, loss_fn, ns_loss, ALPHA, scaler)
         train_losses.append(train_loss)
 
         # save model

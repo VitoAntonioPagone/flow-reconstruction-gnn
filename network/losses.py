@@ -1,6 +1,7 @@
 import torch
 from torch.nn import Module
-
+import torch.nn as nn
+import torch.nn.functional as F
 
 class MaskedMSELoss(Module):
     """ Custom masked MSE loss"""
@@ -14,113 +15,30 @@ class MaskedMSELoss(Module):
         loss_value = torch.mean(masked_diff ** 2)
         return loss_value
 
-class NavierStokesLoss(Module):
-    def __init__(self, model, rho=1.0, mu=1.0, delta=1e-3):
-        super().__init__()
-        self.model = model
-        self.rho = rho
-        self.mu = mu
-        self.delta = delta
+class NavierStokesLoss(nn.Module):
+    def __init__(self):
+        super(NavierStokesLoss, self).__init__()
 
-    def forward(self, pred, x, y, temp):
-        u, v, w = torch.split(pred, 1, dim=1)
+        # Finite difference kernels for dx and dy (centered differences)
+        self.dx_kernel = torch.Tensor([[[[0, -0.5, 0], [0, 0, 0], [0, 0.5, 0]]]]).float()
+        self.dy_kernel = torch.Tensor([[[[0, 0, 0], [-0.5, 0, 0.5], [0, 0, 0]]]]).float()
 
-        du_dx, du_dy = self._get_derivatives(u, x, y, temp)
-        dv_dx, dv_dy = self._get_derivatives(v, x, y, temp)
-        dw_dx, dw_dy = self._get_derivatives(w, x, y, temp)
+    def forward(self, preds):
+        u, v = preds[:, 0], preds[:, 1]  # assuming u and v are the first two channels
 
-        div = du_dx + dv_dy + dw_dy
+        # Calculate gradients
+        du_dx = F.conv2d(u.unsqueeze(1), self.dx_kernel, padding=1)
+        du_dy = F.conv2d(u.unsqueeze(1), self.dy_kernel, padding=1)
+        dv_dx = F.conv2d(v.unsqueeze(1), self.dx_kernel, padding=1)
+        dv_dy = F.conv2d(v.unsqueeze(1), self.dy_kernel, padding=1)
 
-        d2u_dx2, d2u_dy2 = self._get_second_derivatives(u, x, y, temp)
-        d2v_dx2, d2v_dy2 = self._get_second_derivatives(v, x, y, temp)
-        d2w_dx2, d2w_dy2 = self._get_second_derivatives(w, x, y, temp)
+        # Momentum equations
+        momentum_u = torch.abs(u * du_dx + v * du_dy)
+        momentum_v = torch.abs(u * dv_dx + v * dv_dy)
 
-        # Convective terms
-        u_du_dx = u * du_dx
-        v_du_dy = v * du_dy
-        u_dv_dx = u * dv_dx
-        v_dv_dy = v * dv_dy
-        u_dw_dx = u * dw_dx
-        v_dw_dy = v * dw_dy
+        # Continuity equation
+        continuity = torch.abs(du_dx + dv_dy)
 
-        NS_x = self.rho * (u_du_dx + v_du_dy) - self.mu * (d2u_dx2 + d2u_dy2)
-        NS_y = self.rho * (u_dv_dx + v_dv_dy) - self.mu * (d2v_dx2 + d2v_dy2)
-        NS_z = self.rho * (u_dw_dx + v_dw_dy) - self.mu * (d2w_dx2 + d2w_dy2)
+        return (continuity + momentum_u + momentum_v).mean()
 
-        NS_loss = torch.mean(torch.abs(NS_x)) + torch.mean(torch.abs(NS_y)) + torch.mean(torch.abs(NS_z))
-
-        div_loss = torch.mean(torch.abs(div))
-
-        return NS_loss + div_loss
-
-    def _get_derivatives(self, f, x, y, temp):
-        df_dx = (self.model(torch.cat((x + self.delta, y, temp), dim=-1))[:, 0] - f) / self.delta
-        df_dy = (self.model(torch.cat((x, y + self.delta, temp), dim=-1))[:, 0] - f) / self.delta
-        return df_dx, df_dy
-
-    def _get_second_derivatives(self, f, x, y, temp):
-        d2f_dx2 = (self.model(torch.cat((x + 2 * self.delta, y, temp), dim=-1))[:, 0] - 2 * self.model(torch.cat((x + self.delta, y, temp), dim=-1))[:, 0] + f) / (self.delta ** 2)
-        d2f_dy2 = (self.model(torch.cat((x, y + 2 * self.delta, temp), dim=-1))[:, 0] - 2 * self.model(torch.cat((x, y + self.delta, temp), dim=-1))[:, 0] + f) / (self.delta ** 2)
-        return d2f_dx2, d2f_dy2
-
-class CentralNavierStokesLoss(Module):
-    def __init__(self, model, rho=1.0, mu=1.0, delta=1e-3):
-        super().__init__()
-        self.model = model
-        self.rho = rho
-        self.mu = mu
-        self.delta = delta
-
-    def forward(self, pred, x, y, temp):
-        u, v, w = torch.split(pred, 1, dim=1)
-
-        du_dx, du_dy = self._get_derivatives(u, x, y, temp)
-        dv_dx, dv_dy = self._get_derivatives(v, x, y, temp)
-        dw_dx, dw_dy = self._get_derivatives(w, x, y, temp)
-
-        div = du_dx + dv_dy + dw_dy
-
-        d2u_dx2, d2u_dy2 = self._get_second_derivatives(u, x, y, temp)
-        d2v_dx2, d2v_dy2 = self._get_second_derivatives(v, x, y, temp)
-        d2w_dx2, d2w_dy2 = self._get_second_derivatives(w, x, y, temp)
-
-        # Convective terms
-        u_du_dx = u.mul(du_dx)
-        v_du_dy = v.mul(du_dy)
-        u_dv_dx = u.mul(dv_dx)
-        v_dv_dy = v.mul(dv_dy)
-        u_dw_dx = u.mul(dw_dx)
-        v_dw_dy = v.mul(dw_dy)
-
-        NS_x = self.rho * (u_du_dx + v_du_dy) - self.mu * (d2u_dx2 + d2u_dy2)
-        NS_y = self.rho * (u_dv_dx + v_dv_dy) - self.mu * (d2v_dx2 + d2v_dy2)
-        NS_z = self.rho * (u_dw_dx + v_dw_dy) - self.mu * (d2w_dx2 + d2w_dy2)
-
-        NS_loss = torch.mean(torch.abs(NS_x)) + torch.mean(torch.abs(NS_y)) + torch.mean(torch.abs(NS_z))
-
-        div_loss = torch.mean(torch.abs(div))
-
-        return NS_loss + div_loss
-
-    def _get_derivatives(self, f, x, y, temp):
-        f_x_plus = self.model(torch.cat((x + self.delta, y, temp), dim=-1))[:, 0]
-        f_x_minus = self.model(torch.cat((x - self.delta, y, temp), dim=-1))[:, 0]
-        f_y_plus = self.model(torch.cat((x, y + self.delta, temp), dim=-1))[:, 0]
-        f_y_minus = self.model(torch.cat((x, y - self.delta, temp), dim=-1))[:, 0]
-        df_dx = (f_x_plus - f_x_minus) / (2 * self.delta)
-        df_dy = (f_y_plus - f_y_minus) / (2 * self.delta)
-        return df_dx, df_dy
-
-    def _get_second_derivatives(self, f, x, y, temp):
-        f_x_plus_2 = self.model(torch.cat((x + 2 * self.delta, y, temp), dim=-1))[:, 0]
-        f_x_minus_2 = self.model(torch.cat((x - 2 * self.delta, y, temp), dim=-1))[:, 0]
-        f_y_plus_2 = self.model(torch.cat((x, y + 2 * self.delta, temp), dim=-1))[:, 0]
-        f_y_minus_2 = self.model(torch.cat((x, y - 2 * self.delta, temp), dim=-1))[:, 0]
-
-        d2f_dx2 = (f_x_plus_2 - 2 * f + f_x_minus_2) / (4 * self.delta ** 2)
-        d2f_dy2 = (f_y_plus_2 - 2 * f + f_y_minus_2) / (4 * self.delta ** 2)
-        return d2f_dx2, d2f_dy2
-
-
-    
 

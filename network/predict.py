@@ -6,7 +6,7 @@ import os
 import glob
 import matplotlib.pyplot as plt
 from datasets import FlowDataset
-from models import ConvAutoEncoder, MLP
+from models import ConvAutoEncoder, SEConvAutoEncoder,SpatialAttentionConvAutoEncoder
 from utils import load_checkpoint
 
 
@@ -107,17 +107,5 @@ def run_mlp():
             plt.show()
     compare_channels(INPUT, LABEL)
 
-
-def main():
-    model_type = input("Enter the model type ('autoencoder' or 'mlp'): ")
-
-    if model_type.lower() == 'autoencoder':
-        run_autoencoder()
-    elif model_type.lower() == 'mlp':
-        run_mlp()
-    else:
-        print("Invalid model type. Please choose either 'autoencoder' or 'mlp'.")
-
-
 if __name__ == "__main__":
-    main()
+    run_autoencoder()

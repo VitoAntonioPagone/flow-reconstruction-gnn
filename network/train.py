@@ -5,11 +5,11 @@ from models import (
     UNet,
     ConvAutoEncoder,
     DilatedConvAutoEncoder,
-    MLP,
     SEConvAutoEncoder)
 from losses import (
     MaskedMSELoss, 
-    NavierStokesLoss)
+    NavierStokesLoss,
+    TVLoss)
 from tqdm import tqdm
 from utils import (
     load_checkpoint,
@@ -18,29 +18,32 @@ from utils import (
     check_accuracy,
     plot_losses,
     initialize_weights,
-    print_mlp_characteristics,
     print_autoencoder_dashboard
 )
 
 # Hyper-parameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 NUM_WORKERS = 6
 PIN_MEMORY = True
 LEARNING_RATE = 0.001
 SHUFFLE = True
-NUM_EPOCHS = 1
+NUM_EPOCHS = 100
+ALPHA = 0  # set this to the desired value
+BETA = 0
 LOAD_MODEL = False
-CHECKPOINT_FILE = 'flow_reconstruction/network/trained_models/autoencoder_checkpoint.pth.tar'
-TRAIN_INPUTS_DIR = 'flow_reconstruction/dataset/train_data/train_inputs_50'
-TRAIN_LABELS_DIR = 'flow_reconstruction/dataset/train_data/train_labels_50'
-VAL_INPUTS_DIR = 'flow_reconstruction/dataset/train_data/val_inputs_50'
-VAL_LABELS_DIR = 'flow_reconstruction/dataset/train_data/val_labels_50'
-ALPHA = 1  # set this to the desired value
+CHECKPOINT_FILE = f'../trained_models/autoencoder_checkpoint_alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
+TRAIN_INPUTS_DIR = '../dataset/train_data/train_inputs_50'
+TRAIN_LABELS_DIR = '../dataset/train_data/train_labels_50'
+VAL_INPUTS_DIR   = '../dataset/train_data/val_inputs_50'
+VAL_LABELS_DIR   = '../dataset/train_data/val_labels_50'
 
-def train_fn(loader, model, optimizer, loss_fn, ns_loss, alpha, scaler):
-    loop = tqdm(loader)
-    losses = []
+
+def train_fn(loader, model, optimizer, loss_fn, ns_loss, tv_loss, alpha, beta, scaler):
+    loop = tqdm(loader, leave=True)
+
+    total_loss = 0
+    total_batches = 0
 
     for batch_idx, (inputs, labels, mask) in enumerate(loop):
         inputs = inputs.to(device=DEVICE)
@@ -53,10 +56,8 @@ def train_fn(loader, model, optimizer, loss_fn, ns_loss, alpha, scaler):
             outputs = model(inputs_with_mask)
             masked_loss = loss_fn(outputs, labels, mask)
             ns_loss_value = ns_loss(outputs)
-            loss = masked_loss + alpha * ns_loss_value
-
-        # print the Navier-Stokes and L2 losses separately
-        print(f"Navier-Stokes Loss: {ns_loss_value.item()}, Masked L2 Loss: {masked_loss.item()}")
+            tv_loss_value = tv_loss(outputs) # calculate TV loss
+            loss = masked_loss + alpha * ns_loss_value + beta * tv_loss_value  # added TV loss to total loss
 
         # backward
         optimizer.zero_grad()
@@ -65,23 +66,26 @@ def train_fn(loader, model, optimizer, loss_fn, ns_loss, alpha, scaler):
         scaler.update()
 
         # update tqdm loop
-        loop.set_postfix(loss=loss.item())
-        losses.append(loss.item())
+        loop.set_description(f"Iter [{batch_idx}/{len(loader)}]")
+        loop.set_postfix(loss=loss.item(), NSLoss=ns_loss_value.item(), MaskedL2Loss=masked_loss.item(), TVLoss=tv_loss_value.item())  # added TV loss to logging
+        
+        total_loss += loss.item()
+        total_batches += 1
 
-    return sum(losses) / len(losses)
-
-
+    avg_loss = total_loss / total_batches
+    return avg_loss
 
 def train_unet_conv_autoencoder():
 
     print(f"Selected device: {DEVICE}")
 
-    model = ConvAutoEncoder().to(DEVICE)
-    print_autoencoder_dashboard(model)
+    model = DilatedConvAutoEncoder().to(DEVICE)
+    #print_autoencoder_dashboard(model)
     initialize_weights(model)
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
-    loss_fn = MaskedMSELoss()
-    ns_loss = NavierStokesLoss().to(DEVICE)
+    loss_fn = MaskedMSELoss(device=DEVICE) 
+    ns_loss = NavierStokesLoss(DEVICE)
+    tv_loss = TVLoss().to(DEVICE)  # instantiate TVLoss
 
     train_loader, val_loader = get_loaders(
         TRAIN_INPUTS_DIR,
@@ -102,7 +106,8 @@ def train_unet_conv_autoencoder():
     val_losses = []
 
     for epoch in range(NUM_EPOCHS):
-        train_loss = train_fn(train_loader, model, optimizer, loss_fn, ns_loss, ALPHA, scaler)
+        print(f"Starting Epoch {epoch+1}/{NUM_EPOCHS}")
+        train_loss = train_fn(train_loader, model, optimizer, loss_fn, ns_loss, tv_loss, ALPHA, BETA, scaler) # added tv_loss
         train_losses.append(train_loss)
 
         # save model
@@ -115,8 +120,9 @@ def train_unet_conv_autoencoder():
         # check accuracy
         val_loss = check_accuracy(val_loader, model, device=DEVICE)
         val_losses.append(val_loss)
+        print(f"Training Loss: {train_loss}")
 
-    plot_losses(train_losses, val_losses)
+    plot_losses(train_losses, val_losses, ALPHA, BETA, LEARNING_RATE, BATCH_SIZE)
 
 if __name__ == "__main__":
     train_unet_conv_autoencoder()

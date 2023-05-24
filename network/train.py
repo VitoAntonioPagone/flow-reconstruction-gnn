@@ -5,7 +5,8 @@ from models import (
     UNet,
     ConvAutoEncoder,
     DilatedConvAutoEncoder,
-    SEConvAutoEncoder)
+    SEConvAutoEncoder,
+    SuperConvAutoEncoder)
 from losses import (
     MaskedMSELoss, 
     NavierStokesLoss,

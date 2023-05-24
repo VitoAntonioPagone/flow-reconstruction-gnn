@@ -1,11 +1,13 @@
 import torch
 from datasets import FlowDataset
 from torch.utils.data import DataLoader
-from losses import MaskedMSELoss
+from losses import MaskedMSELoss, NavierStokesLoss
 import matplotlib.pyplot as plt
 import torch.nn as nn
 import os
 import pickle
+
+ALPHA = 1
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
@@ -56,9 +58,16 @@ def get_loaders(
 
 
 
-def check_accuracy(loader, model, device="cuda"):
+def check_accuracy(loader, model, device=None):
     model.eval()
 
+    if device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    loss_fn = MaskedMSELoss(device)
+    ns_loss = NavierStokesLoss(device)
+    
+    losses = []
     with torch.no_grad():
         for x, y, mask in loader:
             x = x.to(device)
@@ -66,21 +75,34 @@ def check_accuracy(loader, model, device="cuda"):
             mask = mask.to(device)
             x_with_mask = torch.cat((x, mask), dim=1)
             preds = model(x_with_mask)
-            loss_fn = MaskedMSELoss()
-            loss = loss_fn(preds, y, mask)
-        print(f"Validation Loss: {loss.item():.4f}")
+            masked_loss = loss_fn(preds, y, mask)
+            ns_loss_value = ns_loss(preds)
+            total_loss = masked_loss + ALPHA * ns_loss_value
+            losses.append(total_loss.item())
 
+    avg_loss = sum(losses) / len(losses)
+    print(f"Validation Loss: {avg_loss:.4f}")
     model.train()
+    return avg_loss
 
 
-def plot_losses(train_losses, val_losses):
-    plt.figure()
+
+
+def plot_losses(train_losses, val_losses, alpha, beta, learning_rate, batch_size):
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(10, 7))  # Set a larger figure size
     plt.plot(train_losses, label="Training Loss")
     plt.plot(val_losses, label="Validation Loss")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
-    plt.show()
+
+    # Generate the plot filename based on the hyperparameters
+    plot_filename = f'../losses_plot/losses_plot_alpha_{alpha}_beta_{beta}_lr_{learning_rate}_batch_{batch_size}.jpg'
+
+    plt.savefig(plot_filename, format='jpg', dpi=350)  
+
+
 
 import torch
 
@@ -91,17 +113,6 @@ def initialize_weights(model):
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
     return print('Weights initialized with Glorot (Xavier) initializer, bias initialized to zero')
-
-def print_mlp_characteristics(model):
-    print("Multi-Layer Perceptron Summary:")
-    print("---------------------------------")
-    print(model)
-    print("---------------------------------")
-    print("Number of parameters: {}".format(sum(p.numel() for p in model.parameters())))
-    print("Number of layers: {}".format(len(model.layers)))
-    print("Layer-wise architecture:")
-    for i, layer in enumerate(model.layers):
-        print("Layer {} - {}".format(i+1, layer))
 
 def print_autoencoder_dashboard(model):
     print("ConvAutoEncoder Architecture:\n")

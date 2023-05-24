@@ -3,25 +3,51 @@ from torch.nn import Module
 import torch.nn as nn
 import torch.nn.functional as F
 
-class MaskedMSELoss(Module):
-    """ Custom masked MSE loss"""
+class TVLoss(nn.Module):
+    def __init__(self, TVLoss_weight=1):
+        super(TVLoss, self).__init__()
+        self.TVLoss_weight = TVLoss_weight
 
-    def __init__(self, **kwargs):
+    def forward(self, x):
+        batch_size = x.size()[0]
+        h_x = x.size()[2]
+        w_x = x.size()[3]
+        count_h = self.tensor_size(x[:,:,1:,:])
+        count_w = self.tensor_size(x[:,:,:,1:])
+        h_tv = torch.pow((x[:,:,1:,:]-x[:,:,:h_x-1,:]),2).sum()
+        w_tv = torch.pow((x[:,:,:,1:]-x[:,:,:,:w_x-1]),2).sum()
+        return self.TVLoss_weight*2*(h_tv/count_h+w_tv/count_w)/batch_size
+
+    def tensor_size(self,t):
+        return t.size()[1]*t.size()[2]*t.size()[3]
+
+class MaskedMSELoss(torch.nn.Module):
+    """ Custom pixel-wise MSE loss"""
+    def __init__(self, device):
         super(MaskedMSELoss, self).__init__()
+        self.device = device
 
     def forward(self, predicted, target, mask):
+        predicted = predicted.to(self.device)
+        target = target.to(self.device)
+        mask = mask.to(self.device)  # Mask is not used for the loss calculation
+
+        # Calculate the difference between predicted and target
         diff = predicted - target
-        masked_diff = diff * mask
-        loss_value = torch.mean(masked_diff ** 2)
+
+        # Pixel-wise mean of the squared difference
+        loss_value = torch.mean(diff ** 2)
+
         return loss_value
 
+
 class NavierStokesLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super(NavierStokesLoss, self).__init__()
 
         # Finite difference kernels for dx and dy (centered differences)
-        self.dx_kernel = torch.Tensor([[[[0, -0.5, 0], [0, 0, 0], [0, 0.5, 0]]]]).float()
-        self.dy_kernel = torch.Tensor([[[[0, 0, 0], [-0.5, 0, 0.5], [0, 0, 0]]]]).float()
+        self.dx_kernel = torch.Tensor([[[[0, -0.5, 0], [0, 0, 0], [0, 0.5, 0]]]]).float().to(device)
+        self.dy_kernel = torch.Tensor([[[[0, 0, 0], [-0.5, 0, 0.5], [0, 0, 0]]]]).float().to(device)
 
     def forward(self, preds):
         u, v = preds[:, 0], preds[:, 1]  # assuming u and v are the first two channels
@@ -40,5 +66,3 @@ class NavierStokesLoss(nn.Module):
         continuity = torch.abs(du_dx + dv_dy)
 
         return (continuity + momentum_u + momentum_v).mean()
-
-

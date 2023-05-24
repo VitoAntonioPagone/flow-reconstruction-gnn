@@ -6,10 +6,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from attention import (
     SELayer,
-    ChannelAttention,
-    SpatialAttention,
-    NonLocalBlock)
-
+    SpatialAttention)
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 
@@ -106,43 +103,6 @@ class UNet(nn.Module):
 
         return self.final_conv(x)
 
-
-class MLP(nn.Module):
-    def __init__(self, input_size, hidden_size1, hidden_size2, hidden_size3, hidden_size4, hidden_size5, output_size, dropout_prob=0.5):
-        super(MLP, self).__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(input_size, hidden_size1),
-            nn.BatchNorm1d(hidden_size1),
-            nn.ReLU(),
-            nn.Dropout(dropout_prob),
-
-            nn.Linear(hidden_size1, hidden_size2),
-            nn.BatchNorm1d(hidden_size2),
-            nn.ReLU(),
-            nn.Dropout(dropout_prob),
-
-            nn.Linear(hidden_size2, hidden_size3),
-            nn.BatchNorm1d(hidden_size3),
-            nn.ReLU(),
-            nn.Dropout(dropout_prob),
-
-            nn.Linear(hidden_size3, hidden_size4),
-            nn.BatchNorm1d(hidden_size4),
-            nn.ReLU(),
-            nn.Dropout(dropout_prob),
-
-            nn.Linear(hidden_size4, hidden_size5),
-            nn.BatchNorm1d(hidden_size5),
-            nn.ReLU(),
-            nn.Dropout(dropout_prob),
-
-            nn.Linear(hidden_size5, output_size)
-        )
-
-    def forward(self, x):
-        return self.layers(x)
-
-
 class DenseBlock(nn.Module):
     def __init__(self, in_channels):
         super(DenseBlock, self).__init__()
@@ -159,51 +119,52 @@ class DenseBlock(nn.Module):
 class ConvAutoEncoder(nn.Module):
     def __init__(self):
         super(ConvAutoEncoder, self).__init__()
+
         # Encoder
         self.encoder1 = nn.Sequential(
-            nn.Conv2d(5, 32, kernel_size=3, padding=1),
+            nn.Conv2d(4, 32, kernel_size=7, padding=3),
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.Conv2d(32, 64, kernel_size=7, padding=3),
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.Conv2d(64, 128, kernel_size=7, padding=3),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder4 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.Conv2d(128, 256, kernel_size=7, padding=3),
             nn.BatchNorm2d(256),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder5 = nn.Sequential(
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.Conv2d(256, 512, kernel_size=7, padding=3),
             nn.BatchNorm2d(512),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder6 = nn.Sequential(
-            nn.Conv2d(512, 1024, kernel_size=3, padding=1),
+            nn.Conv2d(512, 1024, kernel_size=7, padding=3),
             nn.BatchNorm2d(1024),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder7 = nn.Sequential(
-            nn.Conv2d(1024, 2048, kernel_size=3, padding=1),
+            nn.Conv2d(1024, 2048, kernel_size=7, padding=3),
             nn.BatchNorm2d(2048),
             nn.ReLU(),
             nn.Dropout(0.2),
@@ -251,8 +212,7 @@ class ConvAutoEncoder(nn.Module):
             nn.Dropout(0.2)
         )
         self.decoder1 = nn.Sequential(
-            nn.ConvTranspose2d(64, 4, kernel_size=2, stride=2),
-            nn.Sigmoid()
+            nn.ConvTranspose2d(64, 3, kernel_size=2, stride=2),
         )
 
     def forward(self, x):
@@ -282,6 +242,7 @@ class ConvAutoEncoder(nn.Module):
         x = self.decoder1(dec2)
 
         return x
+
 
 
 class DilatedConvAutoEncoder(nn.Module):
@@ -359,7 +320,6 @@ class DilatedConvAutoEncoder(nn.Module):
         )
         self.decoder1 = nn.Sequential(
             nn.ConvTranspose2d(128, 4, kernel_size=2, stride=2),
-            nn.Sigmoid()
         )
 
     def forward(self, x):
@@ -679,163 +639,241 @@ class SpatialAttentionConvAutoEncoder(nn.Module):
         x = self.decoder1(dec2)
 
         return x
-    
-class NonLocalConvAutoEncoder(nn.Module):
+
+class SuperConvAutoEncoder(nn.Module):
     def __init__(self):
-        super(NonLocalConvAutoEncoder, self).__init__()
+        super(SuperConvAutoEncoder, self).__init__()
+
         # Encoder
         self.encoder1 = nn.Sequential(
-            nn.Conv2d(5, 32, kernel_size=3, padding=1),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(4, 16, kernel_size=7, padding=3),
+            nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(16, 32, kernel_size=7, padding=3),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
+            nn.Conv2d(32, 64, kernel_size=7, padding=3),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder4 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(64, 128, kernel_size=7, padding=3),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder5 = nn.Sequential(
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
+            nn.Conv2d(128, 256, kernel_size=7, padding=3),
+            nn.BatchNorm2d(256),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder6 = nn.Sequential(
-            nn.Conv2d(512, 1024, kernel_size=3, padding=1),
-            nn.BatchNorm2d(1024),
+            nn.Conv2d(256, 512, kernel_size=7, padding=3),
+            nn.BatchNorm2d(512),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
         self.encoder7 = nn.Sequential(
-            nn.Conv2d(1024, 2048, kernel_size=3, padding=1),
+            nn.Conv2d(512, 1024, kernel_size=7, padding=3),
+            nn.BatchNorm2d(1024),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(2, 2)
+        )
+        self.encoder8 = nn.Sequential(
+            nn.Conv2d(1024, 2048, kernel_size=7, padding=3),
             nn.BatchNorm2d(2048),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(2, 2)
+        )
+        self.encoder9 = nn.Sequential(
+            nn.Conv2d(2048, 4096, kernel_size=7, padding=3),
+            nn.BatchNorm2d(4096),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(2, 2)
+        )
+        self.encoder10 = nn.Sequential(
+            nn.Conv2d(4096, 8192, kernel_size=7, padding=3),
+            nn.BatchNorm2d(8192),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(2, 2)
+        )
+        self.encoder11 = nn.Sequential(
+            nn.Conv2d(8192, 16384, kernel_size=7, padding=3),
+            nn.BatchNorm2d(16384),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(2, 2)
+        )
+        self.encoder12 = nn.Sequential(
+            nn.Conv2d(16384, 32768, kernel_size=7, padding=3),
+            nn.BatchNorm2d(32768),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(2, 2)
+        )
+        self.encoder13 = nn.Sequential(
+            nn.Conv2d(32768, 65536, kernel_size=7, padding=3),
+            nn.BatchNorm2d(65536),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(2, 2)
+        )
+        self.encoder14 = nn.Sequential(
+            nn.Conv2d(65536, 131072, kernel_size=7, padding=3),
+            nn.BatchNorm2d(131072),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.MaxPool2d(2, 2)
         )
 
         # Dense block
-        self.dense_block = DenseBlock(2048)
+        self.dense_block = DenseBlock(131072)
 
         # Decoder
-        self.decoder7 = nn.Sequential(
-            nn.ConvTranspose2d(2048, 1024, kernel_size=2, stride=2),
+        self.decoder14 = nn.Sequential(
+            nn.ConvTranspose2d(131072, 65536, kernel_size=2, stride=2),
+            nn.BatchNorm2d(65536),
+            nn.ReLU(),
+            nn.Dropout(0.2)
+        )
+        self.decoder13 = nn.Sequential(
+            nn.ConvTranspose2d(131072, 32768, kernel_size=2, stride=2),
+            nn.BatchNorm2d(32768),
+            nn.ReLU(),
+            nn.Dropout(0.2)
+        )
+        self.decoder12 = nn.Sequential(
+            nn.ConvTranspose2d(65536, 16384, kernel_size=2, stride=2),
+            nn.BatchNorm2d(16384),
+            nn.ReLU(),
+            nn.Dropout(0.2)
+        )
+        self.decoder11 = nn.Sequential(
+            nn.ConvTranspose2d(32768, 8192, kernel_size=2, stride=2),
+            nn.BatchNorm2d(8192),
+            nn.ReLU(),
+            nn.Dropout(0.2)
+        )
+        self.decoder10 = nn.Sequential(
+            nn.ConvTranspose2d(16384, 4096, kernel_size=2, stride=2),
+            nn.BatchNorm2d(4096),
+            nn.ReLU(),
+            nn.Dropout(0.2)
+        )
+        self.decoder9 = nn.Sequential(
+            nn.ConvTranspose2d(8192, 2048, kernel_size=2, stride=2),
+            nn.BatchNorm2d(2048),
+            nn.ReLU(),
+            nn.Dropout(0.2)
+        )
+        self.decoder8 = nn.Sequential(
+            nn.ConvTranspose2d(4096, 1024, kernel_size=2, stride=2),
             nn.BatchNorm2d(1024),
             nn.ReLU(),
             nn.Dropout(0.2)
         )
-        self.decoder6 = nn.Sequential(
+        self.decoder7 = nn.Sequential(
             nn.ConvTranspose2d(2048, 512, kernel_size=2, stride=2),
             nn.BatchNorm2d(512),
             nn.ReLU(),
             nn.Dropout(0.2)
         )
-        self.decoder5 = nn.Sequential(
+        self.decoder6 = nn.Sequential(
             nn.ConvTranspose2d(1024, 256, kernel_size=2, stride=2),
             nn.BatchNorm2d(256),
             nn.ReLU(),
             nn.Dropout(0.2)
         )
-        self.decoder4 = nn.Sequential(
+        self.decoder5 = nn.Sequential(
             nn.ConvTranspose2d(512, 128, kernel_size=2, stride=2),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Dropout(0.2)
         )
-        self.decoder3 = nn.Sequential(
+        self.decoder4 = nn.Sequential(
             nn.ConvTranspose2d(256, 64, kernel_size=2, stride=2),
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Dropout(0.2)
         )
-        self.decoder2 = nn.Sequential(
+        self.decoder3 = nn.Sequential(
             nn.ConvTranspose2d(128, 32, kernel_size=2, stride=2),
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Dropout(0.2)
         )
-        self.decoder1 = nn.Sequential(
-            nn.ConvTranspose2d(64, 4, kernel_size=2, stride=2),
-            nn.Sigmoid()
+        self.decoder2 = nn.Sequential(
+            nn.ConvTranspose2d(64, 16, kernel_size=2, stride=2),
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.Dropout(0.2)
         )
-        self.non_local_block1 = NonLocalBlock(32)
-        self.non_local_block2 = NonLocalBlock(64)
-        self.non_local_block3 = NonLocalBlock(128)
-        self.non_local_block4 = NonLocalBlock(256)
-        self.non_local_block5 = NonLocalBlock(512)
-        self.non_local_block6 = NonLocalBlock(1024)
-        self.non_local_block7 = NonLocalBlock(2048)
-
+        self.decoder1 = nn.Sequential(
+            nn.ConvTranspose2d(32, 3, kernel_size=2, stride=2),
+        )
     def forward(self, x):
         enc1 = self.encoder1(x)
-        enc1 = self.non_local_block1(enc1)
-
         enc2 = self.encoder2(enc1)
-        enc2 = self.non_local_block2(enc2)
-
         enc3 = self.encoder3(enc2)
-        enc3 = self.non_local_block3(enc3)
-
         enc4 = self.encoder4(enc3)
-        enc4 = self.non_local_block4(enc4)
-
         enc5 = self.encoder5(enc4)
-        enc5 = self.non_local_block5(enc5)
-
         enc6 = self.encoder6(enc5)
-        enc6 = self.non_local_block6(enc6)
-
         enc7 = self.encoder7(enc6)
-        enc7 = self.non_local_block7(enc7)
+        enc8 = self.encoder8(enc7)
+        enc9 = self.encoder9(enc8)
+        enc10 = self.encoder10(enc9)
+        enc11 = self.encoder11(enc10)
+        enc12 = self.encoder12(enc11)
+        enc13 = self.encoder13(enc12)
+        enc14 = self.encoder14(enc13)
 
         # Apply dense block
-        bottleneck = self.dense_block(enc7)
+        bottleneck = self.dense_block(enc14)
 
-        bottleneck = self.dense_block(enc7)
-
-        dec7 = self.decoder7(bottleneck)
+        dec14 = self.decoder14(bottleneck)
+        dec14 = torch.cat((dec14, enc13), dim=1)  # Skip connection
+        dec13 = self.decoder13(dec14)
+        dec13 = torch.cat((dec13, enc12), dim=1)  # Skip connection
+        dec12 = self.decoder12(dec13)
+        dec12 = torch.cat((dec12, enc11), dim=1)  # Skip connection
+        dec11 = self.decoder11(dec12)
+        dec11 = torch.cat((dec11, enc10), dim=1)  # Skip connection
+        dec10 = self.decoder10(dec11)
+        dec10 = torch.cat((dec10, enc9), dim=1)  # Skip connection
+        dec9 = self.decoder9(dec10)
+        dec9 = torch.cat((dec9, enc8), dim=1)  # Skip connection
+        dec8 = self.decoder8(dec9)
+        dec8 = torch.cat((dec8, enc7), dim=1)  # Skip connection
+        dec7 = self.decoder7(dec8)
         dec7 = torch.cat((dec7, enc6), dim=1)  # Skip connection
-        dec7 = self.non_local_block_dec6(dec7)
-
         dec6 = self.decoder6(dec7)
         dec6 = torch.cat((dec6, enc5), dim=1)  # Skip connection
-        dec6 = self.non_local_block_dec5(dec6)
-
         dec5 = self.decoder5(dec6)
         dec5 = torch.cat((dec5, enc4), dim=1)  # Skip connection
-        dec5 = self.non_local_block_dec4(dec5)
-
         dec4 = self.decoder4(dec5)
         dec4 = torch.cat((dec4, enc3), dim=1)  # Skip connection
-        dec4 = self.non_local_block_dec3(dec4)
-
         dec3 = self.decoder3(dec4)
         dec3 = torch.cat((dec3, enc2), dim=1)  # Skip connection
-        dec3 = self.non_local_block_dec2(dec3)
-
         dec2 = self.decoder2(dec3)
         dec2 = torch.cat((dec2, enc1), dim=1)  # Skip connection
-        dec2 = self.non_local_block_dec1(dec2)
-
         x = self.decoder1(dec2)
+
         return x

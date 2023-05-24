@@ -3,15 +3,10 @@ import glob
 import numpy as np
 import vtk
 
-MLP_TRAIN_INPUT_FOLDER = "flow_reconstruction/dataset_mlp/original_data/train"
-MLP_TRAIN_OUTPUT_FOLDER = "flow_reconstruction/dataset_mlp/original_data/npz_data/train"
-MLP_TEST_INPUT_FOLDER = "flow_reconstruction/dataset_mlp/original_data/test"
-MLP_TEST_OUTPUT_FOLDER = "flow_reconstruction/dataset_mlp/original_data/npz_data/test"
-
-GRAPH_TRAIN_INPUT_FOLDER = "flow_reconstruction/dataset_graph/original_data/train"
-GRAPH_TRAIN_OUTPUT_FOLDER = "flow_reconstruction/dataset_graph/original_data/npz_data/train"
-GRAPH_TEST_INPUT_FOLDER = "flow_reconstruction/dataset_graph/original_data/test"
-GRAPH_TEST_OUTPUT_FOLDER = "flow_reconstruction/dataset_graph/original_data/npz_data/test"
+TRAIN_INPUT_FOLDER = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/original_data/train"
+TRAIN_OUTPUT_FOLDER = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/original_data/npz_data/train"
+TEST_INPUT_FOLDER = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/original_data/test"
+TEST_OUTPUT_FOLDER = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/original_data/npz_data/test"
 
 
 def read_vtp_slice(file_name):
@@ -26,7 +21,8 @@ def read_vtp_slice(file_name):
         'x_velocity': np.array(data_in.GetPointData().GetArray("x_velocity")),
         'y_velocity': np.array(data_in.GetPointData().GetArray("y_velocity")),
         'z_velocity': np.array(data_in.GetPointData().GetArray("z_velocity")),
-        'temperature': np.array(data_in.GetPointData().GetArray("temperature"))}
+        #'temperature': np.array(data_in.GetPointData().GetArray("temperature"))
+        }
 
     return data_out
 
@@ -40,8 +36,6 @@ def vtp_to_npz(input_folder, output_folder):
         np.savez(output_file, **data)
 
 # Convert train and test vtp files to npz files
-vtp_to_npz(MLP_TRAIN_INPUT_FOLDER, MLP_TRAIN_OUTPUT_FOLDER)
-vtp_to_npz(MLP_TEST_INPUT_FOLDER, MLP_TEST_OUTPUT_FOLDER)
+vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
+vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
 
-vtp_to_npz(GRAPH_TRAIN_INPUT_FOLDER, GRAPH_TRAIN_OUTPUT_FOLDER)
-vtp_to_npz(GRAPH_TEST_INPUT_FOLDER, GRAPH_TEST_OUTPUT_FOLDER)

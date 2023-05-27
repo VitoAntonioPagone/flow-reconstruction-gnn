@@ -1,13 +1,15 @@
 import torch
 from datasets import FlowDataset
 from torch.utils.data import DataLoader
-from losses import MaskedMSELoss, NavierStokesLoss
+from losses import MaskedMSELoss, NavierStokesLoss, TVLoss
 import matplotlib.pyplot as plt
 import torch.nn as nn
 import os
 import pickle
+from collections import OrderedDict
 
 ALPHA = 1
+BETA = 1
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
@@ -15,8 +17,14 @@ def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
 
 
 def load_checkpoint(checkpoint, model):
-    print("=> Loading checkpoint")
-    model.load_state_dict(checkpoint["state_dict"])
+    state_dict = checkpoint['state_dict']
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k[7:]  # remove 'module.' from the key
+        new_state_dict[name] = v
+
+    # Load the modified state_dict to the model
+    model.load_state_dict(new_state_dict)
 
 
 def get_loaders(
@@ -66,7 +74,8 @@ def check_accuracy(loader, model, device=None):
 
     loss_fn = MaskedMSELoss(device)
     ns_loss = NavierStokesLoss(device)
-    
+    tv_loss = TVLoss().to(device)  # instantiate TVLoss
+
     losses = []
     with torch.no_grad():
         for x, y, mask in loader:
@@ -77,7 +86,8 @@ def check_accuracy(loader, model, device=None):
             preds = model(x_with_mask)
             masked_loss = loss_fn(preds, y, mask)
             ns_loss_value = ns_loss(preds)
-            total_loss = masked_loss + ALPHA * ns_loss_value
+            tv_loss_value = tv_loss(preds)  # calculate TV loss
+            total_loss = masked_loss + ALPHA * ns_loss_value + BETA * tv_loss_value  # added TV loss to total loss
             losses.append(total_loss.item())
 
     avg_loss = sum(losses) / len(losses)

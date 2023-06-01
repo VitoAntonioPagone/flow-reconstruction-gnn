@@ -19,3 +19,8 @@ network/__pycache__/
 
 # MAC
 .DS_Store
+
+#Folder
+/losses_plot
+/trained_models
+

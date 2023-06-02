@@ -7,15 +7,16 @@ import glob
 
 RANDOM_SEED = 1337
 TRAIN_SPLIT = 0.9
-INPUT_TRAIN_INPUTS_DIR = 'flow_reconstruction/dataset/train_data/train_inputs_50/'
-OUTPUT_VAL_INPUTS_DIR = 'flow_reconstruction/dataset/train_data/val_inputs_50/'
-INPUT_TRAIN_LABELS_DIR = 'flow_reconstruction/dataset/train_data/train_labels_50/'
-OUTPUT_VAL_LABELS_DIR = 'flow_reconstruction/dataset/train_data/val_labels_50/'
+PERCENTAGE_OF_MISSING_POINTS = 90
+INPUT_TRAIN_INPUTS_DIR = f'/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_inputs_{PERCENTAGE_OF_MISSING_POINTS}/'
+OUTPUT_VAL_INPUTS_DIR = f'/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/val_inputs_{PERCENTAGE_OF_MISSING_POINTS}/'
+INPUT_TRAIN_LABELS_DIR = f'/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_labels_{PERCENTAGE_OF_MISSING_POINTS}/'
+OUTPUT_VAL_LABELS_DIR = f'/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/val_labels_{PERCENTAGE_OF_MISSING_POINTS}/'
 
 
 def tran_val_split(train_dir, val_dir):
 
-    # files = glob.glob(train_dir + '*.npy')
+    files = glob.glob(train_dir + '*.npy')
     _, _, files = next(os.walk(train_dir))
     files = natsorted(files)
     num_files = len(files)

@@ -3,10 +3,8 @@ import torch.nn as nn
 from torch.optim import Adam
 from models import (
     UNet,
-    ConvAutoEncoder_seven,
-    DilatedConvAutoEncoder,
-    SEConvAutoEncoder,
-    ConvAutoEncoder_simplified)
+    ConvAutoEncoder_simplified,
+    Convolutional_ChannelAttention_Autoencoder)
 from losses import (
     MaskedMSELoss, 
     NavierStokesLoss,
@@ -29,17 +27,18 @@ NUM_WORKERS = 6
 PIN_MEMORY = True
 LEARNING_RATE = 0.0001
 SHUFFLE = True
-NUM_EPOCHS = 1000
+NUM_EPOCHS = 100
 ALPHA = 0.1
 BETA = 0.1
 LOAD_MODEL = False
-MODEL_NAME = "ConvAutoEncoder_simplified"  # Add the name of your model here
+MODEL_NAME = "Convolutional_ChannelAttention_Autoencoder"  # Add the name of your model here
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}_autoencoder_checkpoint_alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}_autoencoder_checkpoint_alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
-TRAIN_INPUTS_DIR = '../dataset/train_data/train_inputs_50'
-TRAIN_LABELS_DIR = '../dataset/train_data/train_labels_50'
-VAL_INPUTS_DIR   = '../dataset/train_data/val_inputs_50'
-VAL_LABELS_DIR   = '../dataset/train_data/val_labels_50'
+PERCENTAGE_OF_MISSING_POINTS = 90
+TRAIN_INPUTS_DIR = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_inputs_{PERCENTAGE_OF_MISSING_POINTS}'
+TRAIN_LABELS_DIR = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_labels_{PERCENTAGE_OF_MISSING_POINTS}'
+VAL_INPUTS_DIR   = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/val_inputs_{PERCENTAGE_OF_MISSING_POINTS}'
+VAL_LABELS_DIR   = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/val_labels_{PERCENTAGE_OF_MISSING_POINTS}'
 
 
 def train_fn(loader, model, optimizer, loss_fn, ns_loss, tv_loss, alpha, beta, scaler):
@@ -82,7 +81,7 @@ def train_unet_conv_autoencoder():
 
     print(f"Selected device: {DEVICE}")
 
-    model = ConvAutoEncoder_simplified().to(DEVICE)
+    model = Convolutional_ChannelAttention_Autoencoder().to(DEVICE)
     # Check for multiple GPUs and wrap model
     if torch.cuda.device_count() > 1:
         print(f"Using {torch.cuda.device_count()} GPUs for training")

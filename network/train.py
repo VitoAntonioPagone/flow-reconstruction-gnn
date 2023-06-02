@@ -27,14 +27,15 @@ NUM_WORKERS = 6
 PIN_MEMORY = True
 LEARNING_RATE = 0.0001
 SHUFFLE = True
-NUM_EPOCHS = 100
+NUM_EPOCHS = 500
 ALPHA = 0.1
 BETA = 0.1
 LOAD_MODEL = False
-MODEL_NAME = "Convolutional_ChannelAttention_Autoencoder"  # Add the name of your model here
+PERCENTAGE_OF_MISSING_POINTS = 90
+MODEL_NAME = f"ConvAutoEncoder_simplified_{PERCENTAGE_OF_MISSING_POINTS}"  # Add the name of your model here
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}_autoencoder_checkpoint_alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}_autoencoder_checkpoint_alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
-PERCENTAGE_OF_MISSING_POINTS = 90
+
 TRAIN_INPUTS_DIR = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_inputs_{PERCENTAGE_OF_MISSING_POINTS}'
 TRAIN_LABELS_DIR = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_labels_{PERCENTAGE_OF_MISSING_POINTS}'
 VAL_INPUTS_DIR   = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/val_inputs_{PERCENTAGE_OF_MISSING_POINTS}'
@@ -81,7 +82,7 @@ def train_unet_conv_autoencoder():
 
     print(f"Selected device: {DEVICE}")
 
-    model = Convolutional_ChannelAttention_Autoencoder().to(DEVICE)
+    model = ConvAutoEncoder_simplified().to(DEVICE)
     # Check for multiple GPUs and wrap model
     if torch.cuda.device_count() > 1:
         print(f"Using {torch.cuda.device_count()} GPUs for training")

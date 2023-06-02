@@ -6,13 +6,13 @@ import os
 import glob
 import matplotlib.pyplot as plt
 from datasets import FlowDataset
-from models import ConvAutoEncoder, SEConvAutoEncoder,SpatialAttentionConvAutoEncoder
+from models import ConvAutoEncoder_seven, DilatedConvAutoEncoder,SEConvAutoEncoder,SpatialAttentionConvAutoEncoder, ConvAutoEncoder_simplified
 from utils import load_checkpoint
 
 
 def run_autoencoder():
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    CHECKPOINT_FILE = '../trained_models/autoencoder_checkpoint_alpha_1_beta_10_lr_0.001_batch_128.pth.tar'
+    CHECKPOINT_FILE = '../trained_models/ConvAutoEncoder_simplified_epochs_1000_autoencoder_checkpoint_alpha_0.1_beta_0.1_lr_0.0001_batch_128.pth.tar'
     TEST_INPUTS_DIR = '../dataset/train_data/test_inputs_50/'
     TEST_LABELS_DIR = '../dataset/train_data/test_labels_50/'
     TEST_FILE_NUM = 8
@@ -40,11 +40,11 @@ def run_autoencoder():
         test_label_tensor = test_label_tensor.unsqueeze(0)
         test_missing_mask_tensor = test_missing_mask_tensor.unsqueeze(0)
         # Load pre-trained model
-        model = ConvAutoEncoder().to(DEVICE)
+        model = ConvAutoEncoder_simplified().to(DEVICE)
         load_checkpoint(torch.load(CHECKPOINT_FILE, map_location=torch.device(DEVICE)), model)
         reconstructed_flow_tensor = reconstruct_flow(model, test_input_tensor, test_missing_mask_tensor)
         reconstructed_flow_tensor = reconstructed_flow_tensor.cpu()  # Move the tensor back to CPU for visualization
-
+        print("Reconstructed Flow Tensor Dimension:", reconstructed_flow_tensor.size())
         fig, axes = plt.subplots(3, 3, figsize=(12, 8), dpi=120)  
         fig.subplots_adjust(hspace=0.5, wspace=0.5)  
 

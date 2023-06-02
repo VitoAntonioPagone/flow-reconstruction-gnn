@@ -3,10 +3,10 @@ import torch.nn as nn
 from torch.optim import Adam
 from models import (
     UNet,
-    ConvAutoEncoder,
+    ConvAutoEncoder_seven,
     DilatedConvAutoEncoder,
     SEConvAutoEncoder,
-    SuperConvAutoEncoder)
+    ConvAutoEncoder_simplified)
 from losses import (
     MaskedMSELoss, 
     NavierStokesLoss,
@@ -27,13 +27,15 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 128
 NUM_WORKERS = 6
 PIN_MEMORY = True
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0001
 SHUFFLE = True
-NUM_EPOCHS = 100
-ALPHA = 0  # set this to the desired value
-BETA = 0
+NUM_EPOCHS = 1000
+ALPHA = 0.1
+BETA = 0.1
 LOAD_MODEL = False
-CHECKPOINT_FILE = f'../trained_models/autoencoder_checkpoint_alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
+MODEL_NAME = "ConvAutoEncoder_simplified"  # Add the name of your model here
+LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}_autoencoder_checkpoint_alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
+SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}_autoencoder_checkpoint_alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
 TRAIN_INPUTS_DIR = '../dataset/train_data/train_inputs_50'
 TRAIN_LABELS_DIR = '../dataset/train_data/train_labels_50'
 VAL_INPUTS_DIR   = '../dataset/train_data/val_inputs_50'
@@ -80,7 +82,11 @@ def train_unet_conv_autoencoder():
 
     print(f"Selected device: {DEVICE}")
 
-    model = DilatedConvAutoEncoder().to(DEVICE)
+    model = ConvAutoEncoder_simplified().to(DEVICE)
+    # Check for multiple GPUs and wrap model
+    if torch.cuda.device_count() > 1:
+        print(f"Using {torch.cuda.device_count()} GPUs for training")
+        model = nn.DataParallel(model)
     #print_autoencoder_dashboard(model)
     initialize_weights(model)
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
@@ -99,8 +105,8 @@ def train_unet_conv_autoencoder():
     )
 
     if LOAD_MODEL:
-        load_checkpoint(torch.load(CHECKPOINT_FILE), model)
-    check_accuracy(val_loader, model, device=DEVICE)
+        load_checkpoint(torch.load(LOAD_CHECKPOINT_FILE), model)
+    check_accuracy(val_loader, model, ALPHA, BETA, device=DEVICE)
     scaler = torch.cuda.amp.GradScaler()
 
     train_losses = []
@@ -116,10 +122,10 @@ def train_unet_conv_autoencoder():
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict(),
         }
-        save_checkpoint(checkpoint_state, CHECKPOINT_FILE)
+        save_checkpoint(checkpoint_state, SAVE_CHECKPOINT_FILE)
 
         # check accuracy
-        val_loss = check_accuracy(val_loader, model, device=DEVICE)
+        val_loss = check_accuracy(val_loader, model, ALPHA, BETA, device=DEVICE)
         val_losses.append(val_loss)
         print(f"Training Loss: {train_loss}")
 

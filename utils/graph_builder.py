@@ -1,57 +1,94 @@
 import numpy as np
-import networkx as nx
 from scipy.spatial.distance import cdist
-import matplotlib.pyplot as plt
-import glob
+import os
+import torch
+from torch_geometric.data import Data
 
-file_pattern = "flow_reconstruction/dataset_graph/original_data/npz_data/train/*.npz"
-files = glob.glob(file_pattern)
+# Define the device for the operations
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-x_list, y_list, x_velocity_list, y_velocity_list, z_velocity_list, temperature_list = [], [], [], [], [], []
+def load_npz_data(file_path):
+    print(f"Loading data from: {file_path}")
+    with np.load(file_path) as data:
+        x = data['x']
+        y = data['y']
+        x_velocity = data['x_velocity']
+        y_velocity = data['y_velocity']
+        z_velocity = data['z_velocity']
+    # Only return the velocities as features and coordinates separately
+    features = np.column_stack((x_velocity, y_velocity, z_velocity))
+    coordinates = np.column_stack((x, y))
+    return torch.tensor(features, dtype=torch.float).to(device), torch.tensor(coordinates, dtype=torch.float).to(device)
 
-for file in files:
-    data = np.load(file)
-    x_list.append(data["x"])
-    y_list.append(data["y"])
-    x_velocity_list.append(data["x_velocity"])
-    y_velocity_list.append(data["y_velocity"])
-    z_velocity_list.append(data["z_velocity"])
-    temperature_list.append(data["temperature"])
+def create_graph(features, coordinates, distance_threshold):
+    print("Creating graph...")
+    adjacency_matrix = cdist(coordinates.cpu().numpy(), coordinates.cpu().numpy()) <= distance_threshold
 
-x = np.concatenate(x_list)
-y = np.concatenate(y_list)
-x_velocity = np.concatenate(x_velocity_list)
-y_velocity = np.concatenate(y_velocity_list)
-z_velocity = np.concatenate(z_velocity_list)
-temperature = np.concatenate(temperature_list)
-coordinates = np.column_stack((x, y))
-features = np.column_stack((x_velocity, y_velocity, z_velocity, temperature))
+    # Remove self-connections
+    np.fill_diagonal(adjacency_matrix, 0)
 
-n_points = len(coordinates)
-subset_size = int(0.01 * n_points)  
-subset_indices = np.random.choice(n_points, size=subset_size, replace=False)
+    edge_index = torch.tensor(np.argwhere(adjacency_matrix).T, dtype=torch.long).to(device)
 
-coordinates_subset = coordinates[subset_indices]
-features_subset = features[subset_indices]
+    graph = Data(x=features, edge_index=edge_index)
+    return graph
 
-distance_matrix = cdist(coordinates_subset, coordinates_subset)
+def create_graphs(data_folder, distance_threshold):
+    graphs = []
+    for file in os.listdir(data_folder):
+        if file.endswith(".npz"):
+            file_path = os.path.join(data_folder, file)
+            
+            print(f"Analyzing file: {file_path}")
+            
+            features, coordinates = load_npz_data(file_path)
+            graph = create_graph(features, coordinates, distance_threshold)
+            graphs.append(graph)
+    return graphs
 
-distance_threshold = 0.0125  
+def save_graphs(graphs, folder):
+    os.makedirs(folder, exist_ok=True)
+    for i, graph in enumerate(graphs):
+        file_path = os.path.join(folder, f"graph_{i}.pt")
+        torch.save(graph, file_path)
 
-#  graph
-G = nx.Graph()
+def load_graphs(folder):
+    graphs = []
+    for file in os.listdir(folder):
+        if file.endswith(".pt"):
+            file_path = os.path.join(folder, file)
+            graph = torch.load(file_path)
+            graphs.append(graph)
+    return graphs
 
-# add nodes to the graph
-for i in range(len(coordinates_subset)):
-    G.add_node(i, features=features_subset[i])
+distance_threshold = 0.005  # Set an appropriate distance threshold
 
-# add edges to the graph based on the distance threshold
-for i in range(len(coordinates_subset)):
-    for j in range(i + 1, len(coordinates_subset)):
-        if distance_matrix[i, j] <= distance_threshold:
-            G.add_edge(i, j, weight=distance_matrix[i, j])
+train_data = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/train"
+test_data = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/test"
+validation_data = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/validation"
+train_inputs = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/train_inputs"
+test_inputs = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/test_inputs"
+validation_inputs = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/validation_inputs"
 
-# plot 
-pos = {i: coordinates_subset[i] for i in range(len(coordinates_subset))}
-nx.draw(G, pos, node_size=20, edge_color='gray', node_color='blue', with_labels=False)
-plt.show()
+train_graphs = create_graphs(train_data, distance_threshold)
+print("Train graphs created.")
+test_graphs = create_graphs(test_data, distance_threshold)
+print("Test graphs created.")
+
+validation_graphs = create_graphs(validation_data, distance_threshold)
+print("Validation graphs created.")
+train_input_graphs = create_graphs(train_inputs, distance_threshold)
+print("Train input graphs created.")
+
+test_input_graphs = create_graphs(test_inputs, distance_threshold)
+print("Test input graphs created.")
+
+validation_input_graphs = create_graphs(validation_inputs, distance_threshold)
+print("Validation input graphs created.")
+
+save_graphs(train_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/train_graphs")
+save_graphs(test_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/test_graphs")
+save_graphs(validation_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/validation_graphs")
+
+save_graphs(train_input_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/train_input_graphs")
+save_graphs(test_input_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/test_input_graphs")
+save_graphs(validation_input_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/validation_input_graphs")

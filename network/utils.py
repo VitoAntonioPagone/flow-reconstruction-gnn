@@ -8,9 +8,6 @@ import os
 import pickle
 from collections import OrderedDict
 
-ALPHA = 1
-BETA = 1
-
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
     torch.save(state, filename)
@@ -66,7 +63,7 @@ def get_loaders(
 
 
 
-def check_accuracy(loader, model, device=None):
+def check_accuracy(loader, model, alpha, beta, device=None):
     model.eval()
 
     if device is None:
@@ -87,16 +84,13 @@ def check_accuracy(loader, model, device=None):
             masked_loss = loss_fn(preds, y, mask)
             ns_loss_value = ns_loss(preds)
             tv_loss_value = tv_loss(preds)  # calculate TV loss
-            total_loss = masked_loss + ALPHA * ns_loss_value + BETA * tv_loss_value  # added TV loss to total loss
+            total_loss = masked_loss + alpha * ns_loss_value + beta * tv_loss_value  # added TV loss to total loss
             losses.append(total_loss.item())
 
     avg_loss = sum(losses) / len(losses)
     print(f"Validation Loss: {avg_loss:.4f}")
     model.train()
     return avg_loss
-
-
-
 
 def plot_losses(train_losses, val_losses, alpha, beta, learning_rate, batch_size):
     import matplotlib.pyplot as plt
@@ -110,11 +104,11 @@ def plot_losses(train_losses, val_losses, alpha, beta, learning_rate, batch_size
     # Generate the plot filename based on the hyperparameters
     plot_filename = f'../losses_plot/losses_plot_alpha_{alpha}_beta_{beta}_lr_{learning_rate}_batch_{batch_size}.jpg'
 
-    plt.savefig(plot_filename, format='jpg', dpi=350)  
+    plt.savefig(plot_filename, format='jpg', dpi=350) 
 
 
 
-import torch
+
 
 def initialize_weights(model):
     for module in model.modules():

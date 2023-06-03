@@ -7,12 +7,10 @@ from pathlib import Path
 
 
 GRID_SIZE = 256
-INPUT_TRAIN_DIR = 'flow_reconstruction/dataset/original_data/train/'
-OUTPUT_TRAIN_DIR = 'flow_reconstruction/dataset/npz_data/train/'
-OUTPUT_TRAIN_DIR_NEW = 'flow_reconstruction/dataset_mlp/npz_data/train/'
-INPUT_TEST_DIR = 'flow_reconstruction/dataset/original_data/test/'
-OUTPUT_TEST_DIR = 'flow_reconstruction/dataset/npz_data/test/'
-OUTPUT_TEST_DIR_NEW = 'flow_reconstruction/dataset_mlp/npz_data/test/'
+INPUT_TRAIN_DIR  = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/original_data/train'
+OUTPUT_TRAIN_DIR = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/npz_data/train/'
+INPUT_TEST_DIR   = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/original_data/test/'
+OUTPUT_TEST_DIR  = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/npz_data/test/'
 
 
 def read_vtp_slice(file_name):
@@ -27,7 +25,8 @@ def read_vtp_slice(file_name):
         'x_velocity': np.array(data_in.GetPointData().GetArray("x_velocity")),
         'y_velocity': np.array(data_in.GetPointData().GetArray("y_velocity")),
         'z_velocity': np.array(data_in.GetPointData().GetArray("z_velocity")),
-        'temperature': np.array(data_in.GetPointData().GetArray("temperature"))}
+        #'temperature': np.array(data_in.GetPointData().GetArray("temperature"))
+        }
 
     return data_out
 
@@ -63,7 +62,5 @@ def interpolate_data(input_folder, *output_folders):
             np.savez_compressed(output_file, **grid_data)
 
 if __name__ == "__main__":
-    interpolate_data(INPUT_TRAIN_DIR, OUTPUT_TRAIN_DIR, OUTPUT_TRAIN_DIR_NEW)
-    interpolate_data(INPUT_TEST_DIR, OUTPUT_TEST_DIR, OUTPUT_TEST_DIR_NEW)
     interpolate_data(INPUT_TRAIN_DIR, OUTPUT_TRAIN_DIR)
     interpolate_data(INPUT_TEST_DIR, OUTPUT_TEST_DIR)

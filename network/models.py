@@ -4,9 +4,7 @@ import torchvision.transforms.functional as TF
 from torch.nn import MultiheadAttention
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
-from attention import (
-    SELayer,
-    SpatialAttention)
+from attention import ChannelAttention
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 
@@ -65,49 +63,51 @@ class ConvAutoEncoder_simplified(nn.Module):
 
         return dec1
     
-class Convolutional_SpatialAttention_Autoencoder(nn.Module):
+class Convolutional_ChannelAttention_Autoencoder(nn.Module):
     def __init__(self):
-        super(Convolutional_SpatialAttention_Autoencoder, self).__init__()
+        super(Convolutional_ChannelAttention_Autoencoder, self).__init__()
 
         # Encoder
         self.encoder1 = nn.Sequential(
             nn.Conv2d(4, 32, kernel_size=7, stride=1, padding=3),
-            nn.ReLU()
+            nn.ReLU(),
+            ChannelAttention(32)
         )
         self.encoder2 = nn.Sequential(
             nn.Conv2d(32, 64, kernel_size=7, stride=1, padding=3),
-            nn.ReLU()
+            nn.ReLU(),
+            ChannelAttention(64)
         )
         self.encoder3 = nn.Sequential(
             nn.Conv2d(64, 128, kernel_size=7, stride=1, padding=3),
-            nn.ReLU()
+            nn.ReLU(),
+            ChannelAttention(128)
         )
         self.encoder4 = nn.Sequential(
             nn.Conv2d(128, 256, kernel_size=7, stride=1, padding=3),
-            nn.ReLU()
+            nn.ReLU(),
+            ChannelAttention(256)
         )
-
-        # Attention Modules
-        self.attention4 = SpatialAttention()
-        self.attention3 = SpatialAttention()
-        self.attention2 = SpatialAttention()
-        self.attention1 = SpatialAttention()
 
         # Decoder
         self.decoder4 = nn.Sequential(
             nn.ConvTranspose2d(384, 128, kernel_size=7, stride=1, padding=3),
-            nn.ReLU()
+            nn.ReLU(),
+            ChannelAttention(128)
         )
         self.decoder3 = nn.Sequential(
             nn.ConvTranspose2d(192, 64, kernel_size=7, stride=1, padding=3),
-            nn.ReLU()
+            nn.ReLU(),
+            ChannelAttention(64)
         )
         self.decoder2 = nn.Sequential(
             nn.ConvTranspose2d(96, 32, kernel_size=7, stride=1, padding=3),
-            nn.ReLU()
+            nn.ReLU(),
+            ChannelAttention(32)
         )
         self.decoder1 = nn.Sequential(
             nn.ConvTranspose2d(32, 3, kernel_size=7, stride=1, padding=3),
+            ChannelAttention(3)
         )
 
     def forward(self, x):
@@ -117,16 +117,9 @@ class Convolutional_SpatialAttention_Autoencoder(nn.Module):
         enc4 = self.encoder4(enc3)
 
         dec4 = self.decoder4(torch.cat((enc4, enc3), dim=1))  # Skip connection from encoder3
-        dec4 = self.attention4(dec4)  # Apply attention
-
         dec3 = self.decoder3(torch.cat((dec4, enc2), dim=1))  # Skip connection from encoder2
-        dec3 = self.attention3(dec3)  # Apply attention
-
         dec2 = self.decoder2(torch.cat((dec3, enc1), dim=1))  # Skip connection from encoder1
-        dec2 = self.attention2(dec2)  # Apply attention
-
         dec1 = self.decoder1(dec2)
-        dec1 = self.attention1(dec1)  # Apply attention
 
         return dec1
 

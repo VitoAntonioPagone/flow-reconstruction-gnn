@@ -1,11 +1,8 @@
 import numpy as np
-from scipy.spatial.distance import cdist
 import os
 import torch
 from torch_geometric.data import Data
-
-# Define the device for the operations
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from scipy.spatial import cKDTree
 
 def load_npz_data(file_path):
     print(f"Loading data from: {file_path}")
@@ -15,19 +12,22 @@ def load_npz_data(file_path):
         x_velocity = data['x_velocity']
         y_velocity = data['y_velocity']
         z_velocity = data['z_velocity']
-    # Only return the velocities as features and coordinates separately
     features = np.column_stack((x_velocity, y_velocity, z_velocity))
     coordinates = np.column_stack((x, y))
-    return torch.tensor(features, dtype=torch.float).to(device), torch.tensor(coordinates, dtype=torch.float).to(device)
+    return torch.tensor(features, dtype=torch.float), torch.tensor(coordinates, dtype=torch.float)
 
 def create_graph(features, coordinates, distance_threshold):
     print("Creating graph...")
-    adjacency_matrix = cdist(coordinates.cpu().numpy(), coordinates.cpu().numpy()) <= distance_threshold
+    tree = cKDTree(coordinates.numpy())
+    adjacency_matrix = tree.query_ball_tree(tree, distance_threshold)
 
-    # Remove self-connections
-    np.fill_diagonal(adjacency_matrix, 0)
-
-    edge_index = torch.tensor(np.argwhere(adjacency_matrix).T, dtype=torch.long).to(device)
+    edge_index = []
+    for v in range(len(adjacency_matrix)):
+        for neighbor in adjacency_matrix[v]:
+            if neighbor != v:  # remove self-connections
+                edge_index.append([v, neighbor])
+    
+    edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
 
     graph = Data(x=features, edge_index=edge_index)
     return graph
@@ -62,12 +62,12 @@ def load_graphs(folder):
 
 distance_threshold = 0.005  # Set an appropriate distance threshold
 
-train_data = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/train"
-test_data = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/test"
-validation_data = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/validation"
-train_inputs = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/train_inputs"
-test_inputs = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/test_inputs"
-validation_inputs = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/validation_inputs"
+train_data = "../dataset_graph/original_data/npz_data/train"
+test_data = "../dataset_graph/original_data/npz_data/test"
+validation_data = "../dataset_graph/original_data/npz_data/validation"
+train_inputs = "../dataset_graph/original_data/npz_data/train_inputs"
+test_inputs = "../dataset_graph/original_data/npz_data/test_inputs"
+validation_inputs = "../dataset_graph/original_data/npz_data/validation_inputs"
 
 train_graphs = create_graphs(train_data, distance_threshold)
 print("Train graphs created.")
@@ -85,10 +85,10 @@ print("Test input graphs created.")
 validation_input_graphs = create_graphs(validation_inputs, distance_threshold)
 print("Validation input graphs created.")
 
-save_graphs(train_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/train_graphs")
-save_graphs(test_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/test_graphs")
-save_graphs(validation_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/validation_graphs")
+save_graphs(train_graphs, "../dataset_graph/train_graphs")
+save_graphs(test_graphs, "../dataset_graph/test_graphs")
+save_graphs(validation_graphs, "../dataset_graph/validation_graphs")
 
-save_graphs(train_input_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/train_input_graphs")
-save_graphs(test_input_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/test_input_graphs")
-save_graphs(validation_input_graphs, "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/validation_input_graphs")
+save_graphs(train_input_graphs, "/../dataset_graph/train_input_graphs")
+save_graphs(test_input_graphs, "../dataset_graph/test_input_graphs")
+save_graphs(validation_input_graphs, "../dataset_graph/validation_input_graphs")

@@ -12,7 +12,13 @@ def load_npz_data(file_path):
         x_velocity = data['x_velocity']
         y_velocity = data['y_velocity']
         z_velocity = data['z_velocity']
+        
     features = np.column_stack((x_velocity, y_velocity, z_velocity))
+    
+    # Add binary indicator feature for missing data
+    missing_indicator = np.linalg.norm(features, axis=1) == 0
+    features = np.column_stack((features, missing_indicator))
+    
     coordinates = np.column_stack((x, y))
     return torch.tensor(features, dtype=torch.float), torch.tensor(coordinates, dtype=torch.float)
 

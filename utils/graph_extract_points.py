@@ -44,12 +44,12 @@ def process_npz_files(folder, output_folder, percentage):
                  z_velocity=features[:, 4])
 
 def main():
-    train_folder = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/train'  # Training data folder
-    test_folder = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/train'    # Testing data folder
-    validation_folder = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/validation'
-    train_output_folder = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/train_inputs'
-    test_output_folder = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/test_inputs'
-    validation_output_folder = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/validation_inputs'
+    train_folder = '../dataset_graph/original_data/npz_data/train'  # Training data folder
+    test_folder = '../original_data/npz_data/train'    # Testing data folder
+    validation_folder = '../original_data/npz_data/validation'
+    train_output_folder = '../original_data/npz_data/train_inputs'
+    test_output_folder = '../original_data/npz_data/test_inputs'
+    validation_output_folder = '../original_data/npz_data/validation_inputs'
 
     percentage = 0.5  
 

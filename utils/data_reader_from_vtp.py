@@ -3,10 +3,10 @@ import glob
 import numpy as np
 import vtk
 
-TRAIN_INPUT_FOLDER = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/original_data/train"
-TRAIN_OUTPUT_FOLDER = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/original_data/npz_data/train"
-TEST_INPUT_FOLDER = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/original_data/test"
-TEST_OUTPUT_FOLDER = "/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/original_data/npz_data/test"
+TRAIN_INPUT_FOLDER = "../dataset/original_data/train"
+TRAIN_OUTPUT_FOLDER = "../dataset/original_data/npz_data/train"
+TEST_INPUT_FOLDER = "../dataset/original_data/test"
+TEST_OUTPUT_FOLDER = "../flow_reconstruction/dataset/original_data/npz_data/test"
 
 
 def read_vtp_slice(file_name):

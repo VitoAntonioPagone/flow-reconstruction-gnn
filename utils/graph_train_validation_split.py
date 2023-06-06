@@ -7,7 +7,7 @@ import numpy as np
 RANDOM_SEED = 1337
 VALIDATION_SPLIT = 0.1
 TRAIN_DIR_INPUT      = '../dataset_graph/original_data/npz_data/train'
-VALIDATION_DIR_INPUT = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset_graph/original_data/npz_data/validation'
+VALIDATION_DIR_INPUT = '../dataset_graph/original_data/npz_data/validation'
 
 
 def train_validation_split(train_dir, validation_dir):

@@ -16,51 +16,39 @@ def load_npz_data(file_path):
     coordinates = np.column_stack((x, y))
     return torch.tensor(features, dtype=torch.float), torch.tensor(coordinates, dtype=torch.float)
 
-def create_graph(features, coordinates, distance_threshold):
+def create_and_save_graph(features, coordinates, num_neighbours, folder, i):
     print("Creating graph...")
     tree = cKDTree(coordinates.numpy())
-    adjacency_matrix = tree.query_ball_tree(tree, distance_threshold)
+    distances, indices = tree.query(coordinates.numpy(), k=num_neighbours+1)
 
     edge_index = []
-    for v in range(len(adjacency_matrix)):
-        for neighbor in adjacency_matrix[v]:
+    edge_attr = []
+    for v in range(len(indices)):
+        for j, neighbor in enumerate(indices[v]):
             if neighbor != v:  # remove self-connections
                 edge_index.append([v, neighbor])
-    
+                edge_attr.append(distances[v][j])
+                
     edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
+    edge_attr = torch.tensor(edge_attr, dtype=torch.float).view(-1, 1)  # reshaping to [num_edges, num_edge_features]
 
-    graph = Data(x=features, edge_index=edge_index)
-    return graph
+    graph = Data(x=features, edge_index=edge_index, edge_attr=edge_attr)
 
-def create_graphs(data_folder, distance_threshold):
-    graphs = []
-    for file in os.listdir(data_folder):
+    # Save the graph
+    os.makedirs(folder, exist_ok=True)
+    file_path = os.path.join(folder, f"graph_{i}.pt")
+    torch.save(graph, file_path)
+
+def create_graphs(data_folder, num_neighbours, save_folder):
+    for i, file in enumerate(os.listdir(data_folder)):
         if file.endswith(".npz"):
             file_path = os.path.join(data_folder, file)
-            
             print(f"Analyzing file: {file_path}")
-            
             features, coordinates = load_npz_data(file_path)
-            graph = create_graph(features, coordinates, distance_threshold)
-            graphs.append(graph)
-    return graphs
+            create_and_save_graph(features, coordinates, num_neighbours, save_folder, i)
 
-def save_graphs(graphs, folder):
-    os.makedirs(folder, exist_ok=True)
-    for i, graph in enumerate(graphs):
-        file_path = os.path.join(folder, f"graph_{i}.pt")
-        torch.save(graph, file_path)
-
-def load_graphs(folder):
-    graphs = []
-    for file in os.listdir(folder):
-        if file.endswith(".pt"):
-            file_path = os.path.join(folder, file)
-            graph = torch.load(file_path)
-            graphs.append(graph)
-    return graphs
-
-distance_threshold = 0.005  # Set an appropriate distance threshold
+# Configuring path and number of neighbours
+num_neighbours = 6
 
 train_data = "../dataset_graph/original_data/npz_data/train"
 test_data = "../dataset_graph/original_data/npz_data/test"
@@ -69,26 +57,16 @@ train_inputs = "../dataset_graph/original_data/npz_data/train_inputs"
 test_inputs = "../dataset_graph/original_data/npz_data/test_inputs"
 validation_inputs = "../dataset_graph/original_data/npz_data/validation_inputs"
 
-train_graphs = create_graphs(train_data, distance_threshold)
+save_graphs_folder = "../dataset_graph/training"
+create_graphs(train_data, num_neighbours, os.path.join(save_graphs_folder, "train_graphs"))
 print("Train graphs created.")
-test_graphs = create_graphs(test_data, distance_threshold)
+create_graphs(test_data, num_neighbours, os.path.join(save_graphs_folder, "test_graphs"))
 print("Test graphs created.")
-
-validation_graphs = create_graphs(validation_data, distance_threshold)
+create_graphs(validation_data, num_neighbours, os.path.join(save_graphs_folder, "validation_graphs"))
 print("Validation graphs created.")
-train_input_graphs = create_graphs(train_inputs, distance_threshold)
+create_graphs(train_inputs, num_neighbours, os.path.join(save_graphs_folder, "train_input_graphs"))
 print("Train input graphs created.")
-
-test_input_graphs = create_graphs(test_inputs, distance_threshold)
+create_graphs(test_inputs, num_neighbours, os.path.join(save_graphs_folder, "test_input_graphs"))
 print("Test input graphs created.")
-
-validation_input_graphs = create_graphs(validation_inputs, distance_threshold)
+create_graphs(validation_inputs, num_neighbours, os.path.join(save_graphs_folder, "validation_input_graphs"))
 print("Validation input graphs created.")
-
-save_graphs(train_graphs, "../dataset_graph/train_graphs")
-save_graphs(test_graphs, "../dataset_graph/test_graphs")
-save_graphs(validation_graphs, "../dataset_graph/validation_graphs")
-
-save_graphs(train_input_graphs, "/../dataset_graph/train_input_graphs")
-save_graphs(test_input_graphs, "../dataset_graph/test_input_graphs")
-save_graphs(validation_input_graphs, "../dataset_graph/validation_input_graphs")

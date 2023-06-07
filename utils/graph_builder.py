@@ -3,6 +3,7 @@ import os
 import torch
 from torch_geometric.data import Data
 from scipy.spatial import cKDTree
+import sys
 
 def load_npz_data(file_path):
     print(f"Loading data from: {file_path}")
@@ -64,15 +65,29 @@ test_inputs = "../dataset_graph/original_data/npz_data/test_inputs"
 validation_inputs = "../dataset_graph/original_data/npz_data/validation_inputs"
 
 save_graphs_folder = "../dataset_graph/training"
+# Flush stdout after each print statement
+sys.stdout.flush()
+
 create_graphs(train_data, num_neighbours, os.path.join(save_graphs_folder, "train_graphs"))
 print("Train graphs created.")
+sys.stdout.flush()
+
 create_graphs(test_data, num_neighbours, os.path.join(save_graphs_folder, "test_graphs"))
 print("Test graphs created.")
+sys.stdout.flush()
+
 create_graphs(validation_data, num_neighbours, os.path.join(save_graphs_folder, "validation_graphs"))
 print("Validation graphs created.")
+sys.stdout.flush()
+
 create_graphs(train_inputs, num_neighbours, os.path.join(save_graphs_folder, "train_input_graphs"))
 print("Train input graphs created.")
+sys.stdout.flush()
+
 create_graphs(test_inputs, num_neighbours, os.path.join(save_graphs_folder, "test_input_graphs"))
 print("Test input graphs created.")
+sys.stdout.flush()
+
 create_graphs(validation_inputs, num_neighbours, os.path.join(save_graphs_folder, "validation_input_graphs"))
 print("Validation input graphs created.")
+sys.stdout.flush()

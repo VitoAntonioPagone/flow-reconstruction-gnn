@@ -5,11 +5,25 @@ from torch.nn import MultiheadAttention
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from attention import ChannelAttention
-import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
-
 import torch
 from torch import nn
+from torch_geometric.nn import GCNConv
+import torch.nn.functional as F
+
+class GCN(torch.nn.Module):
+    def __init__(self, num_node_features):
+        super(GCN, self).__init__()
+        self.conv1 = GCNConv(num_node_features, 128)
+        self.conv2 = GCNConv(128, num_node_features)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv2(x, edge_index)
+        return x
+
 
 class DilatedConvAutoEncoder(nn.Module):
     def __init__(self):

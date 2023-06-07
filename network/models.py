@@ -18,11 +18,18 @@ class GCN(torch.nn.Module):
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
+        
+        # Ensure x is a tensor
+        if isinstance(x, list):
+            x = torch.cat(x, dim=0)
+            
         x = self.conv1(x, edge_index)
         x = F.relu(x)
         x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index)
+        
         return x
+
 
 
 class DilatedConvAutoEncoder(nn.Module):

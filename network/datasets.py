@@ -3,6 +3,9 @@ from torch.utils.data import Dataset
 import torch
 import numpy as np
 import re
+import torch
+from torch_geometric.data import Dataset, Data
+import os
 
 
 class FlowDataset(Dataset):
@@ -36,34 +39,37 @@ class FlowDataset(Dataset):
         return input_tensor, label_tensor, missing_mask_tensor
 
 
+
 class GraphDataset(Dataset):
-    def __init__(self, root_dir, transform=None, pre_transform=None):
-        super(GraphDataset, self).__init__(root_dir, transform, pre_transform)
+    def __init__(self, input_dir, label_dir, transform=None, pre_transform=None):
+        self.input_dir = input_dir
+        self.label_dir = label_dir
+        super(GraphDataset, self).__init__(transform, pre_transform)
 
     @property
     def raw_file_names(self):
-        # List all files in the raw_dir
-        return os.listdir(self.raw_dir)
+        return os.listdir(self.input_dir)
 
     @property
     def processed_file_names(self):
-        # Once processed, file names should follow this format
-        return [f"data_{i}.pt" for i in range(len(self.raw_paths))]
-    
-    def process(self):
-        # Process files one by one
-        for raw_path in self.raw_paths:
-            # Load a raw file
-            data = torch.load(raw_path)
-            
-            # Process the data into suitable format and save it
-            torch.save(data, os.path.join(self.processed_dir, f"data_{os.path.splitext(os.path.basename(raw_path))[0]}.pt"))
+        return os.listdir(self.input_dir)
 
     def len(self):
-        # The length of the dataset is simply the number of processed files
-        return len(self.processed_file_names)
+        return len(self.raw_file_names)
 
     def get(self, idx):
-        # Load a processed file with the given index
-        data = torch.load(os.path.join(self.processed_dir, f"data_{idx}.pt"))
+        graph_file = self.raw_file_names[idx]
+        graph_path = os.path.join(self.input_dir, graph_file)
+
+        graph_data = torch.load(graph_path)
+
+        input_data = torch.load(os.path.join(self.input_dir, graph_file))
+
+        label_data = torch.load(os.path.join(self.label_dir, graph_file))
+
+        data = Data(x=input_data,
+                    edge_index=graph_data.edge_index,
+                    y=label_data)
+
         return data
+

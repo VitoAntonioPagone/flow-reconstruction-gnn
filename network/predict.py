@@ -6,9 +6,12 @@ import os
 import glob
 import matplotlib.pyplot as plt
 from datasets import FlowDataset
-from models import ConvAutoEncoder_simplified
+from models import ConvAutoEncoder_simplified_50
 from utils import load_checkpoint
 
+def calculate_rmse(pred, target):
+    """Calculate RMSE"""
+    return torch.sqrt(((pred - target) ** 2).mean())
 
 def run_autoencoder():
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -40,15 +43,17 @@ def run_autoencoder():
         test_label_tensor = test_label_tensor.unsqueeze(0)
         test_missing_mask_tensor = test_missing_mask_tensor.unsqueeze(0)
         # Load pre-trained model
-        model = ConvAutoEncoder_simplified().to(DEVICE)
+        model = ConvAutoEncoder_simplified_50().to(DEVICE)
         load_checkpoint(torch.load(CHECKPOINT_FILE, map_location=torch.device(DEVICE)), model)
         reconstructed_flow_tensor = reconstruct_flow(model, test_input_tensor, test_missing_mask_tensor)
         reconstructed_flow_tensor = reconstructed_flow_tensor.cpu()  # Move the tensor back to CPU for visualization
         print("Reconstructed Flow Tensor Dimension:", reconstructed_flow_tensor.size())
-        fig, axes = plt.subplots(3, 3, figsize=(12, 8), dpi=120)  
-        fig.subplots_adjust(hspace=0.5, wspace=0.5)  
+        fig, axes = plt.subplots(4, 3, figsize=(12, 12), dpi=120)  # Changed the subplot configuration
+        fig.subplots_adjust(hspace=0.5, wspace=0.5) 
 
         for i in range(3):
+            rmse = calculate_rmse(reconstructed_flow_tensor[0, i], test_label_tensor[0, i])
+            print(f"Channel {i + 1} RMSE: {rmse.item()}")
             # Find min and max values of the ground truth tensor for the current channel
             vmin = test_label_tensor[0, i].min()
             vmax = test_label_tensor[0, i].max()
@@ -71,8 +76,15 @@ def run_autoencoder():
             cbar3 = fig.colorbar(im3, ax=axes[2, i], shrink=0.6)
             cbar3.ax.tick_params(labelsize=8)
 
-        plt.tight_layout(pad=2)  
+            difference_tensor = test_label_tensor[0, i] - reconstructed_flow_tensor[0, i]
+            im4 = axes[3, i].imshow(difference_tensor, cmap='jet', aspect='auto')
+            axes[3, i].set_title(f"Difference Tensor - Channel {i + 1}", fontsize=10)
+            cbar4 = fig.colorbar(im4, ax=axes[3, i], shrink=0.6)
+            cbar4.ax.tick_params(labelsize=8)
+
+        plt.tight_layout(pad=1)  
         plt.show()
+
     predict()
 
 

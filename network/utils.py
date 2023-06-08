@@ -1,5 +1,5 @@
 import torch
-from datasets import FlowDataset, GraphDataset
+from datasets import FlowDataset
 from torch.utils.data import DataLoader
 from losses import MaskedMSELoss, NavierStokesLoss, TVLoss
 import matplotlib.pyplot as plt
@@ -22,7 +22,7 @@ def load_checkpoint(checkpoint, model):
 
     # Load the modified state_dict to the model
     model.load_state_dict(new_state_dict)
-
+'''
 def get_loaders_graphs(
     train_inputs_dir,
     train_labels_dir,
@@ -60,7 +60,7 @@ def get_loaders_graphs(
 
     return train_loader, val_loader
 
-
+'''
 
 
 def get_loaders(

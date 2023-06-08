@@ -34,3 +34,32 @@ class FlowDataset(Dataset):
 
         return input_tensor, label_tensor, missing_mask_tensor
 
+
+class GraphDataset(torch.utils.data.Dataset):
+    def __init__(self, input_dir, target_dir):
+        super(GraphDataset, self).__init__()
+
+        self.input_files = os.listdir(input_dir)
+        self.input_files.sort()
+        self.target_files = os.listdir(target_dir)
+        self.target_files.sort()
+
+        self.input_dir = input_dir
+        self.target_dir = target_dir
+
+    def __len__(self):
+        return len(self.input_files)
+
+    def __getitem__(self, idx):
+        input_file = self.input_files[idx]
+        target_file = self.target_files[idx]
+
+        # Load the input graph
+        input_graph = torch.load(os.path.join(self.input_dir, input_file))
+
+        # Load the target graph
+        target_graph = torch.load(os.path.join(self.target_dir, target_file))
+
+        return input_graph, target_graph
+
+

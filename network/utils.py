@@ -1,5 +1,5 @@
 import torch
-from datasets import FlowDataset
+from datasets import FlowDataset, GraphDataset
 from torch.utils.data import DataLoader
 from losses import MaskedMSELoss, NavierStokesLoss, TVLoss
 import matplotlib.pyplot as plt
@@ -23,7 +23,7 @@ def load_checkpoint(checkpoint, model):
     # Load the modified state_dict to the model
     model.load_state_dict(new_state_dict)
 '''
-def get_loaders_graphs(
+def get_loaders_g(
     train_inputs_dir,
     train_labels_dir,
     val_inputs_dir,
@@ -33,8 +33,9 @@ def get_loaders_graphs(
     pin_memory=True,
 ):
     train_ds = GraphDataset(
+        root=train_inputs_dir,
         input_dir=train_inputs_dir,
-        label_dir=train_labels_dir,
+        target_dir=train_labels_dir,
     )
 
     train_loader = DataLoader(
@@ -46,8 +47,9 @@ def get_loaders_graphs(
     )
 
     val_ds = GraphDataset(
+        root=val_inputs_dir,
         input_dir=val_inputs_dir,
-        label_dir=val_labels_dir,
+        target_dir=val_labels_dir,
     )
 
     val_loader = DataLoader(
@@ -59,8 +61,22 @@ def get_loaders_graphs(
     )
 
     return train_loader, val_loader
-
 '''
+def check_accuracy_graphs(loader, model, criterion, device=None):
+    if device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    model.eval()
+    losses = []
+    with torch.no_grad():
+        for batch in loader:
+            batch = batch.to(device)
+            preds = model(batch)
+            loss = criterion(preds, batch.x)
+            losses.append(loss.item())
+    avg_rmse = torch.sqrt(torch.tensor(losses).mean()).item()
+
+    return avg_rmse
 
 
 def get_loaders(
@@ -163,17 +179,5 @@ def print_autoencoder_dashboard(model):
     for name, module in model.named_children():
         print(f"{name}: {module}\n")
 
-
-def load_torch_geometric_graphs(input_path):
-    tg_graphs = []
-
-    for filename in os.listdir(input_path):
-        if filename.endswith("_tg.pkl"):
-            file_path = os.path.join(input_path, filename)
-            with open(file_path, 'rb') as f:
-                tg_graph = pickle.load(f)
-                tg_graphs.append(tg_graph)
-
-    return tg_graphs
 
 

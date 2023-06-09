@@ -48,7 +48,7 @@ def run_autoencoder():
         reconstructed_flow_tensor = reconstruct_flow(model, test_input_tensor, test_missing_mask_tensor)
         reconstructed_flow_tensor = reconstructed_flow_tensor.cpu()  # Move the tensor back to CPU for visualization
         print("Reconstructed Flow Tensor Dimension:", reconstructed_flow_tensor.size())
-        fig, axes = plt.subplots(4, 3, figsize=(12, 12), dpi=120)  # Changed the subplot configuration
+        fig, axes = plt.subplots(4, 3, figsize=(12, 12))  # Changed the subplot configuration
         fig.subplots_adjust(hspace=0.5, wspace=0.5) 
 
         for i in range(3):

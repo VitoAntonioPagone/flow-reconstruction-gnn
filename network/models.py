@@ -10,25 +10,60 @@ from torch import nn
 from torch_geometric.nn import GCNConv
 import torch.nn.functional as F
 
+import torch
+import torch.nn.functional as F
+from torch_geometric.nn import MessagePassing
+from torch_geometric.utils import add_self_loops, degree
+
+class EdgeConv(MessagePassing):
+    def __init__(self, in_channels, out_channels):
+        super(EdgeConv, self).__init__(aggr='mean')  # "Mean" aggregation.
+        self.lin = torch.nn.Linear(2 * in_channels, out_channels)
+
+    def forward(self, x, edge_index, edge_attr):
+        # x has shape [N, in_channels]
+        # edge_index has shape [2, E]
+        # edge_attr has shape [E, edge_features]
+
+        # Step 1: Add self-loops to the adjacency matrix.
+        edge_index, _ = add_self_loops(edge_index, num_nodes=x.size(0))
+
+        # Step 2: Multiply edge_attr by the associated node features.
+        x = x * edge_attr.view(-1, 1)
+
+        # Step 3: Transform node feature matrix.
+        self_x = self.lin(x)
+
+        # Step 4: Compute normalization.
+        row, col = edge_index
+        deg = degree(col, x.size(0), dtype=x.dtype)
+        deg_inv_sqrt = deg.pow(-0.5)
+        norm = deg_inv_sqrt[row] * deg_inv_sqrt[col]
+
+        # Step 5: Start propagating messages.
+        return self.propagate(edge_index, size=(x.size(0), x.size(0)), x=self_x,
+                              norm=norm)
+
+    def message(self, x_j, norm):
+        # x_j has shape [E, out_channels]
+
+        # Step 6: Normalize node features.
+        return norm.view(-1, 1) * x_j
+
+
 class GCN(torch.nn.Module):
-    def __init__(self, num_node_features):
+    def __init__(self, num_features, hidden_channels):
         super(GCN, self).__init__()
-        self.conv1 = GCNConv(num_node_features, 128)
-        self.conv2 = GCNConv(128, num_node_features)
+        self.conv1 = GCNConv(num_features, hidden_channels)
+        self.conv2 = GCNConv(hidden_channels, num_features)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
-        
-        # Ensure x is a tensor
-        if isinstance(x, list):
-            x = torch.cat(x, dim=0)
-            
         x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        x = F.dropout(x, training=self.training)
+        x = torch.nn.functional.relu(x)
         x = self.conv2(x, edge_index)
-        
         return x
+
 
 
 

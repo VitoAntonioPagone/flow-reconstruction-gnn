@@ -7,6 +7,7 @@ import torch.nn as nn
 import os
 import pickle
 from collections import OrderedDict
+from torch_geometric.data import DataLoader as GeometricDataLoader
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
@@ -22,46 +23,45 @@ def load_checkpoint(checkpoint, model):
 
     # Load the modified state_dict to the model
     model.load_state_dict(new_state_dict)
-'''
+
 def get_loaders_g(
-    train_inputs_dir,
-    train_labels_dir,
-    val_inputs_dir,
-    val_labels_dir,
+    train_input_dir,
+    train_target_dir,
+    val_input_dir,
+    val_target_dir,
     batch_size,
-    num_workers=4,
-    pin_memory=True,
+    num_workers,
+    pin_memory,
 ):
     train_ds = GraphDataset(
-        root=train_inputs_dir,
-        input_dir=train_inputs_dir,
-        target_dir=train_labels_dir,
-    )
-
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        shuffle=True,
+        input_dir=train_input_dir,
+        target_dir=train_target_dir
     )
 
     val_ds = GraphDataset(
-        root=val_inputs_dir,
-        input_dir=val_inputs_dir,
-        target_dir=val_labels_dir,
+        input_dir=val_input_dir,
+        target_dir=val_target_dir
     )
 
-    val_loader = DataLoader(
-        val_ds,
+    train_loader = GeometricDataLoader(
+        train_ds,
         batch_size=batch_size,
+        shuffle=True,
         num_workers=num_workers,
         pin_memory=pin_memory,
+    )
+
+    val_loader = GeometricDataLoader(
+        val_ds,
+        batch_size=batch_size,
         shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
     )
 
     return train_loader, val_loader
-'''
+
+
 def check_accuracy_graphs(loader, model, criterion, device=None):
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"

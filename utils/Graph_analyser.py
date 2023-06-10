@@ -16,12 +16,12 @@ def print_graph_info(graph):
     print("Number of Node Features:", graph.num_node_features)
     print("Number of Edge Features:", graph.num_edge_features)
     print("Is Directed:", graph.is_directed())
-    print("Contains Isolated Nodes:", graph.contains_isolated_nodes())
-    print("Contains Self-loops:", graph.contains_self_loops())
+    print("Contains Isolated Nodes:", graph.has_isolated_nodes())
+    print("Contains Self-loops:", graph.has_self_loops())
     print("Is Undirected:", graph.is_undirected())
 
 # Load graph from file and print its info
-file_path = "../dataset_graph/train_graphs/graph_0.pt"  
+file_path = "../dataset_graph/training/train_graphs/graph_0.pt"  
 graph = load_graph(file_path)
 print_graph_info(graph)
 

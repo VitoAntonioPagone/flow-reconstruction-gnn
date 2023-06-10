@@ -55,22 +55,25 @@ def create_graphs(data_folder, num_neighbours):
 num_neighbours = 4
 
 
-
-def save_graphs(graphs, folder):
+def save_graphs(graphs, folder, is_input):
     os.makedirs(folder, exist_ok=True)
+    suffix = "_input.pt" if is_input else "_label.pt"
     for i, graph in enumerate(graphs):
-        file_path = os.path.join(folder, f"graph_{i}.pt")
+        file_path = os.path.join(folder, f"graph_{i}{suffix}")
         torch.save(graph, file_path)
 
-# Configuring path and threshold
-data_folder = "../dataset_graph/original_data/npz_data/train"  # adjust this to  your specific directory
-distance_threshold = 0.00001  # Set an appropriate distance threshold
-save_folder = "../dataset_graph/train_graphs"  # adjust this to your specific directory
 
-# Creating and saving the graph
-graphs = create_graphs(data_folder, num_neighbours)
-save_graphs(graphs, save_folder)
-'''# Creating and saving the graph
-graphs = create_graphs(data_folder, distance_threshold)
-save_graphs(graphs, save_folder)'''
+# Configuring paths
+train_data = "../dataset_graph/original_data/npz_data/train"
+train_inputs = "../dataset_graph/original_data/npz_data/train_inputs"
+save_folder = "../dataset_graph/train_graphs"
+
+# Creating and saving the full train graphs
+train_graphs = create_graphs(train_data, num_neighbours)
+save_graphs(train_graphs, save_folder, is_input=False)
+
+# Creating and saving the input train graphs
+train_input_graphs = create_graphs(train_inputs, num_neighbours)
+save_graphs(train_input_graphs, save_folder, is_input=True)
+
 

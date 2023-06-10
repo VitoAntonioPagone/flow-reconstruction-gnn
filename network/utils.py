@@ -1,5 +1,5 @@
 import torch
-from datasets import FlowDataset, GraphDataset
+from datasets import FlowDataset, CustomDataset
 from torch.utils.data import DataLoader
 from losses import MaskedMSELoss, NavierStokesLoss, TVLoss
 import matplotlib.pyplot as plt
@@ -24,42 +24,17 @@ def load_checkpoint(checkpoint, model):
     # Load the modified state_dict to the model
     model.load_state_dict(new_state_dict)
 
-def get_loaders_g(
-    train_input_dir,
-    train_target_dir,
-    val_input_dir,
-    val_target_dir,
-    batch_size,
-    num_workers,
-    pin_memory,
-):
-    train_ds = GraphDataset(
-        input_dir=train_input_dir,
-        target_dir=train_target_dir
-    )
+def get_loaders_g(train_input_dir, train_target_dir, val_input_dir, val_target_dir, test_input_dir, test_target_dir, batch_size, num_workers, pin_memory):
+    train_ds = CustomDataset(input_dir=train_input_dir, target_dir=train_target_dir)
+    val_ds = CustomDataset(input_dir=val_input_dir, target_dir=val_target_dir)
+    test_ds = CustomDataset(input_dir=test_input_dir, target_dir=test_target_dir)
 
-    val_ds = GraphDataset(
-        input_dir=val_input_dir,
-        target_dir=val_target_dir
-    )
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
 
-    train_loader = GeometricDataLoader(
-        train_ds,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-    )
+    return train_loader, val_loader, test_loader
 
-    val_loader = GeometricDataLoader(
-        val_ds,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-    )
-
-    return train_loader, val_loader
 
 
 def check_accuracy_graphs(loader, model, criterion, device=None):

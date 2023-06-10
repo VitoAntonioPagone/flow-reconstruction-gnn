@@ -1,5 +1,5 @@
 import os
-from torch.utils.data import Dataset
+from torch_geometric.data import Dataset, Data
 import torch
 import numpy as np
 import re
@@ -34,31 +34,23 @@ class FlowDataset(Dataset):
 
         return input_tensor, label_tensor, missing_mask_tensor
 
+class CustomDataset(Dataset):
+    def __init__(self, inputs_dir, labels_dir):
+        self.inputs_dir = inputs_dir
+        self.labels_dir = labels_dir
 
-class GraphDataset(torch.utils.data.Dataset):
-    def __init__(self, input_dir, target_dir):
-        super(GraphDataset, self).__init__()
+        self.input_files = sorted([file for file in os.listdir(self.inputs_dir) if file.endswith('_input.pt')])
 
-        self.input_files = os.listdir(input_dir)
-        self.input_files.sort()
-        self.target_files = os.listdir(target_dir)
-        self.target_files.sort()
-
-        self.input_dir = input_dir
-        self.target_dir = target_dir
 
     def __len__(self):
         return len(self.input_files)
 
     def __getitem__(self, idx):
-        input_file = self.input_files[idx]
-        target_file = self.target_files[idx]
+        # Load the input data for the given index
+        input_data = torch.load(os.path.join(self.inputs_dir, self.input_files[idx]))
 
-        # Load the input graph
-        input_graph = torch.load(os.path.join(self.input_dir, input_file))
+        # Get the corresponding label filename and load the label data
+        label_filename = self.input_files[idx].replace('_input.pt', '_label.pt')
+        label_data = torch.load(os.path.join(self.labels_dir, label_filename))
 
-        # Load the target graph
-        target_graph = torch.load(os.path.join(self.target_dir, target_file))
-
-        return input_graph, target_graph
-
+        return input_data, label_data

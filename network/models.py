@@ -3,74 +3,13 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 from torch.nn import MultiheadAttention
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv,SAGEConv
 from attention import ChannelAttention
 import torch
 from torch import nn
-from torch_geometric.nn import GCNConv
 import torch.nn.functional as F
 from torch_geometric.data import Data
-from torch_geometric.nn import MessagePassing
-from torch_geometric.utils import add_self_loops, degree
-
-from dgl.nn import SAGEConv
-
-class EdgeConv(MessagePassing):
-    def __init__(self, in_channels, out_channels):
-        super(EdgeConv, self).__init__(aggr='mean')  # "Mean" aggregation.
-        self.lin = torch.nn.Linear(2 * in_channels, out_channels)
-
-    def forward(self, x, edge_index, edge_attr):
-        # x has shape [N, in_channels]
-        # edge_index has shape [2, E]
-        # edge_attr has shape [E, edge_features]
-
-        # Step 1: Add self-loops to the adjacency matrix.
-        edge_index, _ = add_self_loops(edge_index, num_nodes=x.size(0))
-
-        # Step 2: Multiply edge_attr by the associated node features.
-        x = x * edge_attr.view(-1, 1)
-
-        # Step 3: Transform node feature matrix.
-        self_x = self.lin(x)
-
-        # Step 4: Compute normalization.
-        row, col = edge_index
-        deg = degree(col, x.size(0), dtype=x.dtype)
-        deg_inv_sqrt = deg.pow(-0.5)
-        norm = deg_inv_sqrt[row] * deg_inv_sqrt[col]
-
-        # Step 5: Start propagating messages.
-        return self.propagate(edge_index, size=(x.size(0), x.size(0)), x=self_x,
-                              norm=norm)
-
-    def message(self, x_j, norm):
-        # x_j has shape [E, out_channels]
-
-        # Step 6: Normalize node features.
-        return norm.view(-1, 1) * x_j
-
-
-class GraphSAGE(nn.Module):
-    def __init__(self, in_feats, h_feats, num_layers, dropout):
-        super(GraphSAGE, self).__init__()
-        self.layers = nn.ModuleList()
-        self.layers.append(SAGEConv(in_feats, h_feats, 'mean'))
-        for i in range(num_layers - 1):
-            self.layers.append(SAGEConv(h_feats, h_feats, 'mean'))
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self, g, in_feat):
-        h = in_feat
-        for l, layer in enumerate(self.layers):
-            h = layer(g, h)
-            if l != len(self.layers) - 1:
-                h = F.relu(h)
-                h = self.dropout(h)
-        return h
-
-
-
+from torch.nn import Module, Linear, ReLU, Dropout
 
 class DilatedConvAutoEncoder(nn.Module):
     def __init__(self):

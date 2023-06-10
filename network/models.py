@@ -9,11 +9,11 @@ import torch
 from torch import nn
 from torch_geometric.nn import GCNConv
 import torch.nn.functional as F
-
-import torch
-import torch.nn.functional as F
+from torch_geometric.data import Data
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops, degree
+
+from dgl.nn import SAGEConv
 
 class EdgeConv(MessagePassing):
     def __init__(self, in_channels, out_channels):
@@ -51,18 +51,23 @@ class EdgeConv(MessagePassing):
         return norm.view(-1, 1) * x_j
 
 
-class GCN(torch.nn.Module):
-    def __init__(self, num_features, hidden_channels):
-        super(GCN, self).__init__()
-        self.conv1 = GCNConv(num_features, hidden_channels)
-        self.conv2 = GCNConv(hidden_channels, num_features)
+class GraphSAGE(nn.Module):
+    def __init__(self, in_feats, h_feats, num_layers, dropout):
+        super(GraphSAGE, self).__init__()
+        self.layers = nn.ModuleList()
+        self.layers.append(SAGEConv(in_feats, h_feats, 'mean'))
+        for i in range(num_layers - 1):
+            self.layers.append(SAGEConv(h_feats, h_feats, 'mean'))
+        self.dropout = nn.Dropout(dropout)
 
-    def forward(self, data):
-        x, edge_index = data.x, data.edge_index
-        x = self.conv1(x, edge_index)
-        x = torch.nn.functional.relu(x)
-        x = self.conv2(x, edge_index)
-        return x
+    def forward(self, g, in_feat):
+        h = in_feat
+        for l, layer in enumerate(self.layers):
+            h = layer(g, h)
+            if l != len(self.layers) - 1:
+                h = F.relu(h)
+                h = self.dropout(h)
+        return h
 
 
 

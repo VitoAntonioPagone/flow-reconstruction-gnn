@@ -75,7 +75,9 @@ def check_accuracy_graphs(loader, model, criterion, device=None):
             loss = criterion(preds, batch.x)
             losses.append(loss.item())
     avg_rmse = torch.sqrt(torch.tensor(losses).mean()).item()
-
+    
+    model.train()
+    
     return avg_rmse
 
 

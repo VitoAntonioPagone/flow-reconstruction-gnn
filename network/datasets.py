@@ -62,4 +62,3 @@ class GraphDataset(torch.utils.data.Dataset):
 
         return input_graph, target_graph
 
-

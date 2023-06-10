@@ -4,6 +4,7 @@ import torch
 from torch_geometric.data import Data
 from scipy.spatial import cKDTree
 import sys
+from torch_geometric.utils import to_undirected
 
 def load_npz_data(file_path):
     print(f"Loading data from: {file_path}")
@@ -23,39 +24,42 @@ def load_npz_data(file_path):
     coordinates = np.column_stack((x, y))
     return torch.tensor(features, dtype=torch.float), torch.tensor(coordinates, dtype=torch.float)
 
-def create_and_save_graph(features, coordinates, num_neighbours, folder, i):
+def create_and_save_graph(features, coordinates, num_neighbours, folder, i, is_input):
     print("Creating graph...")
     tree = cKDTree(coordinates.numpy())
     distances, indices = tree.query(coordinates.numpy(), k=num_neighbours+1)
 
     edge_index = []
-    edge_attr = []
     for v in range(len(indices)):
         for j, neighbor in enumerate(indices[v]):
             if neighbor != v:  # remove self-connections
                 edge_index.append([v, neighbor])
-                edge_attr.append(distances[v][j])
-                
-    edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
-    edge_attr = torch.tensor(edge_attr, dtype=torch.float).view(-1, 1)  # reshaping to [num_edges, num_edge_features]
 
-    graph = Data(x=features, edge_index=edge_index, edge_attr=edge_attr)
+    edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
+
+    # Convert to undirected graph
+    edge_index = to_undirected(edge_index)
+
+    graph = Data(x=features, edge_index=edge_index)  # removed edge_attr as per your request
 
     # Save the graph
     os.makedirs(folder, exist_ok=True)
-    file_path = os.path.join(folder, f"graph_{i}.pt")
+    suffix = "_input.pt" if is_input else "_label.pt"
+    file_path = os.path.join(folder, f"graph_{i}{suffix}")
     torch.save(graph, file_path)
 
-def create_graphs(data_folder, num_neighbours, save_folder):
+
+
+def create_graphs(data_folder, num_neighbours, save_folder, is_input):
     for i, file in enumerate(os.listdir(data_folder)):
         if file.endswith(".npz"):
             file_path = os.path.join(data_folder, file)
             print(f"Analyzing file: {file_path}")
             features, coordinates = load_npz_data(file_path)
-            create_and_save_graph(features, coordinates, num_neighbours, save_folder, i)
+            create_and_save_graph(features, coordinates, num_neighbours, save_folder, i, is_input)
 
 # Configuring path and number of neighbours
-num_neighbours = 6
+num_neighbours = 4
 
 train_data = "../dataset_graph/original_data/npz_data/train"
 test_data = "../dataset_graph/original_data/npz_data/test"
@@ -68,26 +72,27 @@ save_graphs_folder = "../dataset_graph/training"
 # Flush stdout after each print statement
 sys.stdout.flush()
 
-create_graphs(train_data, num_neighbours, os.path.join(save_graphs_folder, "train_graphs"))
+create_graphs(train_data, num_neighbours, os.path.join(save_graphs_folder, "train_graphs"), is_input=False)
 print("Train graphs created.")
 sys.stdout.flush()
 
-create_graphs(test_data, num_neighbours, os.path.join(save_graphs_folder, "test_graphs"))
+create_graphs(test_data, num_neighbours, os.path.join(save_graphs_folder, "test_graphs"), is_input=False)
 print("Test graphs created.")
 sys.stdout.flush()
 
-create_graphs(validation_data, num_neighbours, os.path.join(save_graphs_folder, "validation_graphs"))
+create_graphs(validation_data, num_neighbours, os.path.join(save_graphs_folder, "validation_graphs"), is_input=False)
 print("Validation graphs created.")
 sys.stdout.flush()
 
-create_graphs(train_inputs, num_neighbours, os.path.join(save_graphs_folder, "train_input_graphs"))
+create_graphs(train_inputs, num_neighbours, os.path.join(save_graphs_folder, "train_input_graphs"), is_input=True)
 print("Train input graphs created.")
 sys.stdout.flush()
 
-create_graphs(test_inputs, num_neighbours, os.path.join(save_graphs_folder, "test_input_graphs"))
+create_graphs(test_inputs, num_neighbours, os.path.join(save_graphs_folder, "test_input_graphs"), is_input=True)
 print("Test input graphs created.")
 sys.stdout.flush()
 
-create_graphs(validation_inputs, num_neighbours, os.path.join(save_graphs_folder, "validation_input_graphs"))
+create_graphs(validation_inputs, num_neighbours, os.path.join(save_graphs_folder, "validation_input_graphs"), is_input=True)
 print("Validation input graphs created.")
 sys.stdout.flush()
+

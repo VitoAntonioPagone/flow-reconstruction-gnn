@@ -21,7 +21,7 @@ def print_graph_info(graph):
     print("Is Undirected:", graph.is_undirected())
 
 # Load graph from file and print its info
-file_path = "../dataset_graph/training/train_graphs/graph_0.pt"  
+file_path = "../dataset_graph/training/train_graphs/graph_0_label.pt"  
 graph = load_graph(file_path)
 print_graph_info(graph)
 

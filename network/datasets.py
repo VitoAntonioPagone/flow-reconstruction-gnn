@@ -34,22 +34,22 @@ class FlowDataset(Dataset):
 
         return input_tensor, label_tensor, missing_mask_tensor
 
+
+import os
+import torch
+from torch.utils.data import Dataset
+
 class CustomDataset(Dataset):
     def __init__(self, inputs_dir, labels_dir):
         self.inputs_dir = inputs_dir
         self.labels_dir = labels_dir
-
         self.input_files = sorted([file for file in os.listdir(self.inputs_dir) if file.endswith('_input.pt')])
-
 
     def __len__(self):
         return len(self.input_files)
 
     def __getitem__(self, idx):
-        # Load the input data for the given index
         input_data = torch.load(os.path.join(self.inputs_dir, self.input_files[idx]))
-
-        # Get the corresponding label filename and load the label data
         label_filename = self.input_files[idx].replace('_input.pt', '_label.pt')
         label_data = torch.load(os.path.join(self.labels_dir, label_filename))
 

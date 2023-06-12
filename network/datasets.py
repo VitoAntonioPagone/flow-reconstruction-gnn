@@ -39,6 +39,8 @@ import os
 import torch
 from torch.utils.data import Dataset
 
+from torch_geometric.data import Data
+
 class CustomDataset(Dataset):
     def __init__(self, inputs_dir, labels_dir):
         self.inputs_dir = inputs_dir
@@ -53,4 +55,11 @@ class CustomDataset(Dataset):
         label_filename = self.input_files[idx].replace('_input.pt', '_label.pt')
         label_data = torch.load(os.path.join(self.labels_dir, label_filename))
 
-        return input_data, label_data
+
+        input_data.y = label_data.x  # Set target node features
+        input_data.x_complete = label_data.x  # Save a copy of complete node features
+
+        return input_data
+
+
+

@@ -10,6 +10,22 @@ from torch import nn
 import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch.nn import Module, Linear, ReLU, Dropout
+import torch
+import torch.nn.functional as F
+from torch_geometric.nn import GCNConv
+
+class GCN(torch.nn.Module):
+    def __init__(self, feat_dim, hidden_dim, output_dim):
+        super(GCN, self).__init__()
+        self.conv1 = GCNConv(feat_dim, hidden_dim)
+        self.conv2 = GCNConv(hidden_dim, output_dim)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv2(x, edge_index)
+        return x
 
 class DilatedConvAutoEncoder(nn.Module):
     def __init__(self):

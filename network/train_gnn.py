@@ -9,9 +9,9 @@ from collections import OrderedDict
 import os
 
 # Hyperparameters
-FEAT_DIM = 4
+FEAT_DIM = 6
 HIDDEN_DIM = 64
-OUTPUT_DIM = 4
+OUTPUT_DIM = 6
 BATCH_SIZE = 32
 LR = 0.01
 EPOCHS = 10

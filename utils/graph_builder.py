@@ -21,10 +21,13 @@ def load_npz_data(file_path):
     missing_indicator = np.linalg.norm(features, axis=1) == 0
     features = np.column_stack((features, missing_indicator))
     
-    # Add x, y positions to the features
-    features = np.column_stack((features, x, y))  # The last two columns are now the x and y positions
+    coordinates = np.column_stack((x, y))
+    
+    # Add coordinates to the features tensor
+    features = np.column_stack((features, coordinates))
 
-    return torch.tensor(features, dtype=torch.float)
+    return torch.tensor(features, dtype=torch.float), torch.tensor(coordinates, dtype=torch.float)
+
 
 
 def create_and_save_graph(features, coordinates, num_neighbours, folder, i, is_input):

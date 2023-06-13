@@ -21,8 +21,11 @@ def load_npz_data(file_path):
     missing_indicator = np.linalg.norm(features, axis=1) == 0
     features = np.column_stack((features, missing_indicator))
     
-    coordinates = np.column_stack((x, y))
-    return torch.tensor(features, dtype=torch.float), torch.tensor(coordinates, dtype=torch.float)
+    # Add x, y positions to the features
+    features = np.column_stack((features, x, y))  # The last two columns are now the x and y positions
+
+    return torch.tensor(features, dtype=torch.float)
+
 
 def create_and_save_graph(features, coordinates, num_neighbours, folder, i, is_input):
     print("Creating graph...")
@@ -40,7 +43,7 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, i, is_i
     # Convert to undirected graph
     edge_index = to_undirected(edge_index)
 
-    graph = Data(x=features, edge_index=edge_index)  # removed edge_attr as per your request
+    graph = Data(x=features, edge_index=edge_index)  
 
     # Save the graph
     os.makedirs(folder, exist_ok=True)

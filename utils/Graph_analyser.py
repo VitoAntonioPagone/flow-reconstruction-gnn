@@ -40,12 +40,17 @@ def print_graph_info(graph):
     # Get the number of connected components
     print("Number of Connected Components:", nx.number_connected_components(g))
 
+    # Percentage of the first three features which are set to zero
+    first_three_features_zero = torch.norm(graph.x[:, :3], p=2, dim=1) == 0
+    percentage_zero = torch.mean(first_three_features_zero.float()) * 100
+    print(f"Percentage of the first three features set to zero: {percentage_zero.item():.2f}%")
+
 def plot_graph(graph):
     g = to_networkx(graph, to_undirected=True)
     nx.draw(g, with_labels=True)
     plt.show()
 
 # Load graph from file and print its info
-graph_file_path = "../dataset_graph/training/train_graphs/graph_0_label.pt"
+graph_file_path = "../dataset_graph/training/test_input_graphs/graph_1_input.pt"
 graph = load_graph(graph_file_path)
 print_graph_info(graph)

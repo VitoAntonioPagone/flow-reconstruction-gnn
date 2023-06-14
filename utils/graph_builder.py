@@ -65,7 +65,7 @@ def create_graphs(data_folder, num_neighbours, save_folder, is_input):
             create_and_save_graph(features, coordinates, num_neighbours, save_folder, i, is_input)
 
 # Configuring path and number of neighbours
-num_neighbours = 4
+num_neighbours = 8
 
 train_data = "../dataset_graph/original_data/npz_data/train"
 test_data = "../dataset_graph/original_data/npz_data/test"

@@ -14,13 +14,13 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # Path
 TEST_INPUT_DIR = '../dataset_graph/training/test_input_graphs'
 TEST_TARGET_DIR = '../dataset_graph/training/test_graphs'
-CHECKPOINT_PATH = '../trained_models/GCN_epochs_10_lr_0.01_batch_32.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GCN_epochs_10_lr_0.01_batch_16.pth.tar' 
 
 # Load dataset
 test_dataset = CustomDataset(TEST_INPUT_DIR, TEST_TARGET_DIR)
 
 # Select a single test graph
-single_graph = test_dataset[0]
+single_graph = test_dataset[2]
 
 # Assuming that the positions are the last 2 features in the feature vector
 positions = single_graph.x[:, -2:].numpy()
@@ -66,7 +66,7 @@ with torch.no_grad():
 print("Output zero check:", torch.all(out==0).item())
 
 # Define grid size
-grid_size = 512  # Increased for a smoother plot
+grid_size = 256  # Increased for a smoother plot
 
 # Get minimum and maximum position values
 min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])

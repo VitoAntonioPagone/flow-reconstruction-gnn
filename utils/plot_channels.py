@@ -16,7 +16,7 @@ positions = np.column_stack((x, y))
 velocities = np.column_stack((x_velocity, y_velocity, z_velocity))
 
 # Define grid size
-grid_size = 256  # Increased for a smoother plot
+grid_size = 512  # Increased for a smoother plot
 
 # Get minimum and maximum position values
 min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])

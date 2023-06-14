@@ -12,7 +12,7 @@ import os
 FEAT_DIM = 6
 HIDDEN_DIM = 64
 OUTPUT_DIM = 6
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 LR = 0.01
 EPOCHS = 10
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

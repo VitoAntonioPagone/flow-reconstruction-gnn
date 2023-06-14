@@ -4,7 +4,7 @@ from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 
 # Load the .pt file
-graph = torch.load("../dataset_graph/training/test_graphs/graph_0_label.pt")
+graph = torch.load("../dataset_graph/training/test_input_graphs/graph_0_input.pt")
 
 # Get node features
 node_features = graph.x

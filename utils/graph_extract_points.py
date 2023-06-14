@@ -32,16 +32,18 @@ def process_npz_files(folder, output_folder, percentage):
             z_velocity = data['z_velocity']
 
         features = np.column_stack((x, y, x_velocity, y_velocity, z_velocity))
-        indices_to_keep = extract_uniform_points(features, percentage)
-        mask = np.ones(features.shape[0], dtype=bool)
-        mask[indices_to_keep] = False
 
+        # Create a boolean mask where approximately `percentage` of entries are True
+        mask = np.random.rand(features.shape[0]) < percentage
+
+        # Set the velocity features of the selected nodes to zero
         features[mask, 2:] = 0
-        output_file_path = os.path.join(output_folder, os.path.basename(file_path))
 
+        output_file_path = os.path.join(output_folder, os.path.basename(file_path))
         np.savez(output_file_path, x=features[:, 0], y=features[:, 1],
                  x_velocity=features[:, 2], y_velocity=features[:, 3],
                  z_velocity=features[:, 4])
+
 
 def main():
     train_folder = '../dataset_graph/original_data/npz_data/train'  # Training data folder

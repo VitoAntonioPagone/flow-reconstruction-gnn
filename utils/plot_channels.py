@@ -1,33 +1,45 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import griddata
 
 # Replace the filename with the path to your NPZ file
-INPUT = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/train_data/train_inputs_50/interpolated_cyc11_CAD605_Y0_Z0_X0_input.npy'
-LABEL = '/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/train_data/train_labels_50/interpolated_cyc11_CAD605_Y0_Z0_X0_label.npy'
+INPUT = '../dataset_graph/original_data/npz_data/train_inputs/cyc11_CAD605_Y0_Z0_X0.npz'
+LABEL = '../dataset_graph/original_data/npz_data/train_inputs/cyc11_CAD605_Y0_Z0_X0.npz'
 
-def plot_npy_channels(file1, file2):
-    data1 = np.load(file1)
-    data2 = np.load(file2)
+# Prepare the regular grid
+grid_x, grid_y = np.mgrid[0:1:256j, 0:1:256j]
 
-    n_channels = data1.shape[-1]
+def plot_npz_channels(input_file, label_file):
+    input_data = np.load(input_file)
+    label_data = np.load(label_file)
 
-    for channel in range(n_channels):
-        fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+    x = input_data['x']
+    y = input_data['y']
+    positions = np.column_stack((x, y))
 
-        # Plot data from file1
-        im1 = axes[0].imshow(data1[:, :, channel], cmap='jet', aspect='auto')
-        axes[0].set_title(f'File1: Channel {channel}')
-        cbar1 = fig.colorbar(im1, ax=axes[0])
-        cbar1.set_label('Values')
+    velocity_names = ['x_velocity', 'y_velocity', 'z_velocity']
 
-        # Plot data from file2
-        im2 = axes[1].imshow(data2[:, :, channel], cmap='jet', aspect='auto')
-        axes[1].set_title(f'File2: Channel {channel}')
-        cbar2 = fig.colorbar(im2, ax=axes[1])
-        cbar2.set_label('Values')
+    for i, name in enumerate(velocity_names):
+        velocity = input_data[name]
 
+        # Interpolate the values onto the regular grid
+        grid_velocity = griddata(positions, velocity, (grid_x, grid_y), method='nearest')
+
+        fig, axs = plt.subplots(1, 2, figsize=(18, 6))  # 1 row, 2 columns
+
+        # Input data
+        im1 = axs[0].imshow(grid_velocity, extent=(0, 1, 0, 1), origin='lower', cmap='jet')
+        axs[0].set_title(f'Input: {name}')
+        fig.colorbar(im1, ax=axs[0])
+
+        # Label data
+        im2 = axs[1].imshow(label_data[:, :, i], extent=(0, 1, 0, 1), origin='lower', cmap='jet')
+        axs[1].set_title(f'Label: Channel {i+1}')
+        fig.colorbar(im2, ax=axs[1])
+
+        plt.tight_layout()
         plt.show()
 
 
 if __name__ == "__main__":
-    plot_npy_channels(INPUT, LABEL)
+    plot_npz_channels(INPUT, LABEL)

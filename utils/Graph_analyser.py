@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from torch_geometric.data import Data
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -24,17 +25,27 @@ def print_graph_info(graph):
     print("Contains Self-loops:", graph.has_self_loops())
     print("Is Undirected:", graph.is_undirected())
 
+    # Convert the graph to a networkx graph for additional analysis
+    g = to_networkx(graph, to_undirected=True)
+    
+    # Degree Distribution
+    degrees = [g.degree(n) for n in g.nodes()]
+    print("Average Degree:", np.mean(degrees))
+    print("Minimum Degree:", np.min(degrees))
+    print("Maximum Degree:", np.max(degrees))
+
+    # Check if the graph is connected
+    print("Is Connected:", nx.is_connected(g))
+
+    # Get the number of connected components
+    print("Number of Connected Components:", nx.number_connected_components(g))
+
 def plot_graph(graph):
-    g = to_networkx(graph)
+    g = to_networkx(graph, to_undirected=True)
     nx.draw(g, with_labels=True)
     plt.show()
 
 # Load graph from file and print its info
 graph_file_path = "../dataset_graph/training/train_graphs/graph_0_label.pt"
-#labels_file_path = "../dataset_graph/training/train_graphs/graph_0_label.pt"
-
 graph = load_graph(graph_file_path)
-#labels = load_labels(labels_file_path)
-
 print_graph_info(graph)
-#print_graph_info(labels)

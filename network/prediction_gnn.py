@@ -6,9 +6,9 @@ import numpy as np
 from scipy.interpolate import griddata
 
 # Hyperparameters
-FEAT_DIM = 4
+FEAT_DIM = 6
 HIDDEN_DIM = 64
-OUTPUT_DIM = 4
+OUTPUT_DIM = 6
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Path
@@ -62,8 +62,18 @@ single_graph.y = single_graph.y.to(DEVICE)
 with torch.no_grad():
     out = model(single_graph)
 
-# Prepare the regular grid
-grid_x, grid_y = np.mgrid[0:1:256j, 0:1:256j]
+# Check if output is entirely zero
+print("Output zero check:", torch.all(out==0).item())
+
+# Define grid size
+grid_size = 512  # Increased for a smoother plot
+
+# Get minimum and maximum position values
+min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
+max_x, max_y = np.max(positions[:, 0]), np.max(positions[:, 1])
+
+# Create the grid
+grid_x, grid_y = np.mgrid[min_x:max_x:grid_size*1j, min_y:max_y:grid_size*1j]
 
 fig, axs = plt.subplots(3, 3, figsize=(18, 18))  # 3 rows for 3 channels, 3 columns for input/output/target
 
@@ -74,27 +84,29 @@ for i in range(3):  # iterate over channels
     input_values = single_graph.x.cpu()[:, i].numpy()
     output_values = out.cpu()[:, i].numpy()
     target_values = single_graph.y.cpu()[:, i].numpy()
-    
-    # Interpolate the values onto the regular grid
-    grid_input_values = griddata(positions, input_values, (grid_x, grid_y), method='cubic')
-    grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='cubic')
-    grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='cubic')
 
-    # Calculate and print the mean absolute error for this channel
-    error = np.mean(np.abs(output_values - target_values))
-    print(f"Mean absolute error in predictions for channel {i+1}: {error}")
+    # Interpolate the values onto the regular grid
+    grid_input_values = griddata(positions, input_values, (grid_x, grid_y), method='nearest')
+    grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='nearest')
+    grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='nearest')
+
+    # Calculate the color scale limits
+    vmin, vmax = target_values.min(), target_values.max()
 
     # Input grid
-    axs[i, 0].imshow(grid_input_values, cmap='jet')
+    im = axs[i, 0].imshow(grid_input_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
     axs[i, 0].set_title(f'Input Channel {i+1}')
+    fig.colorbar(im, ax=axs[i, 0], orientation='vertical')
 
     # Output grid
-    axs[i, 1].imshow(grid_output_values, cmap='jet')
+    im = axs[i, 1].imshow(grid_output_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
     axs[i, 1].set_title(f'Output Channel {i+1}')
+    fig.colorbar(im, ax=axs[i, 1], orientation='vertical')
 
     # Target grid
-    axs[i, 2].imshow(grid_target_values, cmap='jet')
+    im = axs[i, 2].imshow(grid_target_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
     axs[i, 2].set_title(f'Target Channel {i+1}')
+    fig.colorbar(im, ax=axs[i, 2], orientation='vertical')
 
 plt.tight_layout()
 plt.show()

@@ -4,7 +4,7 @@ from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 
 # Load the .pt file
-graph = torch.load("../dataset_graph/training/test_input_graphs/graph_0_input.pt")
+graph = torch.load("../dataset_graph/training/train_graphs/graph_0_label.pt")
 
 # Get node features
 node_features = graph.x
@@ -16,7 +16,7 @@ print(f"Loaded node features shape: {node_features.shape}")
 positions = node_features[:, -2:].numpy()
 
 # Define grid size
-grid_size = 512  # Increased for a smoother plot
+grid_size = 1024  # Increased for a smoother plot
 
 # Get minimum and maximum position values
 min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])

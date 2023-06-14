@@ -1,45 +1,44 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
+import matplotlib.pyplot as plt
 
-# Replace the filename with the path to your NPZ file
-INPUT = '../dataset_graph/original_data/npz_data/train_inputs/cyc11_CAD605_Y0_Z0_X0.npz'
-LABEL = '../dataset_graph/original_data/npz_data/train_inputs/cyc11_CAD605_Y0_Z0_X0.npz'
+# Load the .npz file
+data = np.load("../dataset_graph/original_data/npz_data/train_inputs/cyc11_CAD605_Y0_Z0_X0.npz")
 
-# Prepare the regular grid
-grid_x, grid_y = np.mgrid[0:1:256j, 0:1:256j]
+# Get node features
+x = data['x']
+y = data['y']
+x_velocity = data['x_velocity']
+y_velocity = data['y_velocity']
+z_velocity = data['z_velocity']
 
-def plot_npz_channels(input_file, label_file):
-    input_data = np.load(input_file)
-    label_data = np.load(label_file)
+positions = np.column_stack((x, y))
+velocities = np.column_stack((x_velocity, y_velocity, z_velocity))
 
-    x = input_data['x']
-    y = input_data['y']
-    positions = np.column_stack((x, y))
+# Define grid size
+grid_size = 256  # Increased for a smoother plot
 
-    velocity_names = ['x_velocity', 'y_velocity', 'z_velocity']
+# Get minimum and maximum position values
+min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
+max_x, max_y = np.max(positions[:, 0]), np.max(positions[:, 1])
 
-    for i, name in enumerate(velocity_names):
-        velocity = input_data[name]
+# Create the grid
+grid_x, grid_y = np.mgrid[min_x:max_x:grid_size*1j, min_y:max_y:grid_size*1j]
 
-        # Interpolate the values onto the regular grid
-        grid_velocity = griddata(positions, velocity, (grid_x, grid_y), method='nearest')
+fig, axs = plt.subplots(1, 3, figsize=(18, 6))  # 1 row for 3 channels (x, y, z velocities)
 
-        fig, axs = plt.subplots(1, 2, figsize=(18, 6))  # 1 row, 2 columns
+for i in range(3):  # iterate over velocity channels
+    channel_velocities = velocities[:, i]
 
-        # Input data
-        im1 = axs[0].imshow(grid_velocity, extent=(0, 1, 0, 1), origin='lower', cmap='jet')
-        axs[0].set_title(f'Input: {name}')
-        fig.colorbar(im1, ax=axs[0])
+    # Interpolate the values onto the regular grid
+    grid_velocities = griddata(positions, channel_velocities, (grid_x, grid_y), method='nearest')
 
-        # Label data
-        im2 = axs[1].imshow(label_data[:, :, i], extent=(0, 1, 0, 1), origin='lower', cmap='jet')
-        axs[1].set_title(f'Label: Channel {i+1}')
-        fig.colorbar(im2, ax=axs[1])
+    # Plotting the grid
+    im = axs[i].imshow(grid_velocities.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet')
+    axs[i].set_xlim(min_x, max_x)
+    axs[i].set_ylim(min_y, max_y)
+    axs[i].set_title(f'Interpolated Velocity Channel {i+1}')
+    fig.colorbar(im, ax=axs[i], orientation='vertical')
 
-        plt.tight_layout()
-        plt.show()
-
-
-if __name__ == "__main__":
-    plot_npz_channels(INPUT, LABEL)
+plt.tight_layout()
+plt.show()

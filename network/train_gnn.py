@@ -48,7 +48,7 @@ print('Validation dataset loaded.')
 
 print('Creating data loaders...')
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=True)
 print('Data loaders created.')
 
 print('Building model...')
@@ -78,7 +78,7 @@ for epoch in range(EPOCHS):
         out = model(batch)
 
         # Calculate loss only for the first 3 features
-        loss = criterion(out[:,3], batch.y[:,3],)
+        loss = criterion(out[:,:3], batch.y[:,:3])
         
         train_loss += loss.item()
         loss.backward()
@@ -107,7 +107,7 @@ for epoch in range(EPOCHS):
             out = model(batch)
             
             # Calculate loss only for the first 3 features
-            loss = criterion(out[:,3], batch.y[:,3])
+            loss = criterion(out[:,:3], batch.y[:,:3])
             
             valid_loss += loss.item()
     valid_loss /= len(valid_loader)

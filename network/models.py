@@ -15,17 +15,27 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 
 class GCN(torch.nn.Module):
-    def __init__(self, feat_dim, hidden_dim, output_dim):
+    def __init__(self):
         super(GCN, self).__init__()
-        self.conv1 = GCNConv(feat_dim, hidden_dim)
-        self.conv2 = GCNConv(hidden_dim, output_dim)
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.conv1 = GCNConv(self.feat_dim, 64)
+        self.conv2 = GCNConv(64, 128)  # Added one more hidden layer
+        self.conv3 = GCNConv(128, 64)  # Added one more hidden layer
+        self.conv4 = GCNConv(64, 6)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
         x = self.conv1(x, edge_index)
         x = torch.relu(x)
         x = self.conv2(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv3(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv4(x, edge_index)
         return x
+
+
 
 class DilatedConvAutoEncoder(nn.Module):
     def __init__(self):

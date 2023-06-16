@@ -6,21 +6,18 @@ import numpy as np
 from scipy.interpolate import griddata
 
 # Hyperparameters
-FEAT_DIM = 6
-HIDDEN_DIM = 64
-OUTPUT_DIM = 6
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Path
 TEST_INPUT_DIR = '../dataset_graph/training/test_input_graphs'
 TEST_TARGET_DIR = '../dataset_graph/training/test_graphs'
-CHECKPOINT_PATH = '../trained_models/GCN_epochs_10_lr_0.01_batch_16.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GCN_epochs_100_lr_0.001_batch_16.pth.tar' 
 
 # Load dataset
 test_dataset = CustomDataset(TEST_INPUT_DIR, TEST_TARGET_DIR)
 
 # Select a single test graph
-single_graph = test_dataset[2]
+single_graph = test_dataset[0]
 
 # Assuming that the positions are the last 2 features in the feature vector
 positions = single_graph.x[:, -2:].numpy()
@@ -31,22 +28,13 @@ print(f'Max x position: {np.max(positions[:, 0])}')
 print(f'Min y position: {np.min(positions[:, 1])}')
 print(f'Max y position: {np.max(positions[:, 1])}')
 
-model = GCN(feat_dim=FEAT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM)
+model = GCN()
 model.to(DEVICE)
 
 def load_checkpoint(model, checkpoint_path):
     checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
     state_dict = checkpoint['state_dict']
-    model_dict = model.state_dict()
-
-    # Filter out unnecessary keys
-    state_dict = {k: v for k, v in state_dict.items() if k in model_dict}
-
-    # Overwrite entries in the existing state dict
-    model_dict.update(state_dict)
-
-    # Load the new state dict
-    model.load_state_dict(model_dict)
+    model.load_state_dict(state_dict)
 
 # Load trained weights
 load_checkpoint(model, CHECKPOINT_PATH)
@@ -75,10 +63,11 @@ max_x, max_y = np.max(positions[:, 0]), np.max(positions[:, 1])
 # Create the grid
 grid_x, grid_y = np.mgrid[min_x:max_x:grid_size*1j, min_y:max_y:grid_size*1j]
 
-fig, axs = plt.subplots(3, 3, figsize=(18, 18))  # 3 rows for 3 channels, 3 columns for input/output/target
+def rmse(pred, target):
+    """Computes root mean squared error"""
+    return torch.sqrt(torch.mean((pred - target) ** 2))
 
-# Assuming that the positions are the last 2 features in the feature vector
-positions = single_graph.x.cpu()[:, -2:].numpy()
+fig, axs = plt.subplots(3, 4, figsize=(16, 12))  # Changed the subplot configuration to 3x4
 
 for i in range(3):  # iterate over channels
     input_values = single_graph.x.cpu()[:, i].numpy()
@@ -86,12 +75,16 @@ for i in range(3):  # iterate over channels
     target_values = single_graph.y.cpu()[:, i].numpy()
 
     # Interpolate the values onto the regular grid
-    grid_input_values = griddata(positions, input_values, (grid_x, grid_y), method='nearest')
+    grid_input_values  = griddata(positions, input_values, (grid_x, grid_y), method='nearest')
     grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='nearest')
     grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='nearest')
 
     # Calculate the color scale limits
     vmin, vmax = target_values.min(), target_values.max()
+
+    # Compute the RMSE
+    pixel_wise_rmse = rmse(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
+    print(f"Pixel-wise RMSE for Channel {i+1}: {pixel_wise_rmse}")
 
     # Input grid
     im = axs[i, 0].imshow(grid_input_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
@@ -107,6 +100,11 @@ for i in range(3):  # iterate over channels
     im = axs[i, 2].imshow(grid_target_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
     axs[i, 2].set_title(f'Target Channel {i+1}')
     fig.colorbar(im, ax=axs[i, 2], orientation='vertical')
+
+    # Difference grid
+    im = axs[i, 3].imshow((grid_output_values - grid_target_values).T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet')
+    axs[i, 3].set_title(f'Difference Channel {i+1}')
+    fig.colorbar(im, ax=axs[i, 3], orientation='vertical')
 
 plt.tight_layout()
 plt.show()

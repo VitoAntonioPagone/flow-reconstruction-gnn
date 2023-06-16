@@ -30,10 +30,10 @@ def load_npz_data(file_path):
 
 
 
-def create_and_save_graph(features, coordinates, num_neighbours, folder, i, is_input):
+def create_and_save_graph(features, coordinates, num_neighbours, folder, i, is_input, n_jobs=-1):
     print("Creating graph...")
     tree = cKDTree(coordinates.numpy())
-    distances, indices = tree.query(coordinates.numpy(), k=num_neighbours+1)
+    distances, indices = tree.query(coordinates.numpy(), k=num_neighbours+1, n_jobs=n_jobs)  # Use multiple CPUs
 
     edge_index = []
     for v in range(len(indices)):
@@ -53,7 +53,7 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, i, is_i
     suffix = "_input.pt" if is_input else "_label.pt"
     file_path = os.path.join(folder, f"graph_{i}{suffix}")
     torch.save(graph, file_path)
-
+ 
 
 
 def create_graphs(data_folder, num_neighbours, save_folder, is_input):

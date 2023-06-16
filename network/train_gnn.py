@@ -9,12 +9,9 @@ from collections import OrderedDict
 import os
 
 # Hyperparameters
-FEAT_DIM = 6
-HIDDEN_DIM = 64
-OUTPUT_DIM = 6
-BATCH_SIZE = 16
-LR = 0.01
-EPOCHS = 10
+BATCH_SIZE = 32
+LR = 0.001
+EPOCHS = 100
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 LOAD_MODEL = False  
 MODEL_NAME = f"GCN"  
@@ -48,20 +45,20 @@ print('Validation dataset loaded.')
 
 print('Creating data loaders...')
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=True)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GCN(feat_dim=FEAT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM)
+model = GCN()
 model.to(DEVICE)
 print('Model built.')
 
 optimizer = Adam(model.parameters(), lr=LR)
 criterion = MSELoss()
 
-if LOAD_MODEL and os.path.isfile("my_checkpoint.pth.tar"):
+if LOAD_MODEL and os.path.isfile(LOAD_CHECKPOINT_FILE):
     print('Loading checkpoint...')
-    checkpoint = torch.load("my_checkpoint.pth.tar", map_location=DEVICE)
+    checkpoint = torch.load(LOAD_CHECKPOINT_FILE, map_location=DEVICE)
     load_checkpoint(checkpoint, model, optimizer)
     print("Checkpoint loaded successfully.")
 
@@ -78,7 +75,7 @@ for epoch in range(EPOCHS):
         out = model(batch)
 
         # Calculate loss only for the first 3 features
-        loss = criterion(out[:,:3], batch.y[:,:3])
+        loss = criterion(out[:,:3], batch.y[:,:3])  # Modified this line
         
         train_loss += loss.item()
         loss.backward()
@@ -107,7 +104,7 @@ for epoch in range(EPOCHS):
             out = model(batch)
             
             # Calculate loss only for the first 3 features
-            loss = criterion(out[:,:3], batch.y[:,:3])
+            loss = criterion(out[:,:3], batch.y[:,:3])  # Modified this line
             
             valid_loss += loss.item()
     valid_loss /= len(valid_loader)

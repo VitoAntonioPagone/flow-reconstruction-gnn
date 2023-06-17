@@ -22,7 +22,7 @@ class GCN(torch.nn.Module):
         self.conv1 = GCNConv(self.feat_dim, 64)
         self.conv2 = GCNConv(64, 128)  # Added one more hidden layer
         self.conv3 = GCNConv(128, 64)  # Added one more hidden layer
-        self.conv4 = GCNConv(64, 6)
+        self.conv4 = GCNConv(64, self.feat_dim)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index

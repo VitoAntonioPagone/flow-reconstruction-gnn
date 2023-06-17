@@ -67,7 +67,11 @@ def rmse(pred, target):
     """Computes root mean squared error"""
     return torch.sqrt(torch.mean((pred - target) ** 2))
 
-fig, axs = plt.subplots(3, 4, figsize=(16, 12))  # Changed the subplot configuration to 3x4
+fig, axs = plt.subplots(4, 3, figsize=(16, 12))  # Change subplot configuration to 4x3
+
+# Variables to keep track of min and max difference across all channels
+diff_min = np.inf
+diff_max = -np.inf
 
 for i in range(3):  # iterate over channels
     input_values = single_graph.x.cpu()[:, i].numpy()
@@ -87,24 +91,40 @@ for i in range(3):  # iterate over channels
     print(f"Pixel-wise RMSE for Channel {i+1}: {pixel_wise_rmse}")
 
     # Input grid
-    im = axs[i, 0].imshow(grid_input_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
-    axs[i, 0].set_title(f'Input Channel {i+1}')
-    fig.colorbar(im, ax=axs[i, 0], orientation='vertical')
+    im = axs[0, i].imshow(grid_input_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
+    axs[0, i].set_title(f'Input Channel {i+1}')
+    fig.colorbar(im, ax=axs[0, i], orientation='vertical')
 
     # Output grid
-    im = axs[i, 1].imshow(grid_output_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
-    axs[i, 1].set_title(f'Output Channel {i+1}')
-    fig.colorbar(im, ax=axs[i, 1], orientation='vertical')
+    im = axs[1, i].imshow(grid_output_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
+    axs[1, i].set_title(f'Output Channel {i+1}')
+    fig.colorbar(im, ax=axs[1, i], orientation='vertical')
 
     # Target grid
-    im = axs[i, 2].imshow(grid_target_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
-    axs[i, 2].set_title(f'Target Channel {i+1}')
-    fig.colorbar(im, ax=axs[i, 2], orientation='vertical')
+    im = axs[2, i].imshow(grid_target_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
+    axs[2, i].set_title(f'Target Channel {i+1}')
+    fig.colorbar(im, ax=axs[2, i], orientation='vertical')
+
+    # Update min and max difference if necessary
+    diff_min = min(diff_min, np.min(grid_output_values - grid_target_values))
+    diff_max = max(diff_max, np.max(grid_output_values - grid_target_values))
+
+# Plot difference grids on the last row
+for i in range(3):
+    input_values = single_graph.x.cpu()[:, i].numpy()
+    output_values = out.cpu()[:, i].numpy()
+    target_values = single_graph.y.cpu()[:, i].numpy()
+
+    # Interpolate the values onto the regular grid
+    grid_input_values  = griddata(positions, input_values, (grid_x, grid_y),  method='nearest')
+    grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='nearest')
+    grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='nearest')
 
     # Difference grid
-    im = axs[i, 3].imshow((grid_output_values - grid_target_values).T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet')
-    axs[i, 3].set_title(f'Difference Channel {i+1}')
-    fig.colorbar(im, ax=axs[i, 3], orientation='vertical')
+    im = axs[3, i].imshow((grid_output_values - grid_target_values).T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=diff_min, vmax=diff_max)
+    axs[3, i].set_title(f'Difference Channel {i+1}')
+    fig.colorbar(im, ax=axs[3, i], orientation='vertical')
 
 plt.tight_layout()
 plt.show()
+

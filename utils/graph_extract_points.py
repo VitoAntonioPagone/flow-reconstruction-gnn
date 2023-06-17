@@ -2,22 +2,11 @@ import numpy as np
 import os
 import random
 import glob
-from scipy.spatial import KDTree
 
-def extract_uniform_points(data, percentage):
+def extract_random_points(data, percentage):
     num_points = int(data.shape[0] * percentage)
-    x_min, y_min = np.min(data[:, :2], axis=0)
-    x_max, y_max = np.max(data[:, :2], axis=0)
-
-    x_values = np.linspace(x_min, x_max, int(np.sqrt(num_points)))
-    y_values = np.linspace(y_min, y_max, int(np.sqrt(num_points)))
-
-    grid_points = np.array([(x, y) for x in x_values for y in y_values])
-
-    tree = KDTree(data[:, :2])
-    _, indices = tree.query(grid_points, k=1)
-
-    return np.unique(indices)
+    indices = random.sample(range(data.shape[0]), num_points)
+    return np.array(indices)
 
 def process_npz_files(folder, output_folder, percentage):
     npz_files = glob.glob(os.path.join(folder, '*.npz'))
@@ -33,17 +22,13 @@ def process_npz_files(folder, output_folder, percentage):
 
         features = np.column_stack((x, y, x_velocity, y_velocity, z_velocity))
 
-        # Create a boolean mask where approximately `percentage` of entries are True
-        mask = np.random.rand(features.shape[0]) < percentage
-
-        # Set the velocity features of the selected nodes to zero
-        features[mask, 2:] = 0
+        indices_to_remove = extract_random_points(features, percentage)
+        features[indices_to_remove, 2:] = 0
 
         output_file_path = os.path.join(output_folder, os.path.basename(file_path))
         np.savez(output_file_path, x=features[:, 0], y=features[:, 1],
                  x_velocity=features[:, 2], y_velocity=features[:, 3],
                  z_velocity=features[:, 4])
-
 
 def main():
     train_folder = '../dataset_graph/original_data/npz_data/train'  # Training data folder
@@ -65,3 +50,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

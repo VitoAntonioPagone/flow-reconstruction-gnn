@@ -30,10 +30,10 @@ def load_npz_data(file_path):
 
 
 
-def create_and_save_graph(features, coordinates, num_neighbours, folder, i, is_input, n_jobs=-1):
+def create_and_save_graph(features, coordinates, num_neighbours, folder, i, is_input):
     print("Creating graph...")
     tree = cKDTree(coordinates.numpy())
-    distances, indices = tree.query(coordinates.numpy(), k=num_neighbours+1, n_jobs=n_jobs)  # Use multiple CPUs
+    distances, indices = tree.query(coordinates.numpy(), k=num_neighbours+1)
 
     edge_index = []
     for v in range(len(indices)):
@@ -78,6 +78,9 @@ save_graphs_folder = "../dataset_graph/training"
 # Flush stdout after each print statement
 sys.stdout.flush()
 
+create_graphs(train_inputs, num_neighbours, os.path.join(save_graphs_folder, "train_input_graphs"), is_input=True)
+print("Train input graphs created.")
+sys.stdout.flush()
 create_graphs(train_data, num_neighbours, os.path.join(save_graphs_folder, "train_graphs"), is_input=False)
 print("Train graphs created.")
 sys.stdout.flush()
@@ -90,9 +93,6 @@ create_graphs(validation_data, num_neighbours, os.path.join(save_graphs_folder, 
 print("Validation graphs created.")
 sys.stdout.flush()
 
-create_graphs(train_inputs, num_neighbours, os.path.join(save_graphs_folder, "train_input_graphs"), is_input=True)
-print("Train input graphs created.")
-sys.stdout.flush()
 
 create_graphs(test_inputs, num_neighbours, os.path.join(save_graphs_folder, "test_input_graphs"), is_input=True)
 print("Test input graphs created.")

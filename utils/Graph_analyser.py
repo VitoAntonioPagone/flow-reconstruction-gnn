@@ -51,6 +51,6 @@ def plot_graph(graph):
     plt.show()
 
 # Load graph from file and print its info
-graph_file_path = "../dataset_graph/training/train_graphs/graph_0_label.pt"
+graph_file_path = "../dataset_graph/training/train_input_graphs/graph_1_input.pt"
 graph = load_graph(graph_file_path)
 print_graph_info(graph)

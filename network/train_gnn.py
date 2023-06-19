@@ -4,19 +4,24 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from datasets import CustomDataset
-from models import GCN
+from models import GCN, GraphSAGE, GAT
 from collections import OrderedDict
 import os
+import matplotlib.pyplot as plt
 
 # Hyperparameters
-BATCH_SIZE = 32
+BATCH_SIZE = 4
 LR = 0.001
 EPOCHS = 100
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 LOAD_MODEL = False  
-MODEL_NAME = f"GCN"  
+MODEL_NAME = f"GAT"  
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
+
+# Directory for storing the loss plot
+LOSS_PLOT_DIR = f'../losses_plot/losses_plot_alpha_lr_{LR}_batch_{BATCH_SIZE}.jpg'
+
 
 print(f'Starting script with Device: {DEVICE}')
 
@@ -35,6 +40,16 @@ def load_checkpoint(checkpoint, model, optimizer):
     model.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
 
+def plot_losses(train_losses, val_losses):
+    plt.figure(figsize=(10, 7))  # Set a larger figure size
+    plt.plot(train_losses, label="Training Loss")
+    plt.plot(val_losses, label="Validation Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(f'{LOSS_PLOT_DIR}loss_plot_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg', format='jpg', dpi=350)
+    plt.close()
+
 print('Loading train dataset...')
 train_dataset = CustomDataset(TRAIN_INPUT_DIR, TRAIN_TARGET_DIR)
 print('Train dataset loaded.')
@@ -49,12 +64,14 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GCN()
+model = GAT()
 model.to(DEVICE)
 print('Model built.')
 
 optimizer = Adam(model.parameters(), lr=LR)
 criterion = MSELoss()
+
+train_losses, val_losses = [], []
 
 if LOAD_MODEL and os.path.isfile(LOAD_CHECKPOINT_FILE):
     print('Loading checkpoint...')
@@ -85,6 +102,7 @@ for epoch in range(EPOCHS):
         print(f"  Batch {batch_idx + 1}, Training Loss: {loss.item()}")
 
     train_loss /= len(train_loader)
+    train_losses.append(train_loss)
     print(f'Epoch: {epoch+1}, Training Loss: {train_loss}')
 
     checkpoint = {
@@ -108,4 +126,8 @@ for epoch in range(EPOCHS):
             
             valid_loss += loss.item()
     valid_loss /= len(valid_loader)
+    val_losses.append(valid_loss)
     print(f'Epoch: {epoch+1}, Validation Loss: {valid_loss}')
+
+# After the training loop ends, plot the losses
+plot_losses(train_losses, val_losses)

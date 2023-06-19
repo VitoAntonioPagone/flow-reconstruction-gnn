@@ -2,27 +2,98 @@ import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
 from torch.nn import MultiheadAttention
-import torch.nn.functional as F
 from torch_geometric.nn import GCNConv,SAGEConv
 from attention import ChannelAttention
-import torch
-from torch import nn
 import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch.nn import Module, Linear, ReLU, Dropout
-import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv ,SAGEConv
+from torch_geometric.nn import GATConv
+from torch_geometric.nn import GINConv
+from torch.nn import Sequential, Linear, ReLU
+
+class GIN(torch.nn.Module):
+    def __init__(self):
+        super(GIN, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        
+        nn1 = Sequential(Linear(self.feat_dim, 128), ReLU())
+        self.conv1 = GINConv(nn1)
+        
+        nn2 = Sequential(Linear(128, 256), ReLU())
+        self.conv2 = GINConv(nn2)
+        
+        nn3 = Sequential(Linear(256, 128), ReLU())
+        self.conv3 = GINConv(nn3)
+        
+        nn4 = Sequential(Linear(128, self.output_dim), ReLU())
+        self.conv4 = GINConv(nn4)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv2(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv3(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv4(x, edge_index)
+        return x
+
+class GAT(torch.nn.Module):
+    def __init__(self):
+        super(GAT, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.conv1 = GATConv(self.feat_dim, 128)
+        self.conv2 = GATConv(128, 256)
+        self.conv3 = GATConv(256, 128)
+        self.conv4 = GATConv(128, self.feat_dim)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv2(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv3(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv4(x, edge_index)
+        return x
 
 class GCN(torch.nn.Module):
     def __init__(self):
         super(GCN, self).__init__()
         self.feat_dim = 6
         self.output_dim = 6
-        self.conv1 = GCNConv(self.feat_dim, 64)
-        self.conv2 = GCNConv(64, 128)  # Added one more hidden layer
-        self.conv3 = GCNConv(128, 64)  # Added one more hidden layer
-        self.conv4 = GCNConv(64, self.feat_dim)
+        self.conv1 = GCNConv(self.feat_dim, 128)
+        self.conv2 = GCNConv(128, 256)
+        self.conv3 = GCNConv(256, 128)
+        self.conv4 = GCNConv(128, self.feat_dim)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv2(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv3(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv4(x, edge_index)
+        return x
+    
+
+class GraphSAGE(torch.nn.Module):
+    def __init__(self):
+        super(GraphSAGE, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.conv1 = SAGEConv(self.feat_dim, 128)
+        self.conv2 = SAGEConv(128, 256)
+        self.conv3 = SAGEConv(256, 128)
+        self.conv4 = SAGEConv(128, self.feat_dim)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index

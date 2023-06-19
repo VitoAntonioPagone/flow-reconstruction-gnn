@@ -66,3 +66,36 @@ class NavierStokesLoss(nn.Module):
         continuity = torch.abs(du_dx + dv_dy)
 
         return (continuity + momentum_u + momentum_v).mean()
+
+class GraphNavierStokesLoss(torch.nn.Module):
+    def __init__(self):
+        super(GraphNavierStokesLoss, self).__init__()
+
+    def forward(self, data):
+        u, v, _, _, x, y = data.x[:, 0], data.x[:, 1], data.x[:, 2], data.x[:, 3], data.x[:, 4], data.x[:, 5]
+
+        # For each edge, calculate differences in velocity and position
+        du = u[data.edge_index[0]] - u[data.edge_index[1]]
+        dv = v[data.edge_index[0]] - v[data.edge_index[1]]
+        dx = x[data.edge_index[0]] - x[data.edge_index[1]]
+        dy = y[data.edge_index[0]] - y[data.edge_index[1]]
+
+        # Approximate du/dx, dv/dx, du/dy, dv/dy as (change in velocity) / (change in position)
+        EPSILON = 1e-7  # Small constant
+
+        du_dx = du / (dx + EPSILON)
+        dv_dx = dv / (dx + EPSILON)
+        du_dy = du / (dy + EPSILON)
+        dv_dy = dv / (dy + EPSILON)
+
+
+        # Momentum equations
+        momentum_u = (u * du_dx + v * du_dy) ** 2
+        momentum_v = (u * dv_dx + v * dv_dy) ** 2
+
+        # Continuity equation
+        continuity = (du_dx + dv_dy) ** 2
+
+        return (continuity.mean() + momentum_u.mean() + momentum_v.mean())
+
+

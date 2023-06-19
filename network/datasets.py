@@ -1,15 +1,16 @@
 import os
-from torch_geometric.data import Dataset, Data
-import torch
-import numpy as np
 import re
+import numpy as np
+import torch
+from torch.utils.data import Dataset as TorchDataset
+from torch_geometric.data import Data
 
-class FlowDataset(Dataset):
+class FlowDataset(TorchDataset):
     def __init__(self, input_dir, label_dir, add_mask=False):
         self.input_dir = input_dir
         self.label_dir = label_dir
         self.labels = sorted(os.listdir(label_dir))
-        self.inputs = [re.sub('_label.npy$', '_input.npy', f) for f in self.labels ]  
+        self.inputs = [re.sub('_label.npy$', '_input.npy', f) for f in self.labels]
         self.add_mask = add_mask
 
     def __len__(self):
@@ -35,13 +36,7 @@ class FlowDataset(Dataset):
         return input_tensor, label_tensor, missing_mask_tensor
 
 
-import os
-import torch
-from torch.utils.data import Dataset
-
-from torch_geometric.data import Data
-
-class CustomDataset(Dataset):
+class CustomDataset(TorchDataset):
     def __init__(self, inputs_dir, labels_dir):
         self.inputs_dir = inputs_dir
         self.labels_dir = labels_dir
@@ -55,11 +50,7 @@ class CustomDataset(Dataset):
         label_filename = self.input_files[idx].replace('_input.pt', '_label.pt')
         label_data = torch.load(os.path.join(self.labels_dir, label_filename))
 
-
         input_data.y = label_data.x  # Set target node features
         input_data.x_complete = label_data.x  # Save a copy of complete node features
 
         return input_data
-
-
-

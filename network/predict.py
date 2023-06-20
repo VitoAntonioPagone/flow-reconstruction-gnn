@@ -93,7 +93,7 @@ def run_autoencoder(input_file, label_file):
             axes[0, i].set_title(f"Input Tensor ({channel_names[i]})", fontsize=10)
             axes[0, i].set_xticks([])
             axes[0, i].set_yticks([])
-            cbar1 = fig.colorbar(im1, ax=axes[0, i], shrink=1)
+            cbar1 = fig.colorbar(im1, ax=axes[0, i])
             cbar1.ax.tick_params(labelsize=8)
 
             # Plot the ground truth label tensor
@@ -101,7 +101,7 @@ def run_autoencoder(input_file, label_file):
             axes[2, i].set_title(f"Ground Truth ({channel_names[i]})", fontsize=10)
             axes[2, i].set_xticks([])
             axes[2, i].set_yticks([])
-            cbar2 = fig.colorbar(im2, ax=axes[2, i], shrink=1)
+            cbar2 = fig.colorbar(im2, ax=axes[2, i])
             cbar2.ax.tick_params(labelsize=8)
 
             # Plot the reconstructed flow tensor
@@ -109,7 +109,7 @@ def run_autoencoder(input_file, label_file):
             axes[1, i].set_title(f"Reconstructed Flow ({channel_names[i]})", fontsize=10)
             axes[1, i].set_xticks([])
             axes[1, i].set_yticks([])
-            cbar3 = fig.colorbar(im3, ax=axes[1, i], shrink=1)
+            cbar3 = fig.colorbar(im3, ax=axes[1, i])
             cbar3.ax.tick_params(labelsize=8)
 
             # Plot the difference tensor
@@ -118,7 +118,7 @@ def run_autoencoder(input_file, label_file):
             axes[3, i].set_title(f"Difference ({channel_names[i]})", fontsize=10)
             axes[3, i].set_xticks([])
             axes[3, i].set_yticks([])
-            cbar4 = fig.colorbar(im4, ax=axes[3, i], shrink=1)
+            cbar4 = fig.colorbar(im4, ax=axes[3, i])
             cbar4.ax.tick_params(labelsize=8)
 
         plt.tight_layout(pad=1)  

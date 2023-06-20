@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 
 # Load the .pt file
-graph = torch.load("../dataset_graph/training/train_input_graphs/graph_0_input.pt")
+graph = torch.load("../dataset_graph/training/test_label_graphs/cyc10_CAD615_Y0_Z0_X0_label.pt")
 
 # Get node features
 node_features = graph.x
@@ -27,7 +27,7 @@ print(f"Percentage of nodes with zero velocity: {percentage_zero_velocity_nodes:
 positions = node_features[:, -2:].numpy()
 
 # Define grid size
-grid_size = 512  # Increased for a smoother plot
+grid_size = 256  # Increased for a smoother plot
 
 # Get minimum and maximum position values
 min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])

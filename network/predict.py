@@ -77,51 +77,54 @@ def run_autoencoder(input_file, label_file):
         reconstructed_flow_tensor = reconstruct_flow(model, test_input_tensor, test_missing_mask_tensor)
         reconstructed_flow_tensor = reconstructed_flow_tensor.cpu()  # Move the tensor back to CPU for visualization
         print("Reconstructed Flow Tensor Dimension:", reconstructed_flow_tensor.size())
-        fig, axes = plt.subplots(4, 3, figsize=(12, 12))  # Changed the subplot configuration
+        fig, axes = plt.subplots(4, 3, figsize=(10, 10))  # Changed the subplot configuration
         fig.subplots_adjust(hspace=0.5, wspace=0.5) 
 
+        channel_names = ['x-velocity', 'y-velocity', 'z-velocity']
+    
         for i in range(3):
             rmse = calculate_rmse(reconstructed_flow_tensor[0, i], test_label_tensor[0, i])
-            print(f"Channel {i + 1} RMSE: {rmse.item()}")
-            # Find min and max values of the ground truth tensor for the current channel
+            print(f"{channel_names[i]} RMSE: {rmse.item()}")
             vmin = test_label_tensor[0, i].min()
             vmax = test_label_tensor[0, i].max()
 
             # Plot the input tensor
             im1 = axes[0, i].imshow(test_input_tensor[0, i].cpu(), cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
-            axes[0, i].set_title(f"Input Tensor - Channel {i + 1}", fontsize=10)
+            axes[0, i].set_title(f"Input Tensor ({channel_names[i]})", fontsize=10)
             axes[0, i].set_xticks([])
             axes[0, i].set_yticks([])
-            cbar1 = fig.colorbar(im1, ax=axes[0, i], shrink=0.6)
+            cbar1 = fig.colorbar(im1, ax=axes[0, i], shrink=1)
             cbar1.ax.tick_params(labelsize=8)
 
             # Plot the ground truth label tensor
             im2 = axes[2, i].imshow(test_label_tensor[0, i].cpu(), cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
-            axes[2, i].set_title(f"Ground Truth Label Tensor - Channel {i + 1}", fontsize=10)
+            axes[2, i].set_title(f"Ground Truth ({channel_names[i]})", fontsize=10)
             axes[2, i].set_xticks([])
             axes[2, i].set_yticks([])
-            cbar2 = fig.colorbar(im2, ax=axes[1, i], shrink=0.6)
+            cbar2 = fig.colorbar(im2, ax=axes[2, i], shrink=1)
             cbar2.ax.tick_params(labelsize=8)
 
             # Plot the reconstructed flow tensor
-            im3 = axes[2, i].imshow(reconstructed_flow_tensor[0, i], cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
-            axes[1, i].set_title(f"Reconstructed Flow Tensor - Channel {i + 1}", fontsize=10)
+            im3 = axes[1, i].imshow(reconstructed_flow_tensor[0, i], cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
+            axes[1, i].set_title(f"Reconstructed Flow ({channel_names[i]})", fontsize=10)
             axes[1, i].set_xticks([])
             axes[1, i].set_yticks([])
-            cbar3 = fig.colorbar(im3, ax=axes[2, i], shrink=0.6)
+            cbar3 = fig.colorbar(im3, ax=axes[1, i], shrink=1)
             cbar3.ax.tick_params(labelsize=8)
 
+            # Plot the difference tensor
             difference_tensor = test_label_tensor[0, i] - reconstructed_flow_tensor[0, i]
             im4 = axes[3, i].imshow(difference_tensor.cpu(), cmap='jet', aspect='auto')
-            axes[3, i].set_title(f"Difference Tensor - Channel {i + 1}", fontsize=10)
+            axes[3, i].set_title(f"Difference ({channel_names[i]})", fontsize=10)
             axes[3, i].set_xticks([])
             axes[3, i].set_yticks([])
-            cbar4 = fig.colorbar(im4, ax=axes[3, i], shrink=0.6)
+            cbar4 = fig.colorbar(im4, ax=axes[3, i], shrink=1)
             cbar4.ax.tick_params(labelsize=8)
 
         plt.tight_layout(pad=1)  
         plt.show()
 
+    # Call the function
     predict()
 
 if __name__ == "__main__":

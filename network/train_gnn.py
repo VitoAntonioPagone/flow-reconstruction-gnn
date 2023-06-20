@@ -4,7 +4,7 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from datasets import CustomDataset
-from models import GCN, GraphSAGE, GAT
+from models import GCN, GraphSAGE, GAT, GIN
 from collections import OrderedDict
 import os
 import matplotlib.pyplot as plt
@@ -15,7 +15,7 @@ LR = 0.001
 EPOCHS = 100
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 LOAD_MODEL = False  
-MODEL_NAME = f"GAT"  
+MODEL_NAME = f"GIN"  
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 
@@ -47,7 +47,7 @@ def plot_losses(train_losses, val_losses):
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
-    plt.savefig(f'{LOSS_PLOT_DIR}loss_plot_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg', format='jpg', dpi=350)
+    plt.savefig(f'{MODEL_NAME}loss_plot_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg', format='jpg', dpi=350)
     plt.close()
 
 print('Loading train dataset...')
@@ -64,7 +64,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GAT()
+model = GIN()
 model.to(DEVICE)
 print('Model built.')
 

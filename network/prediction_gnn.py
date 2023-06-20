@@ -4,127 +4,153 @@ from models import GCN
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import griddata
+import torch
+from models import GCN, GAT
+import matplotlib.pyplot as plt
+import numpy as np
+from torch.utils.data import Dataset as TorchDataset
+import torch
+from datasets import CustomDataset
+from models import GCN
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Hyperparameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Path
-TEST_INPUT_DIR = '../dataset_graph/training/test_input_graphs'
-TEST_TARGET_DIR = '../dataset_graph/training/test_graphs'
-CHECKPOINT_PATH = '../trained_models/GCN_epochs_100_lr_0.001_batch_16.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GAT_epochs_100_lr_0.001_batch_2.pth.tar' 
 
-# Load dataset
-test_dataset = CustomDataset(TEST_INPUT_DIR, TEST_TARGET_DIR)
+class CustomDataset(TorchDataset):
+    def __init__(self, input_files, label_files):
+        self.input_files = input_files
+        self.label_files = label_files
 
-# Select a single test graph
-single_graph = test_dataset[0]
+    def __len__(self):
+        return len(self.input_files)
 
-# Assuming that the positions are the last 2 features in the feature vector
-positions = single_graph.x[:, -2:].numpy()
+    def __getitem__(self, idx):
+        input_data = torch.load(self.input_files[idx])
+        label_data = torch.load(self.label_files[idx])
 
-# Print min and max of the positions
-print(f'Min x position: {np.min(positions[:, 0])}')
-print(f'Max x position: {np.max(positions[:, 0])}')
-print(f'Min y position: {np.min(positions[:, 1])}')
-print(f'Max y position: {np.max(positions[:, 1])}')
+        input_data.y = label_data.x  # Set target node features
+        input_data.x_complete = label_data.x  # Save a copy of complete node features
 
-model = GCN()
-model.to(DEVICE)
+        return input_data
 
 def load_checkpoint(model, checkpoint_path):
     checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
     state_dict = checkpoint['state_dict']
     model.load_state_dict(state_dict)
 
-# Load trained weights
-load_checkpoint(model, CHECKPOINT_PATH)
+def run_GCN(input_file, label_file):
+    # Load dataset
+    test_dataset = CustomDataset([input_file], [label_file])
 
-model.eval()
+    # Select a single test graph
+    single_graph = test_dataset[0]
 
-# Move data to the correct device
-single_graph.x = single_graph.x.to(DEVICE)
-single_graph.edge_index = single_graph.edge_index.to(DEVICE)
-single_graph.y = single_graph.y.to(DEVICE)
+    # Assuming that the positions are the last 2 features in the feature vector
+    positions = single_graph.x[:, -2:].numpy()
 
-# Perform prediction
-with torch.no_grad():
-    out = model(single_graph)
+    # Print min and max of the positions
+    print(f'Min x position: {np.min(positions[:, 0])}')
+    print(f'Max x position: {np.max(positions[:, 0])}')
+    print(f'Min y position: {np.min(positions[:, 1])}')
+    print(f'Max y position: {np.max(positions[:, 1])}')
 
-# Check if output is entirely zero
-print("Output zero check:", torch.all(out==0).item())
+    model = GAT()
+    model.to(DEVICE)
 
-# Define grid size
-grid_size = 256  # Increased for a smoother plot
+    # Load trained weights
+    load_checkpoint(model, CHECKPOINT_PATH)
 
-# Get minimum and maximum position values
-min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
-max_x, max_y = np.max(positions[:, 0]), np.max(positions[:, 1])
+    model.eval()
 
-# Create the grid
-grid_x, grid_y = np.mgrid[min_x:max_x:grid_size*1j, min_y:max_y:grid_size*1j]
+    # Move data to the correct device
+    single_graph.x = single_graph.x.to(DEVICE)
+    single_graph.edge_index = single_graph.edge_index.to(DEVICE)
+    single_graph.y = single_graph.y.to(DEVICE)
 
-def rmse(pred, target):
-    """Computes root mean squared error"""
-    return torch.sqrt(torch.mean((pred - target) ** 2))
+    # Perform prediction
+    with torch.no_grad():
+        out = model(single_graph)
 
-fig, axs = plt.subplots(4, 3, figsize=(16, 12))  # Change subplot configuration to 4x3
+    # Check if output is entirely zero
+    print("Output zero check:", torch.all(out==0).item())
 
-# Variables to keep track of min and max difference across all channels
-diff_min = np.inf
-diff_max = -np.inf
+    # Define grid size
+    grid_size = 256  # Increased for a smoother plot
 
-for i in range(3):  # iterate over channels
-    input_values = single_graph.x.cpu()[:, i].numpy()
-    output_values = out.cpu()[:, i].numpy()
-    target_values = single_graph.y.cpu()[:, i].numpy()
+    # Get minimum and maximum position values
+    min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
+    max_x, max_y = np.max(positions[:, 0]), np.max(positions[:, 1])
 
-    # Interpolate the values onto the regular grid
-    grid_input_values  = griddata(positions, input_values, (grid_x, grid_y), method='nearest')
-    grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='nearest')
-    grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='nearest')
+    # Create the grid
+    grid_x, grid_y = np.mgrid[min_x:max_x:grid_size*1j, min_y:max_y:grid_size*1j]
 
-    # Calculate the color scale limits
-    vmin, vmax = target_values.min(), target_values.max()
+    def rmse(pred, target):
+        """Computes root mean squared error"""
+        return torch.sqrt(torch.mean((pred - target) ** 2))
 
-    # Compute the RMSE
-    pixel_wise_rmse = rmse(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
-    print(f"Pixel-wise RMSE for Channel {i+1}: {pixel_wise_rmse}")
+    fig, axs = plt.subplots(4, 3, figsize=(12, 12))  # Changed the subplot configuration
+    fig.subplots_adjust(hspace=0.5, wspace=0.5) 
 
-    # Input grid
-    im = axs[0, i].imshow(grid_input_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
-    axs[0, i].set_title(f'Input Channel {i+1}')
-    fig.colorbar(im, ax=axs[0, i], orientation='vertical')
+    # Variables to keep track of min and max difference across all channels
+    diff_min = np.inf
+    diff_max = -np.inf
 
-    # Output grid
-    im = axs[1, i].imshow(grid_output_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
-    axs[1, i].set_title(f'Output Channel {i+1}')
-    fig.colorbar(im, ax=axs[1, i], orientation='vertical')
+    channels = ['x-velocity', 'y-velocity', 'z-velocity']
+    for i in range(3):
+        input_values = single_graph.x.cpu()[:, i].numpy()
+        output_values = out.cpu()[:, i].numpy()
+        target_values = single_graph.y.cpu()[:, i].numpy()
+        grid_input_values  = griddata(positions, input_values, (grid_x, grid_y), method='nearest')
+        grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='nearest')
+        grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='nearest')
+        vmin, vmax = target_values.min(), target_values.max()
+        pixel_wise_rmse = rmse(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
+        print(f"Pixel-wise RMSE for {channels[i]}: {pixel_wise_rmse}")
 
-    # Target grid
-    im = axs[2, i].imshow(grid_target_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
-    axs[2, i].set_title(f'Target Channel {i+1}')
-    fig.colorbar(im, ax=axs[2, i], orientation='vertical')
+        im = axs[0, i].imshow(grid_input_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
+        axs[0, i].set_title(f'Input {channels[i]}')
+        axs[0, i].set_xticks([])
+        axs[0, i].set_yticks([])
+        fig.colorbar(im, ax=axs[0, i], orientation='vertical')
 
-    # Update min and max difference if necessary
-    diff_min = min(diff_min, np.min(grid_output_values - grid_target_values))
-    diff_max = max(diff_max, np.max(grid_output_values - grid_target_values))
+        im = axs[1, i].imshow(grid_output_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
+        axs[1, i].set_title(f'Output {channels[i]}')
+        axs[1, i].set_xticks([])
+        axs[1, i].set_yticks([])
+        fig.colorbar(im, ax=axs[1, i], orientation='vertical')
 
-# Plot difference grids on the last row
-for i in range(3):
-    input_values = single_graph.x.cpu()[:, i].numpy()
-    output_values = out.cpu()[:, i].numpy()
-    target_values = single_graph.y.cpu()[:, i].numpy()
+        im = axs[2, i].imshow(grid_target_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
+        axs[2, i].set_title(f'Target {channels[i]}')
+        axs[2, i].set_xticks([])
+        axs[2, i].set_yticks([])
+        fig.colorbar(im, ax=axs[2, i], orientation='vertical')
 
-    # Interpolate the values onto the regular grid
-    grid_input_values  = griddata(positions, input_values, (grid_x, grid_y),  method='nearest')
-    grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='nearest')
-    grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='nearest')
+        diff_min = min(diff_min, np.min(grid_output_values - grid_target_values))
+        diff_max = max(diff_max, np.max(grid_output_values - grid_target_values))
 
-    # Difference grid
-    im = axs[3, i].imshow((grid_output_values - grid_target_values).T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=diff_min, vmax=diff_max)
-    axs[3, i].set_title(f'Difference Channel {i+1}')
-    fig.colorbar(im, ax=axs[3, i], orientation='vertical')
+    for i in range(3):
+        input_values = single_graph.x.cpu()[:, i].numpy()
+        output_values = out.cpu()[:, i].numpy()
+        target_values = single_graph.y.cpu()[:, i].numpy()
+        grid_input_values  = griddata(positions, input_values, (grid_x, grid_y),  method='nearest')
+        grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='nearest')
+        grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='nearest')
 
-plt.tight_layout()
-plt.show()
+        im = axs[3, i].imshow((grid_output_values - grid_target_values).T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=diff_min, vmax=diff_max)
+        axs[3, i].set_title(f'Difference {channels[i]}')
+        axs[3, i].set_xticks([])
+        axs[3, i].set_yticks([])
+        fig.colorbar(im, ax=axs[3, i], orientation='vertical')
 
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == "__main__":
+    input_file = '../dataset_graph/training/test_input_graphs/cyc10_CAD615_Y3_Z1_X0_input.pt'
+    label_file = '../dataset_graph/training/test_label_graphs/cyc10_CAD615_Y3_Z1_X0_label.pt'
+    run_GCN(input_file, label_file)

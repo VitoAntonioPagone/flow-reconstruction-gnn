@@ -8,18 +8,48 @@ import matplotlib.pyplot as plt
 from datasets import FlowDataset
 from models import ConvAutoEncoder_simplified_50
 from utils import load_checkpoint
+import numpy as np
+import matplotlib.pyplot as plt
+from torch.utils.data import Dataset as TorchDataset
+
+
+class FlowDataset(TorchDataset):
+    def __init__(self, input_files, label_files, add_mask=False):
+        self.input_files = input_files
+        self.label_files = label_files
+        self.add_mask = add_mask
+
+    def __len__(self):
+        return len(self.input_files)
+
+    def __getitem__(self, index):
+        input_path = self.input_files[index]
+        label_path = self.label_files[index]
+
+        input_data = np.load(input_path)
+        label_data = np.load(label_path)
+
+        # Convert the numpy arrays to PyTorch tensors and add the channel dimension
+        input_tensor = torch.from_numpy(input_data).permute(2, 0, 1).float()
+        label_tensor = torch.from_numpy(label_data).permute(2, 0, 1).float()
+
+        # Compute the single-channel missing mask tensor
+        missing_mask_tensor = (input_tensor[0] == 0).unsqueeze(0).float()
+
+        if self.add_mask:
+            input_tensor = torch.cat((input_tensor, missing_mask_tensor), dim=0)
+
+        return input_tensor, label_tensor, missing_mask_tensor
 
 def calculate_rmse(pred, target):
     """Calculate RMSE"""
     return torch.sqrt(((pred - target) ** 2).mean())
 
-def run_autoencoder():
+def run_autoencoder(input_file, label_file):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     CHECKPOINT_FILE = '../trained_models/ConvAutoEncoder_simplified_epochs_1000_autoencoder_checkpoint_alpha_0.1_beta_0.1_lr_0.0001_batch_128.pth.tar'
-    TEST_INPUTS_DIR = '../dataset/train_data_50/test_inputs_50/'
-    TEST_LABELS_DIR = '../dataset/train_data_50/test_labels_50/'
-    TEST_FILE_NUM = 8
-
+    TEST_INPUT_FILE = input_file
+    TEST_LABEL_FILE = label_file
 
     def reconstruct_flow(model, input_tensor, missing_mask_tensor):
         with torch.no_grad():
@@ -29,12 +59,11 @@ def run_autoencoder():
             reconstructed_flow = output_tensor * missing_mask_tensor + input_tensor * (1 - missing_mask_tensor)
         return reconstructed_flow
 
-
     def predict():
         # Get test data set
-        test_dataset = FlowDataset(TEST_INPUTS_DIR, TEST_LABELS_DIR)
+        test_dataset = FlowDataset([input_file], [label_file])
         # Get a sample input tensor, ground truth label tensor, and its single-channel missing mask tensor
-        test_input_tensor, test_label_tensor, test_missing_mask_tensor = test_dataset[TEST_FILE_NUM]
+        test_input_tensor, test_label_tensor, test_missing_mask_tensor = test_dataset[0]
         test_input_tensor = test_input_tensor.to(DEVICE)
         test_label_tensor = test_label_tensor.to(DEVICE)
         test_missing_mask_tensor = test_missing_mask_tensor.to(DEVICE)
@@ -59,26 +88,34 @@ def run_autoencoder():
             vmax = test_label_tensor[0, i].max()
 
             # Plot the input tensor
-            im1 = axes[0, i].imshow(test_input_tensor[0, i], cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
+            im1 = axes[0, i].imshow(test_input_tensor[0, i].cpu(), cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
             axes[0, i].set_title(f"Input Tensor - Channel {i + 1}", fontsize=10)
+            axes[0, i].set_xticks([])
+            axes[0, i].set_yticks([])
             cbar1 = fig.colorbar(im1, ax=axes[0, i], shrink=0.6)
             cbar1.ax.tick_params(labelsize=8)
 
             # Plot the ground truth label tensor
-            im2 = axes[1, i].imshow(test_label_tensor[0, i], cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
-            axes[1, i].set_title(f"Ground Truth Label Tensor - Channel {i + 1}", fontsize=10)
+            im2 = axes[2, i].imshow(test_label_tensor[0, i].cpu(), cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
+            axes[2, i].set_title(f"Ground Truth Label Tensor - Channel {i + 1}", fontsize=10)
+            axes[2, i].set_xticks([])
+            axes[2, i].set_yticks([])
             cbar2 = fig.colorbar(im2, ax=axes[1, i], shrink=0.6)
             cbar2.ax.tick_params(labelsize=8)
 
             # Plot the reconstructed flow tensor
             im3 = axes[2, i].imshow(reconstructed_flow_tensor[0, i], cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
-            axes[2, i].set_title(f"Reconstructed Flow Tensor - Channel {i + 1}", fontsize=10)
+            axes[1, i].set_title(f"Reconstructed Flow Tensor - Channel {i + 1}", fontsize=10)
+            axes[1, i].set_xticks([])
+            axes[1, i].set_yticks([])
             cbar3 = fig.colorbar(im3, ax=axes[2, i], shrink=0.6)
             cbar3.ax.tick_params(labelsize=8)
 
             difference_tensor = test_label_tensor[0, i] - reconstructed_flow_tensor[0, i]
-            im4 = axes[3, i].imshow(difference_tensor, cmap='jet', aspect='auto')
+            im4 = axes[3, i].imshow(difference_tensor.cpu(), cmap='jet', aspect='auto')
             axes[3, i].set_title(f"Difference Tensor - Channel {i + 1}", fontsize=10)
+            axes[3, i].set_xticks([])
+            axes[3, i].set_yticks([])
             cbar4 = fig.colorbar(im4, ax=axes[3, i], shrink=0.6)
             cbar4.ax.tick_params(labelsize=8)
 
@@ -87,6 +124,7 @@ def run_autoencoder():
 
     predict()
 
-
 if __name__ == "__main__":
-    run_autoencoder()
+    input_file = '../dataset/train_data_50/test_inputs_50/interpolated_cyc10_CAD615_Y3_Z1_X0_input.npy'  
+    label_file = '../dataset/train_data_50/test_labels_50/interpolated_cyc10_CAD615_Y3_Z1_X0_label.npy' 
+    run_autoencoder(input_file, label_file)

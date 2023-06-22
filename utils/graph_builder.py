@@ -10,9 +10,9 @@ from torch_geometric.utils import to_undirected
 NUM_NEIGHBOURS = 8
 PERCENTAGE = 0.9  # Modify this accordingly
 
-TRAIN_DATA = f"../dataset_graph/original_data/npz_data/train_{PERCENTAGE*100:.0f}"
-TEST_DATA = f"../dataset_graph/original_data/npz_data/test_{PERCENTAGE*100:.0f}"
-VALIDATION_DATA = f"../dataset_graph/original_data/npz_data/validation_{PERCENTAGE*100:.0f}"
+TRAIN_DATA = f"../dataset_graph/original_data/npz_data/train"
+TEST_DATA = f"../dataset_graph/original_data/npz_data/test"
+VALIDATION_DATA = f"../dataset_graph/original_data/npz_data/validation"
 TRAIN_INPUTS = f"../dataset_graph/original_data/npz_data/train_inputs_{PERCENTAGE*100:.0f}"
 TEST_INPUTS = f"../dataset_graph/original_data/npz_data/test_inputs_{PERCENTAGE*100:.0f}"
 VALIDATION_INPUTS = f"../dataset_graph/original_data/npz_data/validation_inputs_{PERCENTAGE*100:.0f}"
@@ -79,25 +79,29 @@ def create_graphs(data_folder, save_folder, is_input):
 
 sys.stdout.flush()
 
-create_graphs(TRAIN_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, "train_input_graphs"), is_input=True)
-print("Train input graphs created.")
-sys.stdout.flush()
-create_graphs(TRAIN_DATA, os.path.join(SAVE_GRAPHS_FOLDER, "train_graphs"), is_input=False)
-print("Train graphs created.")
+create_graphs(VALIDATION_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_{PERCENTAGE*100:.0f}"), is_input=True)
+print("Validation input graphs created.")
 sys.stdout.flush()
 
-create_graphs(TEST_DATA, os.path.join(SAVE_GRAPHS_FOLDER, "test_graphs"), is_input=False)
-print("Test graphs created.")
-sys.stdout.flush()
-
-create_graphs(VALIDATION_DATA, os.path.join(SAVE_GRAPHS_FOLDER, "validation_graphs"), is_input=False)
+create_graphs(VALIDATION_DATA, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_{PERCENTAGE*100:.0f}"), is_input=False)
 print("Validation graphs created.")
 sys.stdout.flush()
 
-create_graphs(TEST_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, "test_input_graphs"), is_input=True)
+create_graphs(TEST_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graph_{PERCENTAGE*100:.0f}s"), is_input=True)
 print("Test input graphs created.")
 sys.stdout.flush()
 
-create_graphs(VALIDATION_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, "validation_input_graphs"), is_input=True)
-print("Validation input graphs created.")
+
+create_graphs(TRAIN_DATA, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_{PERCENTAGE*100:.0f}"), is_input=False)
+print("Train graphs created.")
 sys.stdout.flush()
+
+create_graphs(TRAIN_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_{PERCENTAGE*100:.0f}"), is_input=True)
+print("Train input graphs created.")
+sys.stdout.flush()
+
+
+create_graphs(TEST_DATA, os.path.join(SAVE_GRAPHS_FOLDER, f"test_graphs_{PERCENTAGE*100:.0f}"), is_input=False)
+print("Test graphs created.")
+sys.stdout.flush()
+

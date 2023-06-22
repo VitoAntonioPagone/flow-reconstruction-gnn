@@ -13,35 +13,6 @@ from torch_geometric.nn import GATConv
 from torch_geometric.nn import GINConv
 from torch.nn import Sequential, Linear, ReLU
 
-class GIN(torch.nn.Module):
-    def __init__(self):
-        super(GIN, self).__init__()
-        self.feat_dim = 6
-        self.output_dim = 6
-        
-        nn1 = Sequential(Linear(self.feat_dim, 128), ReLU())
-        self.conv1 = GINConv(nn1)
-        
-        nn2 = Sequential(Linear(128, 256), ReLU())
-        self.conv2 = GINConv(nn2)
-        
-        nn3 = Sequential(Linear(256, 128), ReLU())
-        self.conv3 = GINConv(nn3)
-        
-        nn4 = Sequential(Linear(128, self.output_dim), ReLU())
-        self.conv4 = GINConv(nn4)
-
-    def forward(self, data):
-        x, edge_index = data.x, data.edge_index
-        x = self.conv1(x, edge_index)
-        x = torch.relu(x)
-        x = self.conv2(x, edge_index)
-        x = torch.relu(x)
-        x = self.conv3(x, edge_index)
-        x = torch.relu(x)
-        x = self.conv4(x, edge_index)
-        return x
-
 class GAT(torch.nn.Module):
     def __init__(self):
         super(GAT, self).__init__()

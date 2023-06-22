@@ -6,6 +6,19 @@ from scipy.spatial import cKDTree
 import sys
 from torch_geometric.utils import to_undirected
 
+# Constants
+NUM_NEIGHBOURS = 8
+PERCENTAGE = 0.9  # Modify this accordingly
+
+TRAIN_DATA = f"../dataset_graph/original_data/npz_data/train_{PERCENTAGE*100:.0f}"
+TEST_DATA = f"../dataset_graph/original_data/npz_data/test_{PERCENTAGE*100:.0f}"
+VALIDATION_DATA = f"../dataset_graph/original_data/npz_data/validation_{PERCENTAGE*100:.0f}"
+TRAIN_INPUTS = f"../dataset_graph/original_data/npz_data/train_inputs_{PERCENTAGE*100:.0f}"
+TEST_INPUTS = f"../dataset_graph/original_data/npz_data/test_inputs_{PERCENTAGE*100:.0f}"
+VALIDATION_INPUTS = f"../dataset_graph/original_data/npz_data/validation_inputs_{PERCENTAGE*100:.0f}"
+
+SAVE_GRAPHS_FOLDER = "../dataset_graph/training"
+
 def load_npz_data(file_path):
     print(f"Loading data from: {file_path}")
     with np.load(file_path) as data:
@@ -56,49 +69,35 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, i, is_i
  
 
 
-def create_graphs(data_folder, num_neighbours, save_folder, is_input):
+def create_graphs(data_folder, save_folder, is_input):
     for i, file in enumerate(os.listdir(data_folder)):
         if file.endswith(".npz"):
             file_path = os.path.join(data_folder, file)
             print(f"Analyzing file: {file_path}")
             features, coordinates = load_npz_data(file_path)
-            create_and_save_graph(features, coordinates, num_neighbours, save_folder, i, is_input)
+            create_and_save_graph(features, coordinates, NUM_NEIGHBOURS, save_folder, i, is_input)
 
-# Configuring path and number of neighbours
-num_neighbours = 8
-
-train_data = "../dataset_graph/original_data/npz_data/train"
-test_data = "../dataset_graph/original_data/npz_data/test"
-validation_data = "../dataset_graph/original_data/npz_data/validation"
-train_inputs = "../dataset_graph/original_data/npz_data/train_inputs"
-test_inputs = "../dataset_graph/original_data/npz_data/test_inputs"
-validation_inputs = "../dataset_graph/original_data/npz_data/validation_inputs"
-
-save_graphs_folder = "../dataset_graph/training"
-# Flush stdout after each print statement
 sys.stdout.flush()
 
-create_graphs(train_inputs, num_neighbours, os.path.join(save_graphs_folder, "train_input_graphs"), is_input=True)
+create_graphs(TRAIN_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, "train_input_graphs"), is_input=True)
 print("Train input graphs created.")
 sys.stdout.flush()
-create_graphs(train_data, num_neighbours, os.path.join(save_graphs_folder, "train_graphs"), is_input=False)
+create_graphs(TRAIN_DATA, os.path.join(SAVE_GRAPHS_FOLDER, "train_graphs"), is_input=False)
 print("Train graphs created.")
 sys.stdout.flush()
 
-create_graphs(test_data, num_neighbours, os.path.join(save_graphs_folder, "test_graphs"), is_input=False)
+create_graphs(TEST_DATA, os.path.join(SAVE_GRAPHS_FOLDER, "test_graphs"), is_input=False)
 print("Test graphs created.")
 sys.stdout.flush()
 
-create_graphs(validation_data, num_neighbours, os.path.join(save_graphs_folder, "validation_graphs"), is_input=False)
+create_graphs(VALIDATION_DATA, os.path.join(SAVE_GRAPHS_FOLDER, "validation_graphs"), is_input=False)
 print("Validation graphs created.")
 sys.stdout.flush()
 
-
-create_graphs(test_inputs, num_neighbours, os.path.join(save_graphs_folder, "test_input_graphs"), is_input=True)
+create_graphs(TEST_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, "test_input_graphs"), is_input=True)
 print("Test input graphs created.")
 sys.stdout.flush()
 
-create_graphs(validation_inputs, num_neighbours, os.path.join(save_graphs_folder, "validation_input_graphs"), is_input=True)
+create_graphs(VALIDATION_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, "validation_input_graphs"), is_input=True)
 print("Validation input graphs created.")
 sys.stdout.flush()
-

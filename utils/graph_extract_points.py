@@ -3,13 +3,22 @@ import os
 import random
 import glob
 
+# Constants
+TRAIN_FOLDER = '../dataset_graph/original_data/npz_data/train'
+TEST_FOLDER = '../dataset_graph/original_data/npz_data/test'
+VALIDATION_FOLDER = '../dataset_graph/original_data/npz_data/validation'
+PERCENTAGE = 0.9
+
 def extract_random_points(data, percentage):
     num_points = int(data.shape[0] * percentage)
     indices = random.sample(range(data.shape[0]), num_points)
     return np.array(indices)
 
-def process_npz_files(folder, output_folder, percentage):
+def process_npz_files(folder, percentage):
     npz_files = glob.glob(os.path.join(folder, '*.npz'))
+    output_folder = f'{folder}_inputs_{percentage*100:.0f}'  
+    
+    os.makedirs(output_folder, exist_ok=True)
     
     for file_path in npz_files:
         print(f"Processing file: {file_path}")
@@ -31,23 +40,9 @@ def process_npz_files(folder, output_folder, percentage):
                  z_velocity=features[:, 4])
 
 def main():
-    train_folder = '../dataset_graph/original_data/npz_data/train'  # Training data folder
-    test_folder = '../dataset_graph/original_data/npz_data/test'    # Testing data folder
-    validation_folder = '../dataset_graph/original_data/npz_data/validation'
-    train_output_folder = '../dataset_graph/original_data/npz_data/train_inputs'
-    test_output_folder = '../dataset_graph/original_data/npz_data/test_inputs'
-    validation_output_folder = '../dataset_graph/original_data/npz_data/validation_inputs'
-
-    percentage = 0.5  
-
-    os.makedirs(train_output_folder, exist_ok=True)
-    os.makedirs(test_output_folder, exist_ok=True)
-    os.makedirs(validation_output_folder, exist_ok=True)
-
-    process_npz_files(train_folder, train_output_folder, percentage)
-    process_npz_files(test_folder, test_output_folder, percentage)
-    process_npz_files(validation_folder, validation_output_folder, percentage)
+    process_npz_files(TRAIN_FOLDER, PERCENTAGE)
+    process_npz_files(TEST_FOLDER, PERCENTAGE)
+    process_npz_files(VALIDATION_FOLDER, PERCENTAGE)
 
 if __name__ == "__main__":
     main()
-

@@ -4,7 +4,7 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from datasets import CustomDataset
-from models import GCN, GraphSAGE, GAT, GIN
+from models import GCN, GraphSAGE, GAT, GraphSAGE
 from collections import OrderedDict
 import os
 import matplotlib.pyplot as plt
@@ -13,23 +13,23 @@ import matplotlib.pyplot as plt
 BATCH_SIZE = 4
 LR = 0.001
 EPOCHS = 100
+PERCENTAGE_OF_MISSING_POINTS = 90  
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 LOAD_MODEL = False  
-MODEL_NAME = f"GIN"  
+MODEL_NAME = f"GRAPHSAGE_{PERCENTAGE_OF_MISSING_POINTS}"  
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 
 # Directory for storing the loss plot
 LOSS_PLOT_DIR = f'../losses_plot/losses_plot_alpha_lr_{LR}_batch_{BATCH_SIZE}.jpg'
 
-
 print(f'Starting script with Device: {DEVICE}')
 
 # Paths
-TRAIN_INPUT_DIR = '../dataset_graph/training/train_input_graphs'
-TRAIN_TARGET_DIR = '../dataset_graph/training/train_graphs'
-VALID_INPUT_DIR = '../dataset_graph/training/validation_input_graphs'
-VALID_TARGET_DIR = '../dataset_graph/training/validation_graphs'
+TRAIN_INPUT_DIR = f'../dataset_graph/training_{PERCENTAGE_OF_MISSING_POINTS}/train_input_graphs'  
+TRAIN_TARGET_DIR = f'../dataset_graph/training_{PERCENTAGE_OF_MISSING_POINTS}/train_graphs' 
+VALID_INPUT_DIR = f'../dataset_graph/training_{PERCENTAGE_OF_MISSING_POINTS}/validation_input_graphs'  
+VALID_TARGET_DIR = f'../dataset_graph/training_{PERCENTAGE_OF_MISSING_POINTS}/validation_graphs'  
 
 def save_checkpoint(state, filename=SAVE_CHECKPOINT_FILE):
     print("=> Saving checkpoint")
@@ -47,7 +47,7 @@ def plot_losses(train_losses, val_losses):
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
-    plt.savefig(f'{MODEL_NAME}loss_plot_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg', format='jpg', dpi=350)
+    plt.savefig(f'../losses_plot/{MODEL_NAME}loss_plot_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg', format='jpg', dpi=350)
     plt.close()
 
 print('Loading train dataset...')
@@ -64,7 +64,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GIN()
+model = GraphSAGE()
 model.to(DEVICE)
 print('Model built.')
 

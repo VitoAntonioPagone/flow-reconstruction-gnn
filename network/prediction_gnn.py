@@ -11,7 +11,7 @@ import numpy as np
 from torch.utils.data import Dataset as TorchDataset
 import torch
 from datasets import CustomDataset
-from models import GCN
+from models import GCN, GraphSAGE
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -19,7 +19,7 @@ import numpy as np
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Path
-CHECKPOINT_PATH = '../trained_models/GAT_epochs_100_lr_0.001_batch_2.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GRAPHSAGE_epochs_100_lr_0.001_batch_4.pth.tar' 
 
 class CustomDataset(TorchDataset):
     def __init__(self, input_files, label_files):
@@ -59,7 +59,7 @@ def run_GCN(input_file, label_file):
     print(f'Min y position: {np.min(positions[:, 1])}')
     print(f'Max y position: {np.max(positions[:, 1])}')
 
-    model = GAT()
+    model = GraphSAGE()
     model.to(DEVICE)
 
     # Load trained weights

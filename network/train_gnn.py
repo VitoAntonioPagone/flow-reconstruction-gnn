@@ -4,19 +4,19 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from datasets import CustomDataset
-from models import GCN, GraphSAGE, GAT, GraphSAGE_90
+from models import GCN, GraphSAGE, GAT, GraphSAGE_90, GAT_90
 from collections import OrderedDict
 import os
 import matplotlib.pyplot as plt
 
 # Hyperparameters
-BATCH_SIZE = 2
+BATCH_SIZE = 1
 LR = 0.001
 EPOCHS = 100
 PERCENTAGE_OF_MISSING_POINTS = 90  
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 LOAD_MODEL = False  
-MODEL_NAME = f"GraphSAGE_{PERCENTAGE_OF_MISSING_POINTS}"  
+MODEL_NAME = f"GAT_90_{PERCENTAGE_OF_MISSING_POINTS}"  
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 
@@ -64,7 +64,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GraphSAGE_90()
+model = GAT_90()
 model.to(DEVICE)
 print('Model built.')
 

@@ -14,14 +14,14 @@ from datasets import CustomDataset
 from models import GCN, GraphSAGE
 import matplotlib.pyplot as plt
 import numpy as np
-
-MISSING_PERCENTAGE = 90
+import os
+MISSING_PERCENTAGE = 50
 
 # Hyperparameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Path
-CHECKPOINT_PATH = '../trained_models/GraphSAGE_90_epochs_100_lr_0.001_batch_2.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GAT_epochs_100_lr_0.001_batch_2.pth.tar' 
 
 class CustomDataset(TorchDataset):
     def __init__(self, input_files, label_files):
@@ -61,7 +61,10 @@ def run_GCN(input_file, label_file):
     print(f'Min y position: {np.min(positions[:, 1])}')
     print(f'Max y position: {np.max(positions[:, 1])}')
 
-    model = GraphSAGE()
+    ######## MODEL ########
+    model = GAT()
+    ######## MODEL ########
+    
     model.to(DEVICE)
 
     # Load trained weights
@@ -108,9 +111,9 @@ def run_GCN(input_file, label_file):
 
     channels = ['x-velocity', 'y-velocity', 'z-velocity']
     for i in range(3):
-        input_values = single_graph.x.cpu()[:, i].numpy()
-        output_values = out.cpu()[:, i].numpy()
-        target_values = single_graph.y.cpu()[:, i].numpy()
+        input_values = single_graph.x.cpu()[:, i].numpy() * 7.035423
+        output_values = out.cpu()[:, i].numpy() * 7.035423
+        target_values = single_graph.y.cpu()[:, i].numpy() * 7.035423
         grid_input_values  = griddata(positions, input_values, (grid_x, grid_y), method='nearest')
         grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='nearest')
         grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='nearest')
@@ -160,9 +163,10 @@ def run_GCN(input_file, label_file):
         cbar4.ax.tick_params(labelsize=8)
 
     plt.tight_layout()
+    fig.savefig('../results/{}_plot.png'.format(os.path.basename(CHECKPOINT_PATH).split('.')[0]), dpi=300)
     plt.show()
 
 if __name__ == "__main__":
-    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_input_90.pt'
-    label_file = f'../dataset_graph/training/test_label_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_label_90.pt'
+    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_input.pt'
+    label_file = f'../dataset_graph/training/test_label_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_label.pt'
     run_GCN(input_file, label_file)

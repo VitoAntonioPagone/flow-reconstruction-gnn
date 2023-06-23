@@ -51,7 +51,6 @@ def calculate_mae(pred, target):
     """Calculate MAE"""
     return (torch.abs(pred - target)).mean()
 
-
 def run_autoencoder(input_file, label_file):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     CHECKPOINT_FILE = '../trained_models/ConvAutoEncoder_simplified_90_epochs_1000_autoencoder_checkpoint_alpha_0.1_beta_0.1_lr_0.0001_batch_128.pth.tar'
@@ -78,8 +77,12 @@ def run_autoencoder(input_file, label_file):
         test_input_tensor = test_input_tensor.unsqueeze(0)
         test_label_tensor = test_label_tensor.unsqueeze(0)
         test_missing_mask_tensor = test_missing_mask_tensor.unsqueeze(0)
-        # Load pre-trained model
+        # Load pre-trained model 
+
+        ####### MODEL #######
         model = ConvAutoEncoder_simplified_90().to(DEVICE)
+        ####### MODEL #######
+        
         load_checkpoint(torch.load(CHECKPOINT_FILE, map_location=torch.device(DEVICE)), model)
         reconstructed_flow_tensor = reconstruct_flow(model, test_input_tensor, test_missing_mask_tensor)
         reconstructed_flow_tensor = reconstructed_flow_tensor.cpu()  # Move the tensor back to CPU for visualization
@@ -88,42 +91,47 @@ def run_autoencoder(input_file, label_file):
         fig.subplots_adjust(hspace=0.5, wspace=0.5) 
 
         channel_names = ['x-velocity', 'y-velocity', 'z-velocity']
-    
+
+        # Initialize lists to store the RMSEs and MAEs
+        rmses = []
+        maes = []
+        
         for i in range(3):
-            rmse = calculate_rmse(reconstructed_flow_tensor[0, i], test_label_tensor[0, i])
-            mae = calculate_mae(reconstructed_flow_tensor[0, i], test_label_tensor[0, i])
+            reconstructed_flow_tensor_denorm = reconstructed_flow_tensor[0, i] * 7.035423
+            test_label_tensor_denorm = test_label_tensor[0, i] * 7.035423
+            test_input_tensor_denorm = test_input_tensor[0, i] * 7.035423
+            difference_tensor_denorm = test_label_tensor_denorm - reconstructed_flow_tensor_denorm
+            rmse = calculate_rmse(reconstructed_flow_tensor_denorm, test_label_tensor_denorm)
+            mae = calculate_mae(reconstructed_flow_tensor_denorm, test_label_tensor_denorm)
+            rmses.append(rmse.item())
+            maes.append(mae.item())
             print(f"{channel_names[i]} RMSE: {rmse.item()}")
             print(f"{channel_names[i]} MAE: {mae.item()}")
-            vmin = test_label_tensor[0, i].min()
-            vmax = test_label_tensor[0, i].max()
+            vmin = test_label_tensor_denorm.min()
+            vmax = test_label_tensor_denorm.max()
 
-            # Plot the input tensor
-            im1 = axes[0, i].imshow(test_input_tensor[0, i].cpu(), cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
+            im1 = axes[0, i].imshow(test_input_tensor_denorm.cpu(), cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
             axes[0, i].set_title(f"Input Tensor ({channel_names[i]})", fontsize=10)
             axes[0, i].set_xticks([])
             axes[0, i].set_yticks([])
             cbar1 = fig.colorbar(im1, ax=axes[0, i])
             cbar1.ax.tick_params(labelsize=8)
 
-            # Plot the ground truth label tensor
-            im2 = axes[2, i].imshow(test_label_tensor[0, i].cpu(), cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
+            im2 = axes[2, i].imshow(test_label_tensor_denorm.cpu(), cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
             axes[2, i].set_title(f"Ground Truth ({channel_names[i]})", fontsize=10)
             axes[2, i].set_xticks([])
             axes[2, i].set_yticks([])
             cbar2 = fig.colorbar(im2, ax=axes[2, i])
             cbar2.ax.tick_params(labelsize=8)
 
-            # Plot the reconstructed flow tensor
-            im3 = axes[1, i].imshow(reconstructed_flow_tensor[0, i], cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
+            im3 = axes[1, i].imshow(reconstructed_flow_tensor_denorm, cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
             axes[1, i].set_title(f"Reconstructed Flow ({channel_names[i]})", fontsize=10)
             axes[1, i].set_xticks([])
             axes[1, i].set_yticks([])
             cbar3 = fig.colorbar(im3, ax=axes[1, i])
             cbar3.ax.tick_params(labelsize=8)
 
-            # Plot the difference tensor
-            difference_tensor = test_label_tensor[0, i] - reconstructed_flow_tensor[0, i]
-            im4 = axes[3, i].imshow(difference_tensor.cpu(), cmap='jet', aspect='auto')
+            im4 = axes[3, i].imshow(difference_tensor_denorm.cpu(), cmap='jet', aspect='auto')
             axes[3, i].set_title(f"Difference ({channel_names[i]})", fontsize=10)
             axes[3, i].set_xticks([])
             axes[3, i].set_yticks([])
@@ -131,6 +139,8 @@ def run_autoencoder(input_file, label_file):
             cbar4.ax.tick_params(labelsize=8)
 
         plt.tight_layout(pad=1)  
+        plt.show()
+        fig.savefig('../results/{}_plot.png'.format(os.path.basename(CHECKPOINT_FILE)), dpi=300)
         plt.show()
 
     # Call the function

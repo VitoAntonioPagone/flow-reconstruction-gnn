@@ -15,11 +15,13 @@ from models import GCN, GraphSAGE
 import matplotlib.pyplot as plt
 import numpy as np
 
+MISSING_PERCENTAGE = 90
+
 # Hyperparameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Path
-CHECKPOINT_PATH = '../trained_models/GRAPHSAGE_epochs_100_lr_0.001_batch_4.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GraphSAGE_90_epochs_100_lr_0.001_batch_2.pth.tar' 
 
 class CustomDataset(TorchDataset):
     def __init__(self, input_files, label_files):
@@ -161,6 +163,6 @@ def run_GCN(input_file, label_file):
     plt.show()
 
 if __name__ == "__main__":
-    input_file = '../dataset_graph/training/test_input_graphs/cyc10_CAD615_Y3_Z1_X0_input.pt'
-    label_file = '../dataset_graph/training/test_label_graphs/cyc10_CAD615_Y3_Z1_X0_label.pt'
+    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_input_90.pt'
+    label_file = f'../dataset_graph/training/test_label_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_label_90.pt'
     run_GCN(input_file, label_file)

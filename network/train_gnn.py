@@ -21,7 +21,7 @@ LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 
 # Directory for storing the loss plot
-LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}losses_plot_alpha_lr_{LR}_batch_{BATCH_SIZE}.jpg'
+LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
 
 print(f'Starting script with Device: {DEVICE}')
 

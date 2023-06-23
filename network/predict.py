@@ -12,6 +12,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset as TorchDataset
 
+MISSING_PERCENTAGE = 90
+
 
 class FlowDataset(TorchDataset):
     def __init__(self, input_files, label_files, add_mask=False):
@@ -52,7 +54,7 @@ def calculate_mae(pred, target):
 
 def run_autoencoder(input_file, label_file):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    CHECKPOINT_FILE = '../trained_models/ConvAutoEncoder_simplified_90_epochs_500_autoencoder_checkpoint_alpha_0.1_beta_0.1_lr_0.0001_batch_128.pth.tar'
+    CHECKPOINT_FILE = '../trained_models/ConvAutoEncoder_simplified_90_epochs_1000_autoencoder_checkpoint_alpha_0.1_beta_0.1_lr_0.0001_batch_128.pth.tar'
     TEST_INPUT_FILE = input_file
     TEST_LABEL_FILE = label_file
 
@@ -135,6 +137,6 @@ def run_autoencoder(input_file, label_file):
     predict()
 
 if __name__ == "__main__":
-    input_file = '../dataset/train_data_90/test_inputs_90/interpolated_cyc10_CAD615_Y3_Z1_X0_input.npy'  
-    label_file = '../dataset/train_data_90/test_labels_90/interpolated_cyc10_CAD615_Y3_Z1_X0_label.npy' 
+    input_file = f'../dataset/train_data_{MISSING_PERCENTAGE}/test_inputs_{MISSING_PERCENTAGE}/interpolated_cyc10_CAD615_Y3_Z1_X0_input.npy'  
+    label_file = f'../dataset/train_data_{MISSING_PERCENTAGE}/test_labels_{MISSING_PERCENTAGE}/interpolated_cyc10_CAD615_Y3_Z1_X0_label.npy' 
     run_autoencoder(input_file, label_file)

@@ -10,8 +10,9 @@ from torch.nn import Module, Linear, ReLU, Dropout
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv ,SAGEConv
 from torch_geometric.nn import GATConv
-from torch_geometric.nn import GINConv
+from torch_geometric.nn import GINConv, PNAConv
 from torch.nn import Sequential, Linear, ReLU
+
 
 class GAT(torch.nn.Module):
     def __init__(self):
@@ -83,12 +84,39 @@ class GraphSAGE_90(torch.nn.Module):
         super(GraphSAGE_90, self).__init__()
         self.feat_dim = 6
         self.output_dim = 6
-        self.conv1 = SAGEConv(self.feat_dim, 256)
-        self.conv2 = SAGEConv(256, 512)
-        self.conv3 = SAGEConv(512, 1024)
-        self.conv4 = SAGEConv(1024, 512)
-        self.conv5 = SAGEConv(512, 256)
-        self.conv6 = SAGEConv(256, self.feat_dim)
+        self.conv1 = SAGEConv(self.feat_dim, 128)
+        self.conv2 = SAGEConv(128, 256)
+        self.conv3 = SAGEConv(256, 512)
+        self.conv4 = SAGEConv(512, 256)
+        self.conv5 = SAGEConv(256, 128)
+        self.conv6 = SAGEConv(128, self.feat_dim)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv2(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv3(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv4(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv5(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv6(x, edge_index)
+        return x
+    
+class GAT_90(torch.nn.Module):
+    def __init__(self):
+        super(GAT_90, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.conv1 = GATConv(self.feat_dim, 256)
+        self.conv2 = GATConv(256, 512)
+        self.conv3 = GATConv(512, 1024)
+        self.conv4 = GATConv(1024, 512)
+        self.conv5 = GATConv(512, 256)
+        self.conv6 = GATConv(256, self.feat_dim)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index

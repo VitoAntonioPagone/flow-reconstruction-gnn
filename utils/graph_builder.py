@@ -87,10 +87,6 @@ create_graphs(VALIDATION_DATA, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_gra
 print("Validation graphs created.")
 sys.stdout.flush()
 
-create_graphs(TEST_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graph_{PERCENTAGE*100:.0f}"), is_input=True)
-print("Test input graphs created.")
-sys.stdout.flush()
-
 
 create_graphs(TRAIN_DATA, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_{PERCENTAGE*100:.0f}"), is_input=False)
 print("Train graphs created.")
@@ -101,7 +97,4 @@ print("Train input graphs created.")
 sys.stdout.flush()
 
 
-create_graphs(TEST_DATA, os.path.join(SAVE_GRAPHS_FOLDER, f"test_graphs_{PERCENTAGE*100:.0f}"), is_input=False)
-print("Test graphs created.")
-sys.stdout.flush()
 

@@ -45,6 +45,11 @@ def calculate_rmse(pred, target):
     """Calculate RMSE"""
     return torch.sqrt(((pred - target) ** 2).mean())
 
+def calculate_mae(pred, target):
+    """Calculate MAE"""
+    return (torch.abs(pred - target)).mean()
+
+
 def run_autoencoder(input_file, label_file):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     CHECKPOINT_FILE = '../trained_models/ConvAutoEncoder_simplified_epochs_1000_autoencoder_checkpoint_alpha_0.1_beta_0.1_lr_0.0001_batch_128.pth.tar'
@@ -84,7 +89,9 @@ def run_autoencoder(input_file, label_file):
     
         for i in range(3):
             rmse = calculate_rmse(reconstructed_flow_tensor[0, i], test_label_tensor[0, i])
+            mae = calculate_mae(reconstructed_flow_tensor[0, i], test_label_tensor[0, i])
             print(f"{channel_names[i]} RMSE: {rmse.item()}")
+            print(f"{channel_names[i]} MAE: {mae.item()}")
             vmin = test_label_tensor[0, i].min()
             vmax = test_label_tensor[0, i].max()
 

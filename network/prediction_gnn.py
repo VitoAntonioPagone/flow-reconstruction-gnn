@@ -95,6 +95,10 @@ def run_GCN(input_file, label_file):
 
     fig, axs = plt.subplots(4, 3, figsize=(10, 10))  # Changed the subplot configuration
     fig.subplots_adjust(hspace=0.5, wspace=0.5) 
+    
+    def mae(pred, target):
+        """Computes mean absolute error"""
+        return torch.mean(torch.abs(pred - target))
 
     # Variables to keep track of min and max difference across all channels
     diff_min = np.inf
@@ -111,6 +115,8 @@ def run_GCN(input_file, label_file):
         vmin, vmax = target_values.min(), target_values.max()
         pixel_wise_rmse = rmse(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
         print(f"Pixel-wise RMSE for {channels[i]}: {pixel_wise_rmse}")
+        pixel_wise_mae = mae(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
+        print(f"Pixel-wise MAE for {channels[i]}: {pixel_wise_mae}")
 
         im = axs[0, i].imshow(grid_input_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
         axs[0, i].set_title(f'Input {channels[i]}')

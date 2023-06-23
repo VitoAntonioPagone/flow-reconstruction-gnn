@@ -16,7 +16,7 @@ network/__pycache__/
 # NEK files
 *.f000*
 
-
+*.png
 # MAC
 .DS_Store
 

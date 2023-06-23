@@ -4,7 +4,7 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from datasets import CustomDataset
-from models import GCN, GraphSAGE, GAT
+from models import GCN, GraphSAGE, GAT, GraphSAGE_90
 from collections import OrderedDict
 import os
 import matplotlib.pyplot as plt
@@ -64,7 +64,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GraphSAGE()
+model = GraphSAGE_90()
 model.to(DEVICE)
 print('Model built.')
 

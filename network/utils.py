@@ -126,7 +126,7 @@ def check_accuracy(loader, model, alpha, beta, device=None):
     model.train()
     return avg_loss
 
-def plot_losses(train_losses, val_losses, alpha, beta, learning_rate, batch_size, model_name):
+def plot_losses(train_losses, val_losses, alpha, beta, learning_rate, batch_size, model_name, percentage, epochs):
     import matplotlib.pyplot as plt
     plt.figure(figsize=(10, 7))  # Set a larger figure size
     plt.plot(train_losses, label="Training Loss")
@@ -136,10 +136,10 @@ def plot_losses(train_losses, val_losses, alpha, beta, learning_rate, batch_size
     plt.legend()
 
     # Generate the plot filename based on the hyperparameters and the model name
-    plot_filename = f'../losses_plot/losses_plot_{model_name}_alpha_{alpha}_beta_{beta}_lr_{learning_rate}_batch_{batch_size}.jpg'
+    plot_filename = f'../losses_plot/{model_name}_{percentage}_losses_plot_{epochs}alpha_{alpha}_beta_{beta}_lr_{learning_rate}_batch_{batch_size}.jpg'
 
     plt.savefig(plot_filename, format='jpg', dpi=350)
- 
+
 
 
 

@@ -6,6 +6,9 @@ from scipy.spatial import cKDTree
 import sys
 from torch_geometric.utils import to_undirected
 
+# Define the missing percentage value
+MISSING_PERCENTAGE = 90
+
 def load_npz_data(file_path):
     print(f"Loading data from: {file_path}")
     with np.load(file_path) as data:
@@ -48,7 +51,7 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
 
     # Save the graph
     os.makedirs(folder, exist_ok=True)
-    suffix = "_input.pt" if is_input else "_label.pt"
+    suffix = f"_input_{MISSING_PERCENTAGE}.pt" if is_input else f"_label_{MISSING_PERCENTAGE}.pt"
     file_path = os.path.join(folder, f"{file_base}{suffix}")
     torch.save(graph, file_path)
 
@@ -65,18 +68,16 @@ def create_graphs(data_folder, num_neighbours, save_folder, is_input):
 num_neighbours = 8
 
 test_data = "../dataset_graph/original_data/npz_data/test"
-test_inputs = "../dataset_graph/original_data/npz_data/test_inputs"
+test_inputs = f"../dataset_graph/original_data/npz_data/test_inputs_{MISSING_PERCENTAGE}"
 
 save_graphs_folder = "../dataset_graph/training"
 # Flush stdout after each print statement
 sys.stdout.flush()
 
-create_graphs(test_data, num_neighbours, os.path.join(save_graphs_folder, "test_graphs"), is_input=False)
+create_graphs(test_data, num_neighbours, os.path.join(save_graphs_folder, f"test_label_graphs_{MISSING_PERCENTAGE}"), is_input=False)
 print("Test graphs created.")
 sys.stdout.flush()
 
-create_graphs(test_inputs, num_neighbours, os.path.join(save_graphs_folder, "test_input_graphs"), is_input=True)
+create_graphs(test_inputs, num_neighbours, os.path.join(save_graphs_folder, f"test_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
 print("Test input graphs created.")
 sys.stdout.flush()
-
-

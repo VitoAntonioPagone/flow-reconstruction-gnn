@@ -133,7 +133,7 @@ def train_unet_conv_autoencoder():
         val_losses.append(val_loss)
         print(f"Training Loss: {train_loss}")
 
-    plot_losses(train_losses, val_losses, ALPHA, BETA, LEARNING_RATE, BATCH_SIZE, MODEL_NAME)
+    plot_losses(train_losses, val_losses, ALPHA, BETA, LEARNING_RATE, BATCH_SIZE, MODEL_NAME, PERCENTAGE_OF_MISSING_POINTS, NUM_EPOCHS)
 
 if __name__ == "__main__":
     train_unet_conv_autoencoder()

@@ -78,6 +78,35 @@ class GraphSAGE(torch.nn.Module):
         return x
 
 
+class GraphSAGE_90(torch.nn.Module):
+    def __init__(self):
+        super(GraphSAGE_90, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.conv1 = SAGEConv(self.feat_dim, 256)
+        self.conv2 = SAGEConv(256, 512)
+        self.conv3 = SAGEConv(512, 1024)
+        self.conv4 = SAGEConv(1024, 512)
+        self.conv5 = SAGEConv(512, 256)
+        self.conv6 = SAGEConv(256, self.feat_dim)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv2(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv3(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv4(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv5(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv6(x, edge_index)
+        return x
+
+
+
 
 class DilatedConvAutoEncoder(nn.Module):
     def __init__(self):

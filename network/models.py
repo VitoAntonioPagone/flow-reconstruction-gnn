@@ -296,32 +296,6 @@ class Convolutional_ChannelAttention_Autoencoder_90(nn.Module):
 
         return dec1
 
-class GraphConvAutoencoder(nn.Module):
-    def __init__(self, num_features, hidden_dim, embedding_dim):
-        super(GraphConvAutoencoder, self).__init__()
-        
-        # Encoder layers
-        self.gcn1 = GCNConv(num_features, hidden_dim)
-        self.gcn2 = GCNConv(hidden_dim, embedding_dim)
-
-        # Decoder layers
-        self.fc1 = nn.Linear(embedding_dim, hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, num_features)
-
-    def encode(self, x, edge_index):
-        x = F.relu(self.gcn1(x, edge_index))
-        x = self.gcn2(x, edge_index)
-        return x
-
-    def decode(self, z):
-        z = F.relu(self.fc1(z))
-        z = self.fc2(z)
-        return z
-
-    def forward(self, x, edge_index):
-        z = self.encode(x, edge_index)
-        x_hat = self.decode(z)
-        return x_hat
 
 
 class DoubleConv(nn.Module):

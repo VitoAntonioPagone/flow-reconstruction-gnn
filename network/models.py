@@ -12,6 +12,27 @@ from torch_geometric.nn import GCNConv ,SAGEConv
 from torch_geometric.nn import GATConv
 from torch_geometric.nn import GINConv, PNAConv
 from torch.nn import Sequential, Linear, ReLU
+from torch_geometric.nn import ChebConv
+
+class ChebNet(torch.nn.Module):
+    def __init__(self):
+        super(ChebNet, self).__init__()
+        self.feat_dim = 6
+        self.conv1 = ChebConv(self.feat_dim, 128, K=2)
+        self.conv2 = ChebConv(128, 256, K=2)
+        self.conv3 = ChebConv(256, 128, K=2)
+        self.conv4 = ChebConv(128, self.feat_dim, K=2)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv2(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv3(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv4(x, edge_index)
+        return x
 
 
 class GAT(torch.nn.Module):

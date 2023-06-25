@@ -8,7 +8,7 @@ from torch_geometric.utils import to_undirected
 
 # Constants
 NUM_NEIGHBOURS = 8
-PERCENTAGE = 0.9  # Modify this accordingly
+PERCENTAGE = 0.5  # Modify this accordingly
 
 TRAIN_DATA = f"../dataset_graph/original_data/npz_data/train"
 TEST_DATA = f"../dataset_graph/original_data/npz_data/test"
@@ -79,6 +79,14 @@ def create_graphs(data_folder, save_folder, is_input):
 
 sys.stdout.flush()
 
+create_graphs(TRAIN_DATA, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_{PERCENTAGE*100:.0f}"), is_input=False)
+print("Train graphs created.")
+sys.stdout.flush()
+
+create_graphs(TRAIN_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_{PERCENTAGE*100:.0f}"), is_input=True)
+print("Train input graphs created.")
+sys.stdout.flush()
+
 create_graphs(VALIDATION_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_{PERCENTAGE*100:.0f}"), is_input=True)
 print("Validation input graphs created.")
 sys.stdout.flush()
@@ -88,13 +96,6 @@ print("Validation graphs created.")
 sys.stdout.flush()
 
 
-create_graphs(TRAIN_DATA, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_{PERCENTAGE*100:.0f}"), is_input=False)
-print("Train graphs created.")
-sys.stdout.flush()
-
-create_graphs(TRAIN_INPUTS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_{PERCENTAGE*100:.0f}"), is_input=True)
-print("Train input graphs created.")
-sys.stdout.flush()
 
 
 

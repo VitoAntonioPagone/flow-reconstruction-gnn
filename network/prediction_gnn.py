@@ -98,7 +98,7 @@ def run_GCN(input_file, label_file):
         """Computes root mean squared error"""
         return torch.sqrt(torch.mean((pred - target) ** 2))
 
-    fig, axs = plt.subplots(4, 3, figsize=(10, 10))  # Changed the subplot configuration
+    fig, axs = plt.subplots(4, 3, figsize=(10, 10), dpi=350)  # Changed the subplot configuration
     fig.subplots_adjust(hspace=0.5, wspace=0.5) 
     
     def mae(pred, target):

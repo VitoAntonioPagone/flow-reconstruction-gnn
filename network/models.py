@@ -105,12 +105,13 @@ class GraphSAGE_90(torch.nn.Module):
         super(GraphSAGE_90, self).__init__()
         self.feat_dim = 6
         self.output_dim = 6
-        self.conv1 = SAGEConv(self.feat_dim, 128)
-        self.conv2 = SAGEConv(128, 256)
-        self.conv3 = SAGEConv(256, 512)
-        self.conv4 = SAGEConv(512, 256)
-        self.conv5 = SAGEConv(256, 128)
-        self.conv6 = SAGEConv(128, self.feat_dim)
+        self.conv1 = SAGEConv(self.feat_dim, 128*2)
+        self.conv2 = SAGEConv(128*2, 256*2)
+        self.conv3 = SAGEConv(256*2, 512*2)
+        self.conv4 = SAGEConv(512*2, 256*2)
+        self.conv5 = SAGEConv(256*2, 128*2)
+        self.conv6 = SAGEConv(128*2, 64*2) # Updated this line
+        self.conv7 = SAGEConv(64*2, self.feat_dim) # New conv layer
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -125,8 +126,10 @@ class GraphSAGE_90(torch.nn.Module):
         x = self.conv5(x, edge_index)
         x = torch.relu(x)
         x = self.conv6(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv7(x, edge_index) # New conv layer
         return x
-    
+
 class GAT_90(torch.nn.Module):
     def __init__(self):
         super(GAT_90, self).__init__()

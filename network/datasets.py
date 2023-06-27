@@ -54,3 +54,28 @@ class CustomDataset(TorchDataset):
         input_data.x_complete = label_data.x  # Save a copy of complete node features
 
         return input_data
+
+class EdgeCustomDataset(TorchDataset):
+    def __init__(self, inputs_dir, labels_dir):
+        self.inputs_dir = inputs_dir
+        self.labels_dir = labels_dir
+        self.input_files = sorted([file for file in os.listdir(self.inputs_dir) if file.endswith('_input.pt')])
+
+    def __len__(self):
+        return len(self.input_files)
+
+    def __getitem__(self, idx):
+        input_data = torch.load(os.path.join(self.inputs_dir, self.input_files[idx]))
+        label_filename = self.input_files[idx].replace('_input.pt', '_label.pt')
+        label_data = torch.load(os.path.join(self.labels_dir, label_filename))
+
+        # Set target node features
+        input_data.y = label_data.x  
+
+        # Save a copy of complete node features
+        input_data.x_complete = label_data.x  
+
+        input_data.edge_index = label_data.edge_index
+        input_data.edge_attr = label_data.edge_attr
+
+        return input_data

@@ -11,17 +11,17 @@ import numpy as np
 from torch.utils.data import Dataset as TorchDataset
 import torch
 from datasets import CustomDataset
-from models import GCN, GraphSAGE
+from models import GCN, GraphSAGE, GraphSAGE_90, ChebNet_90, GAT_90, AGNN_90
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-MISSING_PERCENTAGE = 50
+MISSING_PERCENTAGE = 90
 
 # Hyperparameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Path
-CHECKPOINT_PATH = '../trained_models/GAT_epochs_100_lr_0.001_batch_2.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/ACGCNN_90_epochs_50_lr_0.001_batch_1.pth.tar' 
 
 class CustomDataset(TorchDataset):
     def __init__(self, input_files, label_files):
@@ -62,7 +62,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = GAT()
+    model = AGNN_90()
     ######## MODEL ########
     
     model.to(DEVICE)
@@ -98,7 +98,7 @@ def run_GCN(input_file, label_file):
         """Computes root mean squared error"""
         return torch.sqrt(torch.mean((pred - target) ** 2))
 
-    fig, axs = plt.subplots(4, 3, figsize=(10, 10), dpi=350)  # Changed the subplot configuration
+    fig, axs = plt.subplots(4, 3, figsize=(10, 10))  # Changed the subplot configuration
     fig.subplots_adjust(hspace=0.5, wspace=0.5) 
     
     def mae(pred, target):
@@ -167,6 +167,6 @@ def run_GCN(input_file, label_file):
     plt.show()
 
 if __name__ == "__main__":
-    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_input.pt'
-    label_file = f'../dataset_graph/training/test_label_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_label.pt'
+    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_input_90.pt'
+    label_file = f'../dataset_graph/training/test_label_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_label_90.pt'
     run_GCN(input_file, label_file)

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from models import (
-    UNet,
+    ConvNet_95,
     ConvAutoEncoder_simplified_50,
     ConvAutoEncoder_simplified_90,
     DilatedConvAutoEncoder,
@@ -24,19 +24,19 @@ from utils import (
 
 # Hyper-parameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 NUM_WORKERS = 6
 PIN_MEMORY = True
 LEARNING_RATE = 0.0001
 SHUFFLE = True
-NUM_EPOCHS = 500
+NUM_EPOCHS = 1000
 ALPHA = 0.1
 BETA = 0.1
 LOAD_MODEL = False
-PERCENTAGE_OF_MISSING_POINTS = 90
-MODEL_NAME = f"ConvAutoEncoder_simplified_{PERCENTAGE_OF_MISSING_POINTS}"  
-LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}_autoencoder_checkpoint_alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
-SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}_autoencoder_checkpoint_alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
+PERCENTAGE_OF_MISSING_POINTS = 95
+MODEL_NAME = f"ConvNet_{PERCENTAGE_OF_MISSING_POINTS}"  
+LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}__alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
+SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}__alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
 
 TRAIN_INPUTS_DIR = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_inputs_{PERCENTAGE_OF_MISSING_POINTS}'
 TRAIN_LABELS_DIR = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_labels_{PERCENTAGE_OF_MISSING_POINTS}'
@@ -84,7 +84,7 @@ def train_unet_conv_autoencoder():
 
     print(f"Selected device: {DEVICE}")
 
-    model = ConvAutoEncoder_simplified_90().to(DEVICE)
+    model = ConvNet_95().to(DEVICE)
 
 
     # Check for multiple GPUs and wrap model

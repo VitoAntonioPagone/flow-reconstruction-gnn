@@ -7,7 +7,7 @@ import glob
 TRAIN_FOLDER = '../dataset_graph/original_data/npz_data/train'
 TEST_FOLDER = '../dataset_graph/original_data/npz_data/test'
 VALIDATION_FOLDER = '../dataset_graph/original_data/npz_data/validation'
-PERCENTAGE = 0.9
+PERCENTAGE = 0.5
 
 def extract_random_points(data, percentage):
     num_points = int(data.shape[0] * percentage)

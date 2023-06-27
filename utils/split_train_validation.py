@@ -7,11 +7,11 @@ import glob
 
 RANDOM_SEED = 1337
 TRAIN_SPLIT = 0.9
-PERCENTAGE_OF_MISSING_POINTS = 90
-INPUT_TRAIN_INPUTS_DIR = f'/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_inputs_{PERCENTAGE_OF_MISSING_POINTS}/'
-OUTPUT_VAL_INPUTS_DIR = f'/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/val_inputs_{PERCENTAGE_OF_MISSING_POINTS}/'
-INPUT_TRAIN_LABELS_DIR = f'/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_labels_{PERCENTAGE_OF_MISSING_POINTS}/'
-OUTPUT_VAL_LABELS_DIR = f'/Users/vitoantonio/Desktop/feature_network_architectures/flow_reconstruction/dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/val_labels_{PERCENTAGE_OF_MISSING_POINTS}/'
+PERCENTAGE_OF_MISSING_POINTS = 95
+INPUT_TRAIN_INPUTS_DIR = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_inputs_{PERCENTAGE_OF_MISSING_POINTS}/'
+OUTPUT_VAL_INPUTS_DIR = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/val_inputs_{PERCENTAGE_OF_MISSING_POINTS}/'
+INPUT_TRAIN_LABELS_DIR = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/train_labels_{PERCENTAGE_OF_MISSING_POINTS}/'
+OUTPUT_VAL_LABELS_DIR = f'../dataset/train_data_{PERCENTAGE_OF_MISSING_POINTS}/val_labels_{PERCENTAGE_OF_MISSING_POINTS}/'
 
 
 def tran_val_split(train_dir, val_dir):

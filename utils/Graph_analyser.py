@@ -16,6 +16,7 @@ def load_labels(file_path):
 def print_graph_info(graph):
     print("Graph Information:")
     print("------------------")
+    
     print("Number of Nodes:", graph.num_nodes)
     print("Number of Edges:", graph.num_edges)
     print("Number of Node Features:", graph.num_node_features)
@@ -51,6 +52,6 @@ def plot_graph(graph):
     plt.show()
 
 # Load graph from file and print its info
-graph_file_path = "../dataset_graph/training/train_input_graphs/graph_1_input.pt"
+graph_file_path = "../dataset_graph/training/edge_train_graphs_50/graph_0_label.pt"
 graph = load_graph(graph_file_path)
 print_graph_info(graph)

@@ -9,11 +9,14 @@ from torch_geometric.data import Data
 from torch.nn import Module, Linear, ReLU, Dropout
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv ,SAGEConv
-from torch_geometric.nn import GATConv
+from torch_geometric.nn import GATConv, GravNetConv
 from torch_geometric.nn import GINConv, PNAConv
 from torch.nn import Sequential, Linear, ReLU
 from torch_geometric.nn import ChebConv
+from torch_geometric.nn import AGNNConv, ARMAConv
 
+
+################# 50%
 class ChebNet(torch.nn.Module):
     def __init__(self):
         super(ChebNet, self).__init__()
@@ -99,6 +102,76 @@ class GraphSAGE(torch.nn.Module):
         x = self.conv4(x, edge_index)
         return x
 
+ ################# 90%
+
+
+
+
+
+class AGNN_90(torch.nn.Module):
+    def __init__(self):
+        super(AGNN_90, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.lin1 = torch.nn.Linear(self.feat_dim, 64)
+        self.conv1 = AGNNConv(requires_grad=True)
+        self.lin2 = torch.nn.Linear(64, 128)
+        self.conv2 = AGNNConv(requires_grad=True)
+        self.lin3 = torch.nn.Linear(128, 64)
+        self.conv3 = AGNNConv(requires_grad=True)
+        self.lin4 = torch.nn.Linear(64, 32)
+        self.conv4 = AGNNConv(requires_grad=True)
+        self.lin5 = torch.nn.Linear(32, self.output_dim)
+        self.conv5 = AGNNConv(requires_grad=True)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.lin1(x)
+        x = self.conv1(x, edge_index)
+        x = torch.relu(x)
+        x = self.lin2(x)
+        x = self.conv2(x, edge_index)
+        x = torch.relu(x)
+        x = self.lin3(x)
+        x = self.conv3(x, edge_index)
+        x = torch.relu(x)
+        x = self.lin4(x)
+        x = self.conv4(x, edge_index)
+        x = torch.relu(x)
+        x = self.lin5(x)
+        x = self.conv5(x, edge_index)
+        return x
+
+class GIN_90(torch.nn.Module):
+    def __init__(self):
+        super(GIN_90, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.conv1 = GINConv(self.feat_dim, 128*2)
+        self.conv2 = GINConv(128*2, 256*2)
+        self.conv3 = GINConv(256*2, 512*2)
+        self.conv4 = GINConv(512*2, 256*2)
+        self.conv5 = GINConv(256*2, 128*2)
+        self.conv6 = GINConv(128*2, 64*2) # Updated this line
+        self.conv7 = SAGEConv(64*2, self.feat_dim) # New conv layer
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv2(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv3(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv4(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv5(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv6(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv7(x, edge_index) # New conv layer
+        return x
+
 
 class GraphSAGE_90(torch.nn.Module):
     def __init__(self):
@@ -135,12 +208,12 @@ class GAT_90(torch.nn.Module):
         super(GAT_90, self).__init__()
         self.feat_dim = 6
         self.output_dim = 6
-        self.conv1 = GATConv(self.feat_dim, 256)
-        self.conv2 = GATConv(256, 512)
-        self.conv3 = GATConv(512, 1024)
-        self.conv4 = GATConv(1024, 512)
-        self.conv5 = GATConv(512, 256)
-        self.conv6 = GATConv(256, self.feat_dim)
+        self.conv1 = GATConv(self.feat_dim, 64)
+        self.conv2 = GATConv(64, 128)
+        self.conv3 = GATConv(128, 256)
+        self.conv4 = GATConv(256, 128)
+        self.conv5 = GATConv(128, 64)
+        self.conv6 = GATConv(64, self.feat_dim)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -159,6 +232,39 @@ class GAT_90(torch.nn.Module):
 
 
 
+class ChebNet_90(torch.nn.Module):
+    def __init__(self):
+        super(ChebNet_90, self).__init__()
+        self.feat_dim = 6
+        self.conv1 = ChebConv(self.feat_dim, 128*2, K=2)
+        self.conv2 = ChebConv(128*2, 256*2, K=2)
+        self.conv3 = ChebConv(256*2, 512*2, K=2)
+        self.conv4 = ChebConv(512*2, 256*2, K=2)
+        self.conv5 = ChebConv(256*2, 128*2, K=2)
+        self.conv6 = ChebConv(128*2, 64*2, K=2) # New conv layer
+        self.conv7 = ChebConv(64*2, self.feat_dim, K=2) # New conv layer
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv2(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv3(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv4(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv5(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv6(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv7(x, edge_index) # New conv layer
+        return x
+
+
+
+
+########### CONVOLUTIONS STANDARD
 
 class DilatedConvAutoEncoder(nn.Module):
     def __init__(self):
@@ -377,8 +483,83 @@ class Convolutional_ChannelAttention_Autoencoder_90(nn.Module):
 
         return dec1
 
+######################################## 95 % #################################################
+class ConvNet_95(nn.Module):
+    def __init__(self):
+        super(ConvNet_95, self).__init__()
+
+        # Encoder
+        self.encoder1 = nn.Sequential(
+            nn.Conv2d(4, 32*3, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.encoder2 = nn.Sequential(
+            nn.Conv2d(32*3, 64*3, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.encoder3 = nn.Sequential(
+            nn.Conv2d(64*3, 128*3, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.encoder4 = nn.Sequential(
+            nn.Conv2d(128*3, 256*3, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+
+        # Decoder
+        self.decoder4 = nn.Sequential(
+            nn.ConvTranspose2d(384*3, 128*3, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.decoder3 = nn.Sequential(
+            nn.ConvTranspose2d(192*3, 64*3, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.decoder2 = nn.Sequential(
+            nn.ConvTranspose2d(96*3, 32*3, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.decoder1 = nn.Sequential(
+            nn.ConvTranspose2d(32*3, 3, kernel_size=7, stride=1, padding=3),
+        )
+
+    def forward(self, x):
+        enc1 = self.encoder1(x)
+        enc2 = self.encoder2(enc1)
+        enc3 = self.encoder3(enc2)
+        enc4 = self.encoder4(enc3)
+
+        dec4 = self.decoder4(torch.cat((enc4, enc3), dim=1))  # Skip connection from encoder3
+        dec3 = self.decoder3(torch.cat((dec4, enc2), dim=1))  # Skip connection from encoder2
+        dec2 = self.decoder2(torch.cat((dec3, enc1), dim=1))  # Skip connection from encoder1
+        dec1 = self.decoder1(dec2)
+
+        return dec1
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+######################################## 95 % #################################################
+'''
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DoubleConv, self).__init__()
@@ -443,5 +624,5 @@ class UNet(nn.Module):
             x = self.ups[idx+1](concat_skip)
 
         return self.final_conv(x)
-
+'''
 

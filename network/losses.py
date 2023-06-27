@@ -2,6 +2,7 @@ import torch
 from torch.nn import Module
 import torch.nn as nn
 import torch.nn.functional as F
+import torch_scatter
 
 class TVLoss(nn.Module):
     def __init__(self, TVLoss_weight=1):
@@ -72,30 +73,32 @@ class GraphNavierStokesLoss(torch.nn.Module):
         super(GraphNavierStokesLoss, self).__init__()
 
     def forward(self, data):
-        u, v, _, _, x, y = data.x[:, 0], data.x[:, 1], data.x[:, 2], data.x[:, 3], data.x[:, 4], data.x[:, 5]
+        u, v, x, y = data.x[:, 0], data.x[:, 1], data.x[:, 4], data.x[:, 5]
 
-        # For each edge, calculate differences in velocity and position
+        EPSILON = 1e-7  # Small constant to avoid division by zero
+
+        # Compute differences in velocities and positions for each edge
         du = u[data.edge_index[0]] - u[data.edge_index[1]]
         dv = v[data.edge_index[0]] - v[data.edge_index[1]]
         dx = x[data.edge_index[0]] - x[data.edge_index[1]]
         dy = y[data.edge_index[0]] - y[data.edge_index[1]]
 
-        # Approximate du/dx, dv/dx, du/dy, dv/dy as (change in velocity) / (change in position)
-        EPSILON = 1e-7  # Small constant
-
+        # Calculate du/dx and dv/dy
         du_dx = du / (dx + EPSILON)
-        dv_dx = dv / (dx + EPSILON)
-        du_dy = du / (dy + EPSILON)
         dv_dy = dv / (dy + EPSILON)
 
+        # Compute the divergence for each edge
+        div_edge = du_dx + dv_dy
 
-        # Momentum equations
-        momentum_u = (u * du_dx + v * du_dy) ** 2
-        momentum_v = (u * dv_dx + v * dv_dy) ** 2
+        # Now we want to sum all the divergence contributions for each node
+        div_node = torch_scatter.scatter_add(div_edge.abs(), data.edge_index[0], dim=0, dim_size=data.num_nodes)
 
-        # Continuity equation
-        continuity = (du_dx + dv_dy) ** 2
+        # Return the mean divergence
+        return div_node.mean()
 
-        return (continuity.mean() + momentum_u.mean() + momentum_v.mean())
+
+
+
+
 
 

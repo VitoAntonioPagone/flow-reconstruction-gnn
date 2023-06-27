@@ -136,7 +136,7 @@ def plot_losses(train_losses, val_losses, alpha, beta, learning_rate, batch_size
     plt.legend()
 
     # Generate the plot filename based on the hyperparameters and the model name
-    plot_filename = f'../losses_plot/{model_name}_{percentage}_losses_plot_{epochs}alpha_{alpha}_beta_{beta}_lr_{learning_rate}_batch_{batch_size}.jpg'
+    plot_filename = f'../losses_plot/{model_name}_{percentage}_losses_plot_{epochs}_alpha_{alpha}_beta_{beta}_lr_{learning_rate}_batch_{batch_size}.jpg'
 
     plt.savefig(plot_filename, format='jpg', dpi=350)
 

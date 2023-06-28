@@ -63,6 +63,67 @@ class ConvNet_50(nn.Module):
 
         return dec1
     
+class ConvNet_50(nn.Module):
+    def __init__(self):
+        super(ConvNet_50, self).__init__()
+
+        # Encoder with Channel Attention
+        self.encoder1 = nn.Sequential(
+            nn.Conv2d(4, 32, kernel_size=7, stride=1, padding=3),
+            nn.ReLU(),
+            ChannelAttention(32)
+        )
+        self.encoder2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=7, stride=1, padding=3),
+            nn.ReLU(),
+            ChannelAttention(64)
+        )
+        self.encoder3 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=7, stride=1, padding=3),
+            nn.ReLU(),
+            ChannelAttention(128)
+        )
+        self.encoder4 = nn.Sequential(
+            nn.Conv2d(128, 256, kernel_size=7, stride=1, padding=3),
+            nn.ReLU(),
+            ChannelAttention(256)
+        )
+
+        # Decoder with Channel Attention
+        self.decoder4 = nn.Sequential(
+            nn.ConvTranspose2d(384, 128, kernel_size=7, stride=1, padding=3),
+            nn.ReLU(),
+            ChannelAttention(128)
+        )
+        self.decoder3 = nn.Sequential(
+            nn.ConvTranspose2d(192, 64, kernel_size=7, stride=1, padding=3),
+            nn.ReLU(),
+            ChannelAttention(64)
+        )
+        self.decoder2 = nn.Sequential(
+            nn.ConvTranspose2d(96, 32, kernel_size=7, stride=1, padding=3),
+            nn.ReLU(),
+            ChannelAttention(32)
+        )
+        self.decoder1 = nn.Sequential(
+            nn.ConvTranspose2d(32, 3, kernel_size=7, stride=1, padding=3),
+            ChannelAttention(3)
+        )
+
+    def forward(self, x):
+        enc1 = self.encoder1(x)
+        enc2 = self.encoder2(enc1)
+        enc3 = self.encoder3(enc2)
+        enc4 = self.encoder4(enc3)
+
+        dec4 = self.decoder4(torch.cat((enc4, enc3), dim=1))  # Skip connection from encoder3
+        dec3 = self.decoder3(torch.cat((dec4, enc2), dim=1))  # Skip connection from encoder2
+        dec2 = self.decoder2(torch.cat((dec3, enc1), dim=1))  # Skip connection from encoder1
+        dec1 = self.decoder1(dec2)
+
+        return dec1
+
+    
 #### GRAPHS NETWORKS ####
 
 class ChebNet_50(torch.nn.Module):
@@ -247,13 +308,13 @@ class GIN_90(torch.nn.Module):
         super(GIN_90, self).__init__()
         self.feat_dim = 6
         self.output_dim = 6
-        self.conv1 = GINConv(self.feat_dim, 128*2)
-        self.conv2 = GINConv(128*2, 256*2)
-        self.conv3 = GINConv(256*2, 512*2)
-        self.conv4 = GINConv(512*2, 256*2)
-        self.conv5 = GINConv(256*2, 128*2)
-        self.conv6 = GINConv(128*2, 64*2) # Updated this line
-        self.conv7 = SAGEConv(64*2, self.feat_dim) # New conv layer
+        self.conv1 = GINConv(self.feat_dim, 128)
+        self.conv2 = GINConv(128, 256)
+        self.conv3 = GINConv(256, 512)
+        self.conv4 = GINConv(512, 256)
+        self.conv5 = GINConv(256, 128)
+        self.conv6 = GINConv(128, 64) # Updated this line
+        self.conv7 = SAGEConv(64, self.feat_dim) # New conv layer
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -455,6 +516,58 @@ class ConvNet_95(nn.Module):
         )
         self.decoder1 = nn.Sequential(
             nn.ConvTranspose2d(32*3, 3, kernel_size=7, stride=1, padding=3),
+        )
+
+    def forward(self, x):
+        enc1 = self.encoder1(x)
+        enc2 = self.encoder2(enc1)
+        enc3 = self.encoder3(enc2)
+        enc4 = self.encoder4(enc3)
+
+        dec4 = self.decoder4(torch.cat((enc4, enc3), dim=1))  # Skip connection from encoder3
+        dec3 = self.decoder3(torch.cat((dec4, enc2), dim=1))  # Skip connection from encoder2
+        dec2 = self.decoder2(torch.cat((dec3, enc1), dim=1))  # Skip connection from encoder1
+        dec1 = self.decoder1(dec2)
+
+        return dec1
+    
+class ConvNet_95_deeper(nn.Module):
+    def __init__(self):
+        super(ConvNet_95_deeper, self).__init__()
+
+        # Encoder
+        self.encoder1 = nn.Sequential(
+            nn.Conv2d(4, 32*4, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.encoder2 = nn.Sequential(
+            nn.Conv2d(32*4, 64*4, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.encoder3 = nn.Sequential(
+            nn.Conv2d(64*4, 128*4, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.encoder4 = nn.Sequential(
+            nn.Conv2d(128*4, 256*4, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+
+        # Decoder
+        self.decoder4 = nn.Sequential(
+            nn.ConvTranspose2d(384*4, 128*4, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.decoder3 = nn.Sequential(
+            nn.ConvTranspose2d(192*4, 64*4, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.decoder2 = nn.Sequential(
+            nn.ConvTranspose2d(96*4, 32*4, kernel_size=7, stride=1, padding=3),
+            nn.ReLU()
+        )
+        self.decoder1 = nn.Sequential(
+            nn.ConvTranspose2d(32*4, 3, kernel_size=7, stride=1, padding=3),
         )
 
     def forward(self, x):

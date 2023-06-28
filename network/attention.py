@@ -1,10 +1,6 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-# Squeeze-and-Excitation Layer (SELayer): adaptively recalibrates channel-wise feature responses by explicitly modeling interdependencies between channels
-
-
-# Spatial Attention (SA): focuses on learning spatial dependencies and computes a spatial attention map by pooling channel information
 
 class ChannelAttention(nn.Module):
     def __init__(self, num_channels, reduction_ratio=16):

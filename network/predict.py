@@ -6,7 +6,7 @@ import os
 import glob
 import matplotlib.pyplot as plt
 from datasets import FlowDataset
-from models import ConvAutoEncoder_simplified_50, ConvAutoEncoder_simplified_90
+from models import ConvNet_95, ConvNet_90
 from utils import load_checkpoint
 import numpy as np
 import matplotlib.pyplot as plt
@@ -80,7 +80,7 @@ def run_autoencoder(input_file, label_file):
         # Load pre-trained model 
 
         ####### MODEL #######
-        model = ConvAutoEncoder_simplified_90().to(DEVICE)
+        model = ConvNet_90().to(DEVICE)
         ####### MODEL #######
         
         load_checkpoint(torch.load(CHECKPOINT_FILE, map_location=torch.device(DEVICE)), model)

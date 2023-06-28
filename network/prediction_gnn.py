@@ -1,27 +1,15 @@
-import torch
-from datasets import CustomDataset
-from models import GCN
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.interpolate import griddata
-import torch
-from models import GCN, GAT
-import matplotlib.pyplot as plt
-import numpy as np
-from torch.utils.data import Dataset as TorchDataset
-import torch
-from datasets import CustomDataset
-from models import GCN, GraphSAGE, GraphSAGE_90, ChebNet_90, GAT_90, AGNN_90
-import matplotlib.pyplot as plt
-import numpy as np
 import os
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import griddata
+from torch.utils.data import Dataset as TorchDataset
+from models import AGNN_90
+
 MISSING_PERCENTAGE = 90
-
-# Hyperparameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-# Path
 CHECKPOINT_PATH = '../trained_models/ACGCNN_90_epochs_50_lr_0.001_batch_1.pth.tar' 
+
 
 class CustomDataset(TorchDataset):
     def __init__(self, input_files, label_files):
@@ -34,16 +22,26 @@ class CustomDataset(TorchDataset):
     def __getitem__(self, idx):
         input_data = torch.load(self.input_files[idx])
         label_data = torch.load(self.label_files[idx])
-
-        input_data.y = label_data.x  # Set target node features
-        input_data.x_complete = label_data.x  # Save a copy of complete node features
-
+        input_data.y = label_data.x
+        input_data.x_complete = label_data.x
         return input_data
+
 
 def load_checkpoint(model, checkpoint_path):
     checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
     state_dict = checkpoint['state_dict']
     model.load_state_dict(state_dict)
+
+
+def rmse(pred, target):
+    """Computes root mean squared error"""
+    return torch.sqrt(torch.mean((pred - target) ** 2))
+
+
+def mae(pred, target):
+    """Computes mean absolute error"""
+    return torch.mean(torch.abs(pred - target))
+
 
 def run_GCN(input_file, label_file):
     # Load dataset

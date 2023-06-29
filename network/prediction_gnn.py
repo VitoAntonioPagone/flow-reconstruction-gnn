@@ -4,11 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-from models import AGNN_90
-
-MISSING_PERCENTAGE = 90
+from models import AGNN_90, GAT_95, GraphSAGE_95
+MISSING_PERCENTAGE = 95
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/ACGCNN_90_epochs_50_lr_0.001_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GAT_95_epochs_50_lr_0.0001_batch_1.pth.tar' 
 
 
 class CustomDataset(TorchDataset):
@@ -60,7 +59,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = AGNN_90()
+    model = GraphSAGE_95()
     ######## MODEL ########
     
     model.to(DEVICE)
@@ -108,6 +107,7 @@ def run_GCN(input_file, label_file):
     diff_max = -np.inf
 
     channels = ['x-velocity', 'y-velocity', 'z-velocity']
+
     for i in range(3):
         input_values = single_graph.x.cpu()[:, i].numpy() * 7.035423
         output_values = out.cpu()[:, i].numpy() * 7.035423
@@ -146,14 +146,17 @@ def run_GCN(input_file, label_file):
         diff_max = max(diff_max, np.max(grid_output_values - grid_target_values))
 
     for i in range(3):
-        input_values = single_graph.x.cpu()[:, i].numpy()
-        output_values = out.cpu()[:, i].numpy()
-        target_values = single_graph.y.cpu()[:, i].numpy()
-        grid_input_values  = griddata(positions, input_values, (grid_x, grid_y),  method='nearest')
-        grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='nearest')
-        grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='nearest')
+        # Use the scaled data for calculating the difference
+        scaled_output_values = out.cpu()[:, i].numpy() * 7.035423
+        scaled_target_values = single_graph.y.cpu()[:, i].numpy() * 7.035423
 
-        im = axs[3, i].imshow((grid_output_values - grid_target_values).T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=diff_min, vmax=diff_max)
+        # Calculate the difference using scaled data
+        diff_values = scaled_output_values - scaled_target_values
+
+        # Then create the grid for this difference
+        grid_diff_values = griddata(positions, diff_values, (grid_x, grid_y), method='nearest')
+
+        im = axs[3, i].imshow(grid_diff_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=diff_min, vmax=diff_max)
         axs[3, i].set_title(f'Difference {channels[i]}')
         axs[3, i].set_xticks([])
         axs[3, i].set_yticks([])
@@ -165,6 +168,6 @@ def run_GCN(input_file, label_file):
     plt.show()
 
 if __name__ == "__main__":
-    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_input_90.pt'
-    label_file = f'../dataset_graph/training/test_label_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_label_90.pt'
+    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_input_95.pt'
+    label_file = f'../dataset_graph/training/test_label_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_label_95.pt'
     run_GCN(input_file, label_file)

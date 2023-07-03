@@ -84,8 +84,8 @@ class GraphNavierStokesLoss(torch.nn.Module):
         dy = y[data.edge_index[0]] - y[data.edge_index[1]]
 
         # Calculate du/dx and dv/dy
-        du_dx = du / (dx + EPSILON)
-        dv_dy = dv / (dy + EPSILON)
+        du_dx = du / (dx.abs() + EPSILON)  # Take absolute value of dx
+        dv_dy = dv / (dy.abs() + EPSILON)  # Take absolute value of dy
 
         # Compute the divergence for each edge
         div_edge = du_dx + dv_dy
@@ -95,6 +95,7 @@ class GraphNavierStokesLoss(torch.nn.Module):
 
         # Return the mean divergence
         return div_node.mean()
+
 
 
 

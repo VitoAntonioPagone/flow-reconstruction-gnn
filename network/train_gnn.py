@@ -64,7 +64,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GraphSAGE_95()
+model = GAT_95()
 model.to(DEVICE)
 graph_initialize_weights(model)  # Initialize weights of the model
 print('Model built.')
@@ -74,7 +74,7 @@ print(model)  # Print the model's structure
 
 optimizer = Adam(model.parameters(), lr=LR)
 criterion = MSELoss()
-navier_stokes_loss = GraphNavierStokesLoss().to(DEVICE)
+#navier_stokes_loss = GAT_95().to(DEVICE)
 
 train_losses, val_losses = [], []
 

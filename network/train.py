@@ -2,8 +2,10 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from models import (
+    ConvNet_50,
     ConvNet_95,
-    ConvNet_95_deeper)
+    ConvNet_95_Attention,
+    ConvNet_99)
 from losses import (
     MaskedMSELoss, 
     NavierStokesLoss,
@@ -26,12 +28,12 @@ NUM_WORKERS = 6
 PIN_MEMORY = True
 LEARNING_RATE = 0.0001
 SHUFFLE = True
-NUM_EPOCHS = 500
+NUM_EPOCHS = 200
 ALPHA = 0.1
 BETA = 0.1
-LOAD_MODEL = False
-PERCENTAGE_OF_MISSING_POINTS = 95
-MODEL_NAME = f"ConvNet_Deep*4_{PERCENTAGE_OF_MISSING_POINTS}"  
+LOAD_MODEL = False  
+PERCENTAGE_OF_MISSING_POINTS = 99
+MODEL_NAME = f"ConvNet_Attention_{PERCENTAGE_OF_MISSING_POINTS}"  
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}__alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}__alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
 
@@ -81,7 +83,7 @@ def train_unet_conv_autoencoder():
 
     print(f"Selected device: {DEVICE}")
 
-    model = ConvNet_95_deeper().to(DEVICE)
+    model = ConvNet_50().to(DEVICE)
 
 
     # Check for multiple GPUs and wrap model

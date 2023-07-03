@@ -137,7 +137,7 @@ def plot_losses(train_losses, val_losses, alpha, beta, learning_rate, batch_size
     plt.legend()
 
     # Generate the plot filename based on the hyperparameters and the model name
-    plot_filename = f'../losses_plot/{model_name}_{percentage}_losses_plot_{epochs}_alpha_{alpha}_beta_{beta}_lr_{learning_rate}_batch_{batch_size}.jpg'
+    plot_filename = f'../losses_plot/{model_name}_losses_plot_{epochs}_alpha_{alpha}_beta_{beta}_lr_{learning_rate}_batch_{batch_size}.jpg'
 
     plt.savefig(plot_filename, format='jpg', dpi=350)
 
@@ -147,18 +147,7 @@ def graph_initialize_weights(model):
             torch.nn.init.xavier_uniform_(module.weight)
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
-        elif isinstance(module, (SAGEConv, GATConv)):
-            torch.nn.init.xavier_uniform_(module.lin_l.weight)
-            torch.nn.init.xavier_uniform_(module.lin_r.weight)
-            if module.lin_l.bias is not None:
-                torch.nn.init.zeros_(module.lin_l.bias)
-            if module.lin_r.bias is not None:
-                torch.nn.init.zeros_(module.lin_r.bias)
-        elif isinstance(module, GINConv):
-            if hasattr(module.mlp, 'weight'):  # GINConv uses an MLP
-                torch.nn.init.xavier_uniform_(module.mlp.weight)
-                if module.mlp.bias is not None:
-                    torch.nn.init.zeros_(module.mlp.bias)
+
     return print('Weights initialized with Glorot (Xavier) initializer')
 
 

@@ -59,7 +59,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = GraphSAGE_95()
+    model = GAT_95()
     ######## MODEL ########
     
     model.to(DEVICE)

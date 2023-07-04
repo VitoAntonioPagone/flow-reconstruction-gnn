@@ -26,7 +26,7 @@ SAVE_GRAPHS_FOLDER = "../dataset_graph/training"
 
 # Function definitions
 def read_vtp_slice(file_name):
-    print(f"Reading vtp slice: {file_name}")
+    print(f"Reading VTP slice from {file_name}...")
     reader = vtk.vtkXMLPolyDataReader()
     reader.SetFileName(file_name)
     reader.Update()
@@ -42,17 +42,20 @@ def read_vtp_slice(file_name):
     return data_out
 
 def vtp_to_npz(input_folder, output_folder):
+    print(f"Converting VTP files in {input_folder} to NPZ format...")
+    
     os.makedirs(output_folder, exist_ok=True)
 
     vtp_files = glob.glob(os.path.join(input_folder, "*.vtp"))
     print(f"Found {len(vtp_files)} .vtp files in {input_folder}")
 
     for vtp_file in vtp_files:
-        print(f"Processing file: {vtp_file}")
+        print(f"Processing {vtp_file}...")
         data = read_vtp_slice(vtp_file)
         output_file = os.path.join(output_folder, os.path.splitext(os.path.basename(vtp_file))[0] + ".npz")
         np.savez(output_file, **data)
         print(f"Converted {vtp_file} to {output_file}")
+    print("VTP to NPZ conversion complete.")
 
 def train_validation_split(train_dir, validation_dir):
     _, _, files = next(os.walk(train_dir))

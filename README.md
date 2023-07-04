@@ -28,7 +28,7 @@ This script allows for the conversion of flow field simulation data from .vtp fi
 
 This script is intended to be run from the command line with Python:
 
-printf(python standard_convolutions_data_pipeline.py)
+'python standard_convolutions_data_pipeline.py'
 
 The script uses a number of constants that can be modified at the beginning of the script to fit your specific use case, including grid size, percentage of data to remove, and directory paths for input and output data.
 
@@ -38,6 +38,6 @@ This script requires the following libraries: os, glob, numpy, vtk, scipy, pathl
 
 You can install the necessary libraries using pip:
 
-printf(pip install vtk scipy pathlib numpy natsort)
+'pip install vtk scipy pathlib numpy natsort'
 
 This script provides a streamlined way to process flow field simulation data for machine learning applications, particularly for tasks involving sparse data or data completion.

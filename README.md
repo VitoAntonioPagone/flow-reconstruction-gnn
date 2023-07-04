@@ -24,4 +24,20 @@ Steps
 - Training and validation split: The dataset is split into training and validation sets based on TRAIN_SPLIT (default is 90%). This means 90% of the data will be used for training and 10% for validation. This step is performed by the tran_val_split function.
 
 
+Usage
 
+This script is intended to be run from the command line with Python:
+
+standard_convolutions_data_pipeline.py
+
+The script uses a number of constants that can be modified at the beginning of the script to fit your specific use case, including grid size, percentage of data to remove, and directory paths for input and output data.
+
+All output directories are created by the script if they do not already exist.
+
+This script requires the following libraries: os, glob, numpy, vtk, scipy, pathlib, shutil, and natsort. Make sure to install these libraries before running the script.
+
+You can install the necessary libraries using pip:
+
+pip install vtk scipy pathlib numpy natsort
+
+This script provides a streamlined way to process flow field simulation data for machine learning applications, particularly for tasks involving sparse data or data completion.

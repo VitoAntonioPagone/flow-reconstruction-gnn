@@ -4,10 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-from models import AGNN_90, GAT_95, GraphSAGE_95
-MISSING_PERCENTAGE = 95
+from models import GAT_50, GCN_50, AGNN_90, GAT_95, GraphSAGE_95
+MISSING_PERCENTAGE = 50
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/GAT_95_epochs_50_lr_0.0001_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GCN_epochs_100_lr_0.001_batch_4.pth.tar' 
 
 
 class CustomDataset(TorchDataset):
@@ -59,7 +59,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = GAT_95()
+    model = GCN_50()
     ######## MODEL ########
     
     model.to(DEVICE)
@@ -82,7 +82,7 @@ def run_GCN(input_file, label_file):
     print("Output zero check:", torch.all(out==0).item())
 
     # Define grid size
-    grid_size = 256  # Increased for a smoother plot
+    grid_size = 256   # Increased for a smoother plot
 
     # Get minimum and maximum position values
     min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
@@ -168,6 +168,8 @@ def run_GCN(input_file, label_file):
     plt.show()
 
 if __name__ == "__main__":
-    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_input_95.pt'
-    label_file = f'../dataset_graph/training/test_label_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y3_Z1_X0_label_95.pt'
+    #input_file = f'../dataset/original_data/onehundredfile/graph_input.pt'
+    #label_file = f'../dataset/original_data/onehundredfile/graph_label.pt'
+    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y0_Z0_X0_input_{MISSING_PERCENTAGE}.pt'
+    label_file = f'../dataset_graph/training/test_label_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y0_Z0_X0_label_{MISSING_PERCENTAGE}.pt'
     run_GCN(input_file, label_file)

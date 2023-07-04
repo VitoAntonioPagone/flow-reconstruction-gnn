@@ -12,7 +12,8 @@ Good practice (not mandatory):
 - Follow PEP 8 style of coding whenever possible
 
 ## Data - Pipeline
-Standard Convolution: ```bash
+Standard Convolution:
+```bash
 standard_convolutions_data_pipeline.py
 ```
 

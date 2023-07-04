@@ -12,11 +12,13 @@ Good practice (not mandatory):
 - Follow PEP 8 style of coding whenever possible
 
 ## Data - Pipeline
-Standard Convolution: *standard_convolutions_data_pipeline.py*
+Standard Convolution: ```bash
+standard_convolutions_data_pipeline.py
+```
 
 This script allows for the conversion of flow field simulation data from .vtp files to .npz format, interpolation of data onto a uniform grid, creation of input-label pairs with a certain percentage of the data removed from the inputs, and finally splitting the dataset into training and validation sets.
 
-# Steps
+## Steps
 
 - Conversion from VTP to NPZ: Flow field simulation data stored in .vtp files is read and saved in .npz format for easier manipulation. This step is executed by the function vtp_to_npz.
 - Interpolation: The data is interpolated onto a uniform grid of size GRID_SIZE x GRID_SIZE. Interpolation is performed separately for each feature in the dataset. This step is performed by the interpolate_data function.
@@ -24,7 +26,7 @@ This script allows for the conversion of flow field simulation data from .vtp fi
 - Training and validation split: The dataset is split into training and validation sets based on TRAIN_SPLIT (default is 90%). This means 90% of the data will be used for training and 10% for validation. This step is performed by the tran_val_split function.
 
 
-# Usage
+## Usage
 
 This script is intended to be run from the command line with Python:
 
@@ -44,3 +46,21 @@ pip install vtk scipy pathlib numpy natsort
 ```
 
 This script provides a streamlined way to process flow field simulation data for machine learning applications, particularly for tasks involving sparse data or data completion.
+
+dataset_graph/
+│
+├── original_data/
+│   ├── train/
+│   ├── test/
+│   └── npz_data/
+│       ├── train/
+│       ├── test/
+│       └── validation/
+│
+└── training/
+    ├── train_graphs_[PERCENTAGE]/
+    ├── train_input_graphs_[PERCENTAGE]/
+    ├── validation_graphs_[PERCENTAGE]/
+    ├── validation_input_graphs_[PERCENTAGE]/
+    ├── test_graphs_[PERCENTAGE]/
+    └── test_input_graphs_[PERCENTAGE]/

@@ -47,24 +47,3 @@ pip install vtk scipy pathlib numpy natsort
 
 This script provides a streamlined way to process flow field simulation data for machine learning applications, particularly for tasks involving sparse data or data completion.
 
-└── utils
-    ├── standard_convolutions_data_pipeline.py
-└── dataset
-    ├── original_data
-    │   ├── train  # Original training data in VTP format
-    │   └── test  # Original testing data in VTP format
-    ├── npz_data
-    │   ├── train  # Converted NPZ training data
-    │   ├── test  # Converted NPZ testing data
-    │   └── validation  # Validation data split from the training data
-    ├── npz_data_interpolated
-    │   ├── train  # Interpolated NPZ training data
-    │   └── test  # Interpolated NPZ testing data
-    └── train_data_{PERCENT_TO_REMOVE}  # Folders for various percentage train data
-        ├── train_inputs_{PERCENT_TO_REMOVE}  # Training inputs with certain percentage of data removed
-        ├── train_labels_{PERCENT_TO_REMOVE}  # Corresponding labels for the training data
-        ├── test_inputs_{PERCENT_TO_REMOVE}  # Testing inputs with certain percentage of data removed
-        ├── test_labels_{PERCENT_TO_REMOVE}  # Corresponding labels for the testing data
-        ├── val_inputs_{PERCENT_TO_REMOVE}  # Validation inputs with certain percentage of data removed
-        └── val_labels_{PERCENT_TO_REMOVE}  # Corresponding labels for the validation data
-

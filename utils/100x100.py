@@ -1,62 +1,102 @@
 import numpy as np
+from scipy.interpolate import griddata
 import os
+import matplotlib.pyplot as plt
+from scipy.spatial import cKDTree
 import torch
 from torch_geometric.data import Data
-from scipy.spatial import cKDTree
 from torch_geometric.utils import to_undirected
 
-# Constants
-NUM_NEIGHBOURS = 8
-INPUT_NPZ_PATH = "../dataset_graph/original_data/npz_data/test_inputs_50/cyc10_CAD615_Y0_Z0_X0.npz" 
-LABEL_NPZ_PATH = "../dataset_graph/original_data/npz_data/test_labels_50/cyc10_CAD615_Y0_Z0_X0.npz" 
-SAVE_GRAPHS_FOLDER = "../dataset/original_data/onehundredfile/" 
+# Set seed for reproducibility
+np.random.seed(42)
+
+GRID_SIZE = 100
+PERCENT_TO_REMOVE = 50
+MISSING_PERCENTAGE = 50
+LABEL_FILE_PATH = "../dataset_graph/original_data/npz_data/test/cyc10_CAD615_Y0_Z0_X0.npz"
+INTERPOLATED_OUTPUT_PATH = "../dataset_graph/original_data/onehundred/label_interpolated.npz"
+ZEROED_OUTPUT_PATH = "../dataset_graph/original_data/onehundred/input_interpolated.npz"
+SAVE_GRAPHS_FOLDER = "../dataset_graph/original_data/onehundred"
+
+def load_label(file_path):
+    data = np.load(file_path)
+    return data
+
+def interpolate_label(data):
+    x_grid = np.linspace(min(data['x']), max(data['x']), GRID_SIZE)
+    y_grid = np.linspace(min(data['y']), max(data['y']), GRID_SIZE)
+    X_grid, Y_grid = np.meshgrid(x_grid, y_grid)
+
+    grid_data = {'x': X_grid, 'y': Y_grid}
+    for feature in data.keys():
+        if feature not in ['x', 'y']:
+            grid_data[feature] = griddata(
+                np.array([data['x'], data['y']]).T, data[feature],
+                (X_grid, Y_grid), method='nearest'
+            )
+
+    return grid_data
 
 def load_npz_data(file_path):
     print(f"Loading data from: {file_path}")
     with np.load(file_path) as data:
-        x = data['x']
-        y = data['y']
-        x_velocity = data['x_velocity']
-        y_velocity = data['y_velocity']
-        z_velocity = data['z_velocity']
-    
-    # Flatten the data for later processes
-    x_velocity = x_velocity.flatten()
-    y_velocity = y_velocity.flatten()
-    z_velocity = z_velocity.flatten()
-    
-# Perform interpolation on a regular grid
-# grid_x, grid_y = np.mgrid[min(x):max(x):GRID_SIZE*1j, min(y):max(y):GRID_SIZE*1j]
-# grid_x_velocity = griddata((x, y), x_velocity, (grid_x, grid_y), method='nearest')
-# grid_y_velocity = griddata((x, y), y_velocity, (grid_x, grid_y), method='nearest')
-# grid_z_velocity = griddata((x, y), z_velocity, (grid_x, grid_y), method='nearest')
-
-# Flatten the data for later processes
-# x_velocity = grid_x_velocity.flatten()
-# y_velocity = grid_y_velocity.flatten()
-# z_velocity = grid_z_velocity.flatten()
+        x = data['x'].flatten()
+        y = data['y'].flatten()
+        x_velocity = data['x_velocity'].flatten()
+        y_velocity = data['y_velocity'].flatten()
+        z_velocity = data['z_velocity'].flatten()
 
     features = np.column_stack((x_velocity, y_velocity, z_velocity))
-    
+
     # Add binary indicator feature for missing data
     missing_indicator = np.linalg.norm(features, axis=1) == 0
     features = np.column_stack((features, missing_indicator))
 
     coordinates = np.column_stack((x, y))
-    
+
     # Add coordinates to the features tensor
     features = np.column_stack((features, coordinates))
 
     return torch.tensor(features, dtype=torch.float), torch.tensor(coordinates, dtype=torch.float)
 
-def create_and_save_graph(features, coordinates, num_neighbours, folder, is_input):
+def save_label(data, output_file_path):
+    directory = os.path.dirname(output_file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    np.savez_compressed(output_file_path, **data)
+
+def set_velocity_to_zero(data):
+    percent_to_zero = int(PERCENT_TO_REMOVE / 100 * np.prod(data['x_velocity'].shape))
+    indices_to_zero = np.random.choice(data['x_velocity'].size, percent_to_zero, replace=False)
+    data['x_velocity'].flat[indices_to_zero] = 0
+    data['y_velocity'].flat[indices_to_zero] = 0
+    data['z_velocity'].flat[indices_to_zero] = 0
+    return data
+
+def plot_velocity_channels(data, title):
+    fig, axs = plt.subplots(3, figsize=(8, 12))
+
+    axs[0].imshow(data['x_velocity'], cmap='jet')
+    axs[0].set_title('X Velocity')
+
+    axs[1].imshow(data['y_velocity'], cmap='jet')
+    axs[1].set_title('Y Velocity')
+
+    axs[2].imshow(data['z_velocity'], cmap='jet')
+    axs[2].set_title('Z Velocity')
+
+    fig.suptitle(title, fontsize=16)
+    plt.show()
+
+
+def create_and_save_graph(features, coordinates, num_neighbours, folder, file_base, is_input):
     print("Creating graph...")
     tree = cKDTree(coordinates.numpy())
-    distances, indices = tree.query(coordinates.numpy(), k=num_neighbours+1)
+    _, indices = tree.query(coordinates.numpy(), k=num_neighbours+1)
 
     edge_index = []
     for v in range(len(indices)):
-        for j, neighbor in enumerate(indices[v]):
+        for neighbor in indices[v]:
             if neighbor != v:  # remove self-connections
                 edge_index.append([v, neighbor])
 
@@ -65,21 +105,41 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, is_inpu
     # Convert to undirected graph
     edge_index = to_undirected(edge_index)
 
-    graph = Data(x=features, edge_index=edge_index)  
+    graph = Data(x=features, edge_index=edge_index)
 
     # Save the graph
     os.makedirs(folder, exist_ok=True)
-    suffix = "_input.pt" if is_input else "_label.pt"
-    file_path = os.path.join(folder, f"graph{suffix}")
+    suffix = f"_input_{MISSING_PERCENTAGE}.pt" if is_input else f"_label_{MISSING_PERCENTAGE}.pt"
+    file_path = os.path.join(folder, f"{file_base}{suffix}")
     torch.save(graph, file_path)
 
-# Load the input and label data from npz files
-features_input, coordinates = load_npz_data(INPUT_NPZ_PATH)
-features_label, _ = load_npz_data(LABEL_NPZ_PATH)
+def main():
+    print("Starting the main function...")
 
+    print(f"Processing NPZ file: {LABEL_FILE_PATH}")
 
-# Create and save the input graph
-create_and_save_graph(features_input, coordinates, NUM_NEIGHBOURS, SAVE_GRAPHS_FOLDER, is_input=True)
+    data = load_label(LABEL_FILE_PATH)
+    data_interpolated = interpolate_label(data)
 
-# Create and save the label graph
-create_and_save_graph(features_label, coordinates, NUM_NEIGHBOURS, SAVE_GRAPHS_FOLDER, is_input=False)
+    save_label(data_interpolated, INTERPOLATED_OUTPUT_PATH)
+    plot_velocity_channels(data_interpolated, 'Label Data')
+
+    features, coordinates = load_npz_data(INTERPOLATED_OUTPUT_PATH)
+    create_and_save_graph(features, coordinates, num_neighbours=8,
+                          folder=os.path.join(SAVE_GRAPHS_FOLDER, f"test_label_graphs_{MISSING_PERCENTAGE}"),
+                          file_base='label_interpolated', is_input=False)
+
+    data_interpolated_zeroed = set_velocity_to_zero(data_interpolated)
+
+    save_label(data_interpolated_zeroed, ZEROED_OUTPUT_PATH)
+    plot_velocity_channels(data_interpolated_zeroed, 'Input Data')
+
+    features_zeroed, coordinates_zeroed = load_npz_data(ZEROED_OUTPUT_PATH)
+    create_and_save_graph(features_zeroed, coordinates_zeroed, num_neighbours=8,
+                          folder=os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graphs_{MISSING_PERCENTAGE}"),
+                          file_base='input_interpolated', is_input=True)
+
+    print("Finished the main function.")
+
+if __name__ == "__main__":
+    main()

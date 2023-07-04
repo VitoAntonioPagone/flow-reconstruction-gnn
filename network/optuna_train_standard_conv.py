@@ -68,9 +68,9 @@ def train_fn(trial, loader, model, optimizer, loss_fn, ns_loss, tv_loss, alpha, 
     return avg_loss
 
 def objective(trial):
-    BATCH_SIZE = trial.suggest_categorical('batch_size', [32, 64, 128])
-    LEARNING_RATE = trial.suggest_float('lr', 1e-5, 1e-1, log=True)
-    NUM_EPOCHS = trial.suggest_int('num_epochs', 100, 500)
+    BATCH_SIZE = trial.suggest_categorical('batch_size', [64, 128])
+    LEARNING_RATE = trial.suggest_float('lr', 1e-5, 1e-2, log=True)
+    NUM_EPOCHS = trial.suggest_int('num_epochs', 100, 200)
     ALPHA = trial.suggest_float('alpha', 0, 2)
     BETA = trial.suggest_float('beta', 0, 2)
 
@@ -127,7 +127,7 @@ def objective(trial):
 
 if __name__ == "__main__":
     study = optuna.create_study(direction='minimize')
-    study.optimize(objective, n_trials=100, show_progress_bar=True)
+    study.optimize(objective, n_trials=25, show_progress_bar=True)
 
     print('\nBest trial:')
     trial = study.best_trial

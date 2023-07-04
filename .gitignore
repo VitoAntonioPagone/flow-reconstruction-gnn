@@ -25,3 +25,4 @@ network/__pycache__/
 /trained_models
 
 utils/local_graph_builder.py
+npz_analyzer.py

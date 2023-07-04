@@ -5,10 +5,46 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
 from models import GAT_50, GCN_50, AGNN_90, GAT_95, GraphSAGE_95
+import torch_geometric
+from torch_geometric.utils import to_networkx
+import networkx as nx
+
 MISSING_PERCENTAGE = 50
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 CHECKPOINT_PATH = '../trained_models/GCN_epochs_100_lr_0.001_batch_4.pth.tar' 
 
+def print_graph_info(graph):
+    print("Graph Information:")
+    print("------------------")
+    
+    print("Number of Nodes:", graph.num_nodes)
+    print("Number of Edges:", graph.num_edges)
+    print("Number of Node Features:", graph.num_node_features)
+    print("Number of Edge Features:", graph.num_edge_features)
+    print("Is Directed:", graph.is_directed())
+    print("Contains Isolated Nodes:", graph.has_isolated_nodes())
+    print("Contains Self-loops:", graph.has_self_loops())
+    print("Is Undirected:", graph.is_undirected())
+
+    # Convert the graph to a networkx graph for additional analysis
+    g = to_networkx(graph, to_undirected=True)
+    
+    # Degree Distribution
+    degrees = [g.degree(n) for n in g.nodes()]
+    print("Average Degree:", np.mean(degrees))
+    print("Minimum Degree:", np.min(degrees))
+    print("Maximum Degree:", np.max(degrees))
+
+    # Check if the graph is connected
+    print("Is Connected:", nx.is_connected(g))
+
+    # Get the number of connected components
+    print("Number of Connected Components:", nx.number_connected_components(g))
+
+    # Percentage of the first three features which are set to zero
+    first_three_features_zero = torch.norm(graph.x[:, :3], p=2, dim=1) == 0
+    percentage_zero = torch.mean(first_three_features_zero.float()) * 100
+    print(f"Percentage of the first three features set to zero: {percentage_zero.item():.2f}%")
 
 class CustomDataset(TorchDataset):
     def __init__(self, input_files, label_files):
@@ -49,6 +85,15 @@ def run_GCN(input_file, label_file):
     # Select a single test graph
     single_graph = test_dataset[0]
 
+    print("Input Graph:")
+    print_graph_info(single_graph)
+    
+    # Print information about the label graph
+    label_graph = torch.load(label_file)
+    print("Label Graph:")
+    print_graph_info(label_graph)
+
+
     # Assuming that the positions are the last 2 features in the feature vector
     positions = single_graph.x[:, -2:].numpy()
 
@@ -82,7 +127,7 @@ def run_GCN(input_file, label_file):
     print("Output zero check:", torch.all(out==0).item())
 
     # Define grid size
-    grid_size = 256   # Increased for a smoother plot
+    grid_size = 100   # Increased for a smoother plot
 
     # Get minimum and maximum position values
     min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
@@ -168,8 +213,9 @@ def run_GCN(input_file, label_file):
     plt.show()
 
 if __name__ == "__main__":
-    #input_file = f'../dataset/original_data/onehundredfile/graph_input.pt'
-    #label_file = f'../dataset/original_data/onehundredfile/graph_label.pt'
-    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y0_Z0_X0_input_{MISSING_PERCENTAGE}.pt'
-    label_file = f'../dataset_graph/training/test_label_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y0_Z0_X0_label_{MISSING_PERCENTAGE}.pt'
+    input_file = f'../dataset_graph/original_data/onehundred/test_input_graphs_50/input_interpolated_input_50.pt'
+    label_file = f'../dataset_graph/original_data/onehundred/test_label_graphs_50/label_interpolated_label_50.pt'
+    #input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y0_Z0_X0_input_{MISSING_PERCENTAGE}.pt'
+    #label_file = f'../dataset_graph/training/test_label_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y0_Z0_X0_label_{MISSING_PERCENTAGE}.pt'
     run_GCN(input_file, label_file)
+    

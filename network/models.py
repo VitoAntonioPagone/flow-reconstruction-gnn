@@ -61,68 +61,7 @@ class ConvNet_50(nn.Module):
         dec1 = self.decoder1(dec2)
 
         return dec1
-    
-class ConvNet_50(nn.Module):
-    def __init__(self):
-        super(ConvNet_50, self).__init__()
-
-        # Encoder with Channel Attention
-        self.encoder1 = nn.Sequential(
-            nn.Conv2d(4, 32, kernel_size=7, stride=1, padding=3),
-            nn.ReLU(),
-            ChannelAttention(32)
-        )
-        self.encoder2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=7, stride=1, padding=3),
-            nn.ReLU(),
-            ChannelAttention(64)
-        )
-        self.encoder3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=7, stride=1, padding=3),
-            nn.ReLU(),
-            ChannelAttention(128)
-        )
-        self.encoder4 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=7, stride=1, padding=3),
-            nn.ReLU(),
-            ChannelAttention(256)
-        )
-
-        # Decoder with Channel Attention
-        self.decoder4 = nn.Sequential(
-            nn.ConvTranspose2d(384, 128, kernel_size=7, stride=1, padding=3),
-            nn.ReLU(),
-            ChannelAttention(128)
-        )
-        self.decoder3 = nn.Sequential(
-            nn.ConvTranspose2d(192, 64, kernel_size=7, stride=1, padding=3),
-            nn.ReLU(),
-            ChannelAttention(64)
-        )
-        self.decoder2 = nn.Sequential(
-            nn.ConvTranspose2d(96, 32, kernel_size=7, stride=1, padding=3),
-            nn.ReLU(),
-            ChannelAttention(32)
-        )
-        self.decoder1 = nn.Sequential(
-            nn.ConvTranspose2d(32, 3, kernel_size=7, stride=1, padding=3),
-            ChannelAttention(3)
-        )
-
-    def forward(self, x):
-        enc1 = self.encoder1(x)
-        enc2 = self.encoder2(enc1)
-        enc3 = self.encoder3(enc2)
-        enc4 = self.encoder4(enc3)
-
-        dec4 = self.decoder4(torch.cat((enc4, enc3), dim=1))  # Skip connection from encoder3
-        dec3 = self.decoder3(torch.cat((dec4, enc2), dim=1))  # Skip connection from encoder2
-        dec2 = self.decoder2(torch.cat((dec3, enc1), dim=1))  # Skip connection from encoder1
-        dec1 = self.decoder1(dec2)
-
-        return dec1
-
-    
+        
 #### GRAPHS NETWORKS ####
 
 class ChebNet_50(torch.nn.Module):

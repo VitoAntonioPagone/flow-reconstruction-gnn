@@ -1,17 +1,14 @@
 import numpy as np
 import os
-import random
 import torch
 from torch_geometric.data import Data
 from scipy.spatial import cKDTree
 from torch_geometric.utils import to_undirected
-from scipy.interpolate import griddata
 
 # Constants
 NUM_NEIGHBOURS = 8
-PERCENTAGE = 0.5  
-GRID_SIZE = 100
-SLICE_PATH = "../dataset/original_data/npz_data/test/cyc10_CAD615_Y0_Z0_X0.npz"  
+INPUT_NPZ_PATH = "../dataset_graph/original_data/npz_data/test_inputs_50/cyc10_CAD615_Y0_Z0_X0.npz" 
+LABEL_NPZ_PATH = "../dataset_graph/original_data/npz_data/test_labels_50/cyc10_CAD615_Y0_Z0_X0.npz" 
 SAVE_GRAPHS_FOLDER = "../dataset/original_data/onehundredfile/" 
 
 def load_npz_data(file_path):
@@ -22,19 +19,22 @@ def load_npz_data(file_path):
         x_velocity = data['x_velocity']
         y_velocity = data['y_velocity']
         z_velocity = data['z_velocity']
-
-    # Perform interpolation on a regular grid
-    grid_x, grid_y = np.mgrid[min(x):max(x):GRID_SIZE*1j, min(y):max(y):GRID_SIZE*1j]
-    grid_x_velocity = griddata((x, y), x_velocity, (grid_x, grid_y), method='nearest')
-    grid_y_velocity = griddata((x, y), y_velocity, (grid_x, grid_y), method='nearest')
-    grid_z_velocity = griddata((x, y), z_velocity, (grid_x, grid_y), method='nearest')
-
+    
     # Flatten the data for later processes
-    x = grid_x.flatten()
-    y = grid_y.flatten()
-    x_velocity = grid_x_velocity.flatten()
-    y_velocity = grid_y_velocity.flatten()
-    z_velocity = grid_z_velocity.flatten()
+    x_velocity = x_velocity.flatten()
+    y_velocity = y_velocity.flatten()
+    z_velocity = z_velocity.flatten()
+    
+# Perform interpolation on a regular grid
+# grid_x, grid_y = np.mgrid[min(x):max(x):GRID_SIZE*1j, min(y):max(y):GRID_SIZE*1j]
+# grid_x_velocity = griddata((x, y), x_velocity, (grid_x, grid_y), method='nearest')
+# grid_y_velocity = griddata((x, y), y_velocity, (grid_x, grid_y), method='nearest')
+# grid_z_velocity = griddata((x, y), z_velocity, (grid_x, grid_y), method='nearest')
+
+# Flatten the data for later processes
+# x_velocity = grid_x_velocity.flatten()
+# y_velocity = grid_y_velocity.flatten()
+# z_velocity = grid_z_velocity.flatten()
 
     features = np.column_stack((x_velocity, y_velocity, z_velocity))
     
@@ -73,22 +73,13 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, is_inpu
     file_path = os.path.join(folder, f"graph{suffix}")
     torch.save(graph, file_path)
 
-def interpolate_and_process_slice(slice_path):
-    features, coordinates = load_npz_data(slice_path)
+# Load the input and label data from npz files
+features_input, coordinates = load_npz_data(INPUT_NPZ_PATH)
+features_label, _ = load_npz_data(LABEL_NPZ_PATH)
 
-    # Save the complete graph (label graph)
-    create_and_save_graph(features, coordinates, NUM_NEIGHBOURS, SAVE_GRAPHS_FOLDER, is_input=False)
 
-    # Select indices of 50% of the points randomly
-    num_points = int(features.shape[0] * PERCENTAGE)
-    indices = random.sample(range(features.shape[0]), num_points)
+# Create and save the input graph
+create_and_save_graph(features_input, coordinates, NUM_NEIGHBOURS, SAVE_GRAPHS_FOLDER, is_input=True)
 
-    # Set the velocity features of the selected points to zero in the input graph
-    features_input = features.clone()
-    features_input[indices, :3] = 0
-
-    # Create and save the input graph
-    create_and_save_graph(features_input, coordinates, NUM_NEIGHBOURS, SAVE_GRAPHS_FOLDER, is_input=True)
-
-# Run the function for the slice
-interpolate_and_process_slice(SLICE_PATH)
+# Create and save the label graph
+create_and_save_graph(features_label, coordinates, NUM_NEIGHBOURS, SAVE_GRAPHS_FOLDER, is_input=False)

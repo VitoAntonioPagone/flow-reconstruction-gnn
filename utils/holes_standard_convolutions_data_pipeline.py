@@ -97,21 +97,23 @@ def create_windowed_dataset(input_folder, output_folder):
         x_start = (nx - WINDOW_SIZE) // 2
         y_start = (ny - WINDOW_SIZE) // 2
 
-        # Create a copy of the data with the features outside the window set to zero
+        # Create a copy of the data with the features outside the window set to mean of the feature values
         windowed_data = {}
         for feature_name in data.files:
             feature_data = data[feature_name].copy()
-            # set outside box features to zero
-            feature_data[:y_start, :] = 0
-            feature_data[y_start+WINDOW_SIZE:, :] = 0
-            feature_data[:, :x_start] = 0
-            feature_data[:, x_start+WINDOW_SIZE:] = 0
+            # set outside box features to their mean
+            feature_mean = np.mean(feature_data)
+            feature_data[:y_start, :] = feature_mean
+            feature_data[y_start+WINDOW_SIZE:, :] = feature_mean
+            feature_data[:, :x_start] = feature_mean
+            feature_data[:, x_start+WINDOW_SIZE:] = feature_mean
             windowed_data[feature_name] = feature_data
 
         output_file = os.path.join(output_folder, os.path.splitext(os.path.basename(npz_file))[0] + ".npz")
         np.savez(output_file, **windowed_data)
         print(f"Saved windowed NPZ file: {output_file}")
     print(f"Finished creating windowed dataset.")
+
 
 
 
@@ -166,8 +168,8 @@ if __name__ == "__main__":
     print("Starting main script execution...")
     #vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
     #vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
-    #interpolate_data(TRAIN_OUTPUT_FOLDER, INTERPOLATED_TRAIN_OUTPUT_FOLDER)
-    #interpolate_data(TEST_OUTPUT_FOLDER, INTERPOLATED_TEST_OUTPUT_FOLDER)
+    interpolate_data(TRAIN_OUTPUT_FOLDER, INTERPOLATED_TRAIN_OUTPUT_FOLDER)
+    interpolate_data(TEST_OUTPUT_FOLDER, INTERPOLATED_TEST_OUTPUT_FOLDER)
     create_windowed_dataset(INTERPOLATED_TRAIN_OUTPUT_FOLDER, NEW_TRAIN_INPUT_FOLDER)
     create_windowed_dataset(INTERPOLATED_TEST_OUTPUT_FOLDER, NEW_TEST_INPUT_FOLDER)
     create_inputs_labels(NEW_TRAIN_INPUT_FOLDER, INTERPOLATED_TRAIN_OUTPUT_FOLDER, NEW_OUTPUT_TRAIN_INPUTS_DIR, NEW_OUTPUT_TRAIN_LABELS_DIR)

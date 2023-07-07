@@ -6,13 +6,13 @@ import os
 import glob
 import matplotlib.pyplot as plt
 from datasets import FlowDataset
-from models import ConvNet_95, ConvNet_99, ConvNet_90, ConvNet_95_Attention
+from models import ConvNet_95, ConvNet_99, ConvNet_90
 from utils import load_checkpoint
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset as TorchDataset
 
-MISSING_PERCENTAGE = 99
+MISSING_PERCENTAGE = 90
 
 
 class FlowDataset(TorchDataset):
@@ -53,7 +53,7 @@ def calculate_mae(pred, target):
 
 def run_autoencoder(input_file, label_file):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    CHECKPOINT_FILE = '../trained_models/ConvNet_Deep_99_epochs_100__alpha_0.1_beta_0.1_lr_0.0001_batch_64.pth.tar'
+    CHECKPOINT_FILE = '../trained_models/ConvNet_Attention_hole_128x128_epochs_800__alpha_0.1_beta_0.1_lr_0.0001_batch_64.pth.tar'
     TEST_INPUT_FILE = input_file
     TEST_LABEL_FILE = label_file
 
@@ -80,7 +80,7 @@ def run_autoencoder(input_file, label_file):
         # Load pre-trained model 
 
         ####### MODEL #######
-        model = ConvNet_99().to(DEVICE)
+        model = ConvNet_90().to(DEVICE)
         ####### MODEL #######
         
         load_checkpoint(torch.load(CHECKPOINT_FILE, map_location=torch.device(DEVICE)), model)
@@ -147,6 +147,8 @@ def run_autoencoder(input_file, label_file):
     predict()
 
 if __name__ == "__main__":
-    input_file = f'../dataset/train_data_{MISSING_PERCENTAGE}/test_inputs_{MISSING_PERCENTAGE}/interpolated_cyc10_CAD615_Y3_Z1_X0_input.npy'  
-    label_file = f'../dataset/train_data_{MISSING_PERCENTAGE}/test_labels_{MISSING_PERCENTAGE}/interpolated_cyc10_CAD615_Y3_Z1_X0_label.npy' 
+    #input_file = f'../dataset/train_data_{MISSING_PERCENTAGE}/test_inputs_{MISSING_PERCENTAGE}/interpolated_cyc10_CAD615_Y3_Z1_X0_input.npy'  
+    #label_file = f'../dataset/train_data_{MISSING_PERCENTAGE}/test_labels_{MISSING_PERCENTAGE}/interpolated_cyc10_CAD615_Y3_Z1_X0_label.npy' 
+    input_file = '../dataset/train_data_hole_128x128/test_inputs_hole_128x128/interpolated_cyc10_CAD615_Y0_Z0_X0_input.npy'  
+    label_file = '../dataset/train_data_hole_128x128/test_labels_hole_128x128/interpolated_cyc10_CAD615_Y0_Z0_X0_label.npy' 
     run_autoencoder(input_file, label_file)

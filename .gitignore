@@ -23,6 +23,8 @@ network/__pycache__/
 #Folder
 /losses_plot
 /trained_models
-
+utils/plot_npz_channels.py
 utils/local_graph_builder.py
 npz_analyzer.py
+utils/npy_plots.py
+pics

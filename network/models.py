@@ -559,3 +559,44 @@ class ConvNet_99(nn.Module):
         dec1 = self.decoder1(dec2)
 
         return dec1
+
+class GraphSAGE_99(torch.nn.Module):
+    def __init__(self):
+        super(GraphSAGE_99, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.conv1 = SAGEConv(self.feat_dim, 128)
+        self.conv2 = SAGEConv(128, 256)
+        self.conv3 = SAGEConv(256, 512)
+        self.conv4 = SAGEConv(512, 512) # added
+        self.conv5 = SAGEConv(512, 512) # added
+        self.conv6 = SAGEConv(512, 256)
+        self.conv7 = SAGEConv(256, 128)
+        self.conv8 = SAGEConv(128, 64)
+        self.conv9 = SAGEConv(64, 32) 
+        self.conv10 = SAGEConv(32, self.feat_dim) 
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv2(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv3(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv4(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv5(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv6(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv7(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv8(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv9(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv10(x, edge_index)
+        return x
+
+

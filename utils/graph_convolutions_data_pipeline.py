@@ -20,7 +20,7 @@ TEST_OUTPUT_FOLDER = "../dataset_graph/original_data/npz_data/test"
 VALIDATION_DIR_INPUT = "../dataset_graph/original_data/npz_data/validation"
 RANDOM_SEED = 1
 VALIDATION_SPLIT = 0.1
-MISSING_PERCENTAGE = 50
+MISSING_PERCENTAGE = 99
 NUM_NEIGHBOURS = 8
 SAVE_GRAPHS_FOLDER = "../dataset_graph/training"
 
@@ -151,7 +151,7 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
 
     # Save the graph
     os.makedirs(folder, exist_ok=True)
-    suffix = f"_input_{MISSING_PERCENTAGE}.pt" if is_input else f"_label_{MISSING_PERCENTAGE}.pt"
+    suffix = f"_input.pt" if is_input else f"_label.pt"
     file_path = os.path.join(folder, f"{file_base}{suffix}")
     torch.save(graph, file_path)
 
@@ -167,30 +167,36 @@ def create_graphs(data_folder, num_neighbours, save_folder, is_input):
 # Main script
 if __name__ == "__main__":
     # Convert train and test vtp files to npz files
-    vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
+    #vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
     vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
     # Split train data into train and validation
-    train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
+    #train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
     # Process npz files
-    process_npz_files(TRAIN_OUTPUT_FOLDER, MISSING_PERCENTAGE)
+  
+    #process_npz_files(TRAIN_OUTPUT_FOLDER, MISSING_PERCENTAGE)
     process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
-    process_npz_files(VALIDATION_DIR_INPUT, MISSING_PERCENTAGE)
+    #process_npz_files(VALIDATION_DIR_INPUT, MISSING_PERCENTAGE)
     # Create and save graphs
-    create_graphs(TRAIN_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_{MISSING_PERCENTAGE}"), is_input=False)
-    print("Train graphs created.")
-    sys.stdout.flush()
-    create_graphs(TRAIN_OUTPUT_FOLDER + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
-    print("Train input graphs created.")
-    sys.stdout.flush()
+    '''
     create_graphs(VALIDATION_DIR_INPUT + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
     print("Validation input graphs created.")
     sys.stdout.flush()
     create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_{MISSING_PERCENTAGE}"), is_input=False)
     print("Validation graphs created.")
     sys.stdout.flush()
+    create_graphs(TRAIN_OUTPUT_FOLDER + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
+    print("Train input graphs created.")
+    sys.stdout.flush()
+    create_graphs(TRAIN_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_{MISSING_PERCENTAGE}"), is_input=False)
+    print("Train graphs created.")
+    sys.stdout.flush()
+    '''
+
     create_graphs(TEST_OUTPUT_FOLDER + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
     print("Test input graphs created.")
     sys.stdout.flush()
     create_graphs(TEST_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_graphs_{MISSING_PERCENTAGE}"), is_input=False)
     print("Test graphs created.")
     sys.stdout.flush()
+    
+

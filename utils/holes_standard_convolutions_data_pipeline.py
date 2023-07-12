@@ -97,23 +97,21 @@ def create_windowed_dataset(input_folder, output_folder):
         x_start = (nx - WINDOW_SIZE) // 2
         y_start = (ny - WINDOW_SIZE) // 2
 
-        # Create a copy of the data with the features outside the window set to mean of the feature values
+        # Create a copy of the data with the features outside the window set to zero
         windowed_data = {}
         for feature_name in data.files:
             feature_data = data[feature_name].copy()
-            # set outside box features to their mean
-            feature_mean = np.mean(feature_data)
-            feature_data[:y_start, :] = feature_mean
-            feature_data[y_start+WINDOW_SIZE:, :] = feature_mean
-            feature_data[:, :x_start] = feature_mean
-            feature_data[:, x_start+WINDOW_SIZE:] = feature_mean
+            # set outside box features to zero
+            feature_data[:y_start, :] = 0
+            feature_data[y_start+WINDOW_SIZE:, :] = 0
+            feature_data[:, :x_start] = 0
+            feature_data[:, x_start+WINDOW_SIZE:] = 0
             windowed_data[feature_name] = feature_data
 
         output_file = os.path.join(output_folder, os.path.splitext(os.path.basename(npz_file))[0] + ".npz")
         np.savez(output_file, **windowed_data)
         print(f"Saved windowed NPZ file: {output_file}")
     print(f"Finished creating windowed dataset.")
-
 
 
 

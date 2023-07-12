@@ -1,8 +1,7 @@
 import torch
-import optuna
 import torch.nn as nn
 from torch.optim import Adam
-from models import ConvNet_90
+from models import ConvNet_90, UNet
 from losses import MaskedMSELoss, NavierStokesLoss, TVLoss
 from tqdm import tqdm
 from utils import (
@@ -22,13 +21,13 @@ NUM_WORKERS = 6
 PIN_MEMORY = True
 LEARNING_RATE = 0.0001
 SHUFFLE = True
-NUM_EPOCHS = 200
+NUM_EPOCHS = 500
 ALPHA = 0.1
 BETA = 0.1
 LOAD_MODEL = False
-WINDOW_SIZE = 128  
+WINDOW_SIZE = 200  
 NEW_FOLDER_NAME = f"hole_{WINDOW_SIZE}x{WINDOW_SIZE}"
-MODEL_NAME = f"ConvNet_Attention_{NEW_FOLDER_NAME}"
+MODEL_NAME = f"UNET_CentralHole_{NEW_FOLDER_NAME}"
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}__alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}__alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
 
@@ -78,7 +77,7 @@ def train_unet_conv_autoencoder():
 
     print(f"Selected device: {DEVICE}")
 
-    model = ConvNet_90().to(DEVICE)
+    model = UNet().to(DEVICE)
 
 
     # Check for multiple GPUs and wrap model

@@ -53,7 +53,7 @@ def calculate_mae(pred, target):
 
 def run_autoencoder(input_file, label_file):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    CHECKPOINT_FILE = '../trained_models/ConvNet_Attention_hole_128x128_epochs_800__alpha_0.1_beta_0.1_lr_0.0001_batch_64.pth.tar'
+    CHECKPOINT_FILE = '../trained_models/ConvNet_CentralHole_hole_128x128_epochs_500__alpha_0.1_beta_0.1_lr_0.0001_batch_64.pth.tar'
     TEST_INPUT_FILE = input_file
     TEST_LABEL_FILE = label_file
 

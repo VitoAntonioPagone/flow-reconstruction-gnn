@@ -224,13 +224,75 @@ class ConvNet_90(nn.Module):
         enc2 = self.encoder2(enc1)
         enc3 = self.encoder3(enc2)
         enc4 = self.encoder4(enc3)
-
+        
         dec4 = self.decoder4(torch.cat((enc4, enc3), dim=1))  # Skip connection from encoder3
+        print(f'dec4 shape: {dec4.shape}')
+        print(f'enc3 shape: {enc3.shape}')
+
         dec3 = self.decoder3(torch.cat((dec4, enc2), dim=1))  # Skip connection from encoder2
         dec2 = self.decoder2(torch.cat((dec3, enc1), dim=1))  # Skip connection from encoder1
         dec1 = self.decoder1(dec2)
 
         return dec1
+
+class UNet(nn.Module):
+    def __init__(self):
+        super(UNet, self).__init__()
+
+        # Encoder
+        self.encoder1 = nn.Sequential(
+            nn.Conv2d(4, 32, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.AvgPool2d(kernel_size=2, stride=2)
+        )
+        self.encoder2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.AvgPool2d(kernel_size=2, stride=2)
+        )
+        self.encoder3 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.AvgPool2d(kernel_size=2, stride=2)
+        )
+        self.encoder4 = nn.Sequential(
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.AvgPool2d(kernel_size=2, stride=2)
+        )
+
+        # Decoder
+        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.decoder4 = nn.Sequential(
+            nn.ConvTranspose2d(256, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU()
+        )
+        self.decoder3 = nn.Sequential(
+            nn.ConvTranspose2d(128, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU()
+        )
+        self.decoder2 = nn.Sequential(
+            nn.ConvTranspose2d(64, 32, kernel_size=3, stride=1, padding=1),
+            nn.ReLU()
+        )
+        self.decoder1 = nn.Sequential(
+            nn.ConvTranspose2d(32, 3, kernel_size=3, stride=1, padding=1)
+        )
+
+    def forward(self, x):
+        enc1 = self.encoder1(x)
+        enc2 = self.encoder2(enc1)
+        enc3 = self.encoder3(enc2)
+        enc4 = self.encoder4(enc3)
+
+        dec4 = self.decoder4(self.up(enc4)) 
+        dec3 = self.decoder3(self.up(dec4))  
+        dec2 = self.decoder2(self.up(dec3))  
+        dec1 = self.decoder1(self.up(dec2))
+
+        return dec1
+
+
 
 #### GRAPH NETWORKS ####
 

@@ -71,8 +71,31 @@ model = GraphSAGE_99()
 model.to(DEVICE)
 graph_initialize_weights(model)  # Initialize weights of the model
 print('Model built.')
-print(f'Model Name: {type(model).__name__}')  # Print the name of the model
-print(model)  # Print the model's structure
+print("--------------------------")
+print(f"  Model Name: {type(model).__name__}")  
+print("--------------------------")
+print(f"  Device: {DEVICE}")
+print("--------------------------")
+print(f"  Alpha: {ALPHA}")
+print(f"  Batch Size: {BATCH_SIZE}")
+print(f"  Learning Rate: {LR}")
+print(f"  Number of Epochs: {EPOCHS}")
+print(f"  Percentage of Missing Points: {PERCENTAGE_OF_MISSING_POINTS}")
+print("--------------------------")
+print(f"  Load Model: {'Yes' if LOAD_MODEL else 'No'}")
+print(f"  Checkpoint File: {LOAD_CHECKPOINT_FILE}")
+print("--------------------------")
+print(f"  Training Input Directory: {TRAIN_INPUT_DIR}")
+print(f"  Training Target Directory: {TRAIN_TARGET_DIR}")
+print(f"  Validation Input Directory: {VALID_INPUT_DIR}")
+print(f"  Validation Target Directory: {VALID_TARGET_DIR}")
+print("--------------------------")
+print(f"  Training Dataset Size: {len(train_dataset)} samples")
+print(f"  Validation Dataset Size: {len(valid_dataset)} samples")
+print("--------------------------")
+print(f"  Model Structure: \n{model}")
+print("--------------------------")
+
 
 
 optimizer = Adam(model.parameters(), lr=LR)

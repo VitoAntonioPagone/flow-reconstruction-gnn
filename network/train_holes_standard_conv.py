@@ -13,6 +13,8 @@ from utils import (
     initialize_weights,
     print_autoencoder_dashboard
 )
+from torchsummary import summary
+
 
 # Hyper-parameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -21,9 +23,9 @@ NUM_WORKERS = 6
 PIN_MEMORY = True
 LEARNING_RATE = 0.0001
 SHUFFLE = True
-NUM_EPOCHS = 500
-ALPHA = 0.1
-BETA = 0.1
+NUM_EPOCHS = 250
+ALPHA = 0.25
+BETA = 0.5
 LOAD_MODEL = False
 WINDOW_SIZE = 200  
 NEW_FOLDER_NAME = f"hole_{WINDOW_SIZE}x{WINDOW_SIZE}"
@@ -74,17 +76,25 @@ def train_fn(loader, model, optimizer, loss_fn, ns_loss, tv_loss, alpha, beta, s
     return avg_loss
 
 def train_unet_conv_autoencoder():
-
     print(f"Selected device: {DEVICE}")
 
     model = UNet().to(DEVICE)
 
+    # Print model summary
+    print("Model Summary:")
+    summary(model, input_size=(4, 256, 256))
 
     # Check for multiple GPUs and wrap model
     if torch.cuda.device_count() > 1:
         print(f"Using {torch.cuda.device_count()} GPUs for training")
         model = nn.DataParallel(model)
-    #print_autoencoder_dashboard(model)
+
+    print(f"\nHyperparameters:")
+    print(f"Learning Rate: {LEARNING_RATE}")
+    print(f"Batch Size: {BATCH_SIZE}")
+    print(f"Alpha: {ALPHA}")
+    print(f"Beta: {BETA}")
+    print(f"Number of Epochs: {NUM_EPOCHS}")
     initialize_weights(model)
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
     loss_fn = MaskedMSELoss(device=DEVICE) 

@@ -241,42 +241,43 @@ class UNet(nn.Module):
 
         # Encoder
         self.encoder1 = nn.Sequential(
-            nn.Conv2d(4, 32, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(4, 32, kernel_size=9, stride=1, padding=4),
             nn.ReLU(),
             nn.AvgPool2d(kernel_size=2, stride=2)
         )
         self.encoder2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(32, 64, kernel_size=9, stride=1, padding=4),
             nn.ReLU(),
             nn.AvgPool2d(kernel_size=2, stride=2)
         )
         self.encoder3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(64, 128, kernel_size=9, stride=1, padding=4),
             nn.ReLU(),
             nn.AvgPool2d(kernel_size=2, stride=2)
         )
         self.encoder4 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(128, 256, kernel_size=9, stride=1, padding=4),
             nn.ReLU(),
             nn.AvgPool2d(kernel_size=2, stride=2)
         )
 
         # Decoder
         self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+
         self.decoder4 = nn.Sequential(
-            nn.ConvTranspose2d(256, 128, kernel_size=3, stride=1, padding=1),
+            nn.ConvTranspose2d(384, 128, kernel_size=9, stride=1, padding=4),
             nn.ReLU()
         )
         self.decoder3 = nn.Sequential(
-            nn.ConvTranspose2d(128, 64, kernel_size=3, stride=1, padding=1),
+            nn.ConvTranspose2d(192, 64, kernel_size=9, stride=1, padding=4),
             nn.ReLU()
         )
         self.decoder2 = nn.Sequential(
-            nn.ConvTranspose2d(64, 32, kernel_size=3, stride=1, padding=1),
+            nn.ConvTranspose2d(96, 32, kernel_size=9, stride=1, padding=4),
             nn.ReLU()
         )
         self.decoder1 = nn.Sequential(
-            nn.ConvTranspose2d(32, 3, kernel_size=3, stride=1, padding=1)
+            nn.ConvTranspose2d(32, 3, kernel_size=9, stride=1, padding=4) #Changed the input channels from 64 to 32
         )
 
     def forward(self, x):
@@ -285,14 +286,12 @@ class UNet(nn.Module):
         enc3 = self.encoder3(enc2)
         enc4 = self.encoder4(enc3)
 
-        dec4 = self.decoder4(self.up(enc4)) 
-        dec3 = self.decoder3(self.up(dec4))  
-        dec2 = self.decoder2(self.up(dec3))  
+        dec4 = self.decoder4(torch.cat((self.up(enc4), enc3), dim=1))
+        dec3 = self.decoder3(torch.cat((self.up(dec4), enc2), dim=1))
+        dec2 = self.decoder2(torch.cat((self.up(dec3), enc1), dim=1))
         dec1 = self.decoder1(self.up(dec2))
 
         return dec1
-
-
 
 #### GRAPH NETWORKS ####
 

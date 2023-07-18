@@ -5,6 +5,7 @@ import numpy as np
 import vtk
 import random
 import torch
+import torch_geometric
 from torch_geometric.data import Data
 from torch_geometric.utils import to_undirected
 from scipy.spatial import cKDTree
@@ -146,14 +147,41 @@ def load_npz_data(file_path):
         x_velocity = data['x_velocity']
         y_velocity = data['y_velocity']
         z_velocity = data['z_velocity']
-        
+
+    # Check if first three features are zero
+    indicator = ((x_velocity == 0.0) & (y_velocity == 0.0) & (z_velocity == 0.0)).astype(float)
+    
+    # Calculate and print the percentage of missing nodes
+    missing_percentage = np.mean(indicator) * 100
+    print(f"Percentage of missing nodes: {missing_percentage}%")
+    
     # Assemble all the features together
-    features = np.column_stack((x_velocity, y_velocity, z_velocity, x, y))
+    features = np.column_stack((x_velocity, y_velocity, z_velocity, indicator, x, y))  # Added indicator feature as the 4th feature
 
     coordinates = np.column_stack((x, y))
 
     return torch.tensor(features, dtype=torch.float), torch.tensor(coordinates, dtype=torch.float)
 
+
+def simple_feature_propagation(graph, features, num_iterations=40):
+    """Propagates features through the graph by setting each node's feature to be the average of its neighbors' features."""
+    print("Starting feature propagation...")
+    # Get the indicators of the missing nodes and known nodes
+    missing_nodes = features[:, 3] == 1.0
+
+    adjacency_matrix = torch_geometric.utils.to_dense_adj(graph.edge_index).squeeze(0)
+
+    for i in range(num_iterations):
+        print(f"Iteration {i + 1} of feature propagation...")
+        for node in range(features.shape[0]):
+            if missing_nodes[node]:
+                neighbors = adjacency_matrix[node, :].nonzero(as_tuple=True)[0]
+                features[node, :3] = torch.mean(features[neighbors, :3], dim=0)
+
+        print(f"Finished iteration {i + 1} of feature propagation. The current feature values are:\n{features}")
+
+    print("Feature propagation complete.")
+    return features
 
 def create_and_save_graph(features, coordinates, num_neighbours, folder, file_base, is_input):
     print("Creating graph from npz data")
@@ -171,13 +199,19 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
     # Convert to undirected graph
     edge_index = to_undirected(edge_index)
 
-    graph = Data(x=features, edge_index=edge_index)  
+    graph = Data(x=features, edge_index=edge_index)
+
+    # Propagate features
+    propagated_features = simple_feature_propagation(graph, features, num_iterations=5)
+    graph.x = propagated_features
 
     # Save the graph
     os.makedirs(folder, exist_ok=True)
     suffix = f"_input.pt" if is_input else f"_label.pt"
     file_path = os.path.join(folder, f"{file_base}{suffix}")
     torch.save(graph, file_path)
+    print(f"Saved the graph to {file_path}")
+
 
 def create_graphs(data_folder, num_neighbours, save_folder, is_input):
     for i, file in enumerate(os.listdir(data_folder)):
@@ -197,27 +231,23 @@ if __name__ == "__main__":
     #train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
     # Process npz files
   
-    process_npz_files(TRAIN_OUTPUT_FOLDER, BOX_PERCENTAGE)
-    #process_npz_files(TEST_OUTPUT_FOLDER, BOX_PERCENTAGE)
-    process_npz_files(VALIDATION_DIR_INPUT, BOX_PERCENTAGE)
+    #process_npz_files(TRAIN_OUTPUT_FOLDER, BOX_PERCENTAGE)
+    process_npz_files(TEST_OUTPUT_FOLDER, BOX_PERCENTAGE)
+    #process_npz_files(VALIDATION_DIR_INPUT, BOX_PERCENTAGE)
     # Create and save graphs
-    create_graphs(VALIDATION_DIR_INPUT + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
-    print("Validation input graphs created.")
-    sys.stdout.flush()
-    create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
-    print("Validation graphs created.")
-    sys.stdout.flush()
-    create_graphs(TRAIN_OUTPUT_FOLDER + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
-    print("Train input graphs created.")
-    sys.stdout.flush()
-    create_graphs(TRAIN_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
-    print("Train graphs created.")
-    sys.stdout.flush()
-    #create_graphs(TEST_OUTPUT_FOLDER + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
-    #print("Test input graphs created.")
-    sys.stdout.flush()
-    #create_graphs(TEST_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
-    #print("Test graphs created.")
-    sys.stdout.flush()
-
-
+    #create_graphs(VALIDATION_DIR_INPUT + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
+    #print("Validation input graphs created.")
+    #sys.stdout.flush()
+    #create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
+    #print("Validation graphs created.")
+    #sys.stdout.flush()
+    #create_graphs(TRAIN_OUTPUT_FOLDER + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
+    #print("Train input graphs created.")
+    #sys.stdout.flush()
+    #create_graphs(TRAIN_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
+    #print("Train graphs created.")
+    #sys.stdout.flush()
+    create_graphs(TEST_OUTPUT_FOLDER + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
+    print("Test input graphs created.")
+    create_graphs(TEST_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
+    print("Test graphs created.")

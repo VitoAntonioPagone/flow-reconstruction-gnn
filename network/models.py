@@ -235,63 +235,7 @@ class ConvNet_90(nn.Module):
 
         return dec1
 
-class UNet(nn.Module):
-    def __init__(self):
-        super(UNet, self).__init__()
 
-        # Encoder
-        self.encoder1 = nn.Sequential(
-            nn.Conv2d(4, 32, kernel_size=9, stride=1, padding=4),
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=2)
-        )
-        self.encoder2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=9, stride=1, padding=4),
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=2)
-        )
-        self.encoder3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=9, stride=1, padding=4),
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=2)
-        )
-        self.encoder4 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=9, stride=1, padding=4),
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=2)
-        )
-
-        # Decoder
-        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-
-        self.decoder4 = nn.Sequential(
-            nn.ConvTranspose2d(384, 128, kernel_size=9, stride=1, padding=4),
-            nn.ReLU()
-        )
-        self.decoder3 = nn.Sequential(
-            nn.ConvTranspose2d(192, 64, kernel_size=9, stride=1, padding=4),
-            nn.ReLU()
-        )
-        self.decoder2 = nn.Sequential(
-            nn.ConvTranspose2d(96, 32, kernel_size=9, stride=1, padding=4),
-            nn.ReLU()
-        )
-        self.decoder1 = nn.Sequential(
-            nn.ConvTranspose2d(32, 3, kernel_size=9, stride=1, padding=4) #Changed the input channels from 64 to 32
-        )
-
-    def forward(self, x):
-        enc1 = self.encoder1(x)
-        enc2 = self.encoder2(enc1)
-        enc3 = self.encoder3(enc2)
-        enc4 = self.encoder4(enc3)
-
-        dec4 = self.decoder4(torch.cat((self.up(enc4), enc3), dim=1))
-        dec3 = self.decoder3(torch.cat((self.up(dec4), enc2), dim=1))
-        dec2 = self.decoder2(torch.cat((self.up(dec3), enc1), dim=1))
-        dec1 = self.decoder1(self.up(dec2))
-
-        return dec1
 
 #### GRAPH NETWORKS ####
 
@@ -660,6 +604,74 @@ class GraphSAGE_99(torch.nn.Module):
         x = self.conv10(x, edge_index)
         return x
 
+    
+
+#########################
+#         HOLES         #
+#                       # 
+#########################
+
+class UNet(nn.Module):
+    def __init__(self):
+        super(UNet, self).__init__()
+
+        # Encoder
+        self.encoder1 = nn.Sequential(
+            nn.Conv2d(4, 32, kernel_size=3, stride=1, padding=1),  # Changed kernel size to 3
+            nn.ReLU(),
+            nn.AvgPool2d(kernel_size=2, stride=2)
+        )
+        self.encoder2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),  
+            nn.ReLU(),
+            nn.AvgPool2d(kernel_size=2, stride=2)
+        )
+        self.encoder3 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),  
+            nn.ReLU(),
+            nn.AvgPool2d(kernel_size=2, stride=2)
+        )
+        self.encoder4 = nn.Sequential(
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),  
+            nn.ReLU(),
+            nn.AvgPool2d(kernel_size=2, stride=2)
+        )
+
+        # Decoder
+        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+
+        self.decoder4 = nn.Sequential(
+            nn.ConvTranspose2d(384, 128, kernel_size=3, stride=1, padding=1), 
+            nn.ReLU()
+        )
+        self.decoder3 = nn.Sequential(
+            nn.ConvTranspose2d(192, 64, kernel_size=3, stride=1, padding=1),  
+            nn.ReLU()
+        )
+        self.decoder2 = nn.Sequential(
+            nn.ConvTranspose2d(96, 32, kernel_size=3, stride=1, padding=1), 
+        )
+        self.decoder1 = nn.Sequential(
+            nn.ConvTranspose2d(32, 3, kernel_size=3, stride=1, padding=1)   
+        )
+
+    def forward(self, x):
+        enc1 = self.encoder1(x)
+        enc2 = self.encoder2(enc1)
+        enc3 = self.encoder3(enc2)
+        enc4 = self.encoder4(enc3)
+
+        dec4 = self.decoder4(torch.cat((self.up(enc4), enc3), dim=1))
+        dec3 = self.decoder3(torch.cat((self.up(dec4), enc2), dim=1))
+        dec2 = self.decoder2(torch.cat((self.up(dec3), enc1), dim=1))
+        dec1 = self.decoder1(self.up(dec2))
+
+        return dec1
+
+
+import torch
+from torch_geometric.nn import SAGEConv
+
 class Hole_GraphSAGE_99(torch.nn.Module):
     def __init__(self):
         super(Hole_GraphSAGE_99, self).__init__()
@@ -668,13 +680,15 @@ class Hole_GraphSAGE_99(torch.nn.Module):
         self.conv1 = SAGEConv(self.feat_dim, 128)
         self.conv2 = SAGEConv(128, 256)
         self.conv3 = SAGEConv(256, 512)
-        self.conv4 = SAGEConv(512, 512) # added
-        self.conv5 = SAGEConv(512, 512) # added
-        self.conv6 = SAGEConv(512, 256)
-        self.conv7 = SAGEConv(256, 128)
-        self.conv8 = SAGEConv(128, 64)
-        self.conv9 = SAGEConv(64, 32) 
-        self.conv10 = SAGEConv(32, self.feat_dim) 
+        self.conv4 = SAGEConv(512, 1024) # added
+        self.conv5 = SAGEConv(1024, 2048) # added
+        self.conv6 = SAGEConv(2048, 1024) # added
+        self.conv7 = SAGEConv(1024, 512) # added
+        self.conv8 = SAGEConv(512, 256)
+        self.conv9 = SAGEConv(256, 128)
+        self.conv10 = SAGEConv(128, 64)
+        self.conv11 = SAGEConv(64, 32) 
+        self.conv12 = SAGEConv(32, self.feat_dim) 
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -697,6 +711,10 @@ class Hole_GraphSAGE_99(torch.nn.Module):
         x = self.conv9(x, edge_index)
         x = torch.relu(x)
         x = self.conv10(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv11(x, edge_index)
+        x = torch.relu(x)
+        x = self.conv12(x, edge_index)
         return x
 
 

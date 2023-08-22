@@ -8,7 +8,7 @@ import shutil
 from natsort import natsorted
 
 GRID_SIZE = 256
-PERCENT_TO_REMOVE = 90
+PERCENT_TO_REMOVE = 99
 RANDOM_SEED = 1
 TRAIN_SPLIT = 0.9
 

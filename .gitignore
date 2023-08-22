@@ -23,3 +23,4 @@ network/__pycache__/
 #Folder
 /losses_plot
 /trained_models
+network/network_images.py

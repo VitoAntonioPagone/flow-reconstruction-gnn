@@ -4,14 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-from models import GAT_50, GCN_50, AGNN_90, GAT_95, GraphSAGE_95, GraphSAGE_99
+from models import GAT_50, GCN_50, AGNN_90, GAT_95, GraphSAGE_95, GraphSAGE_99, Hole_GraphSAGE_99, Hole_GAT_99
 import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
 
 MISSING_PERCENTAGE = 99
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/GraphSAGE_99_epochs_50_lr_0.0001_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GAT_box_90.0_epochs_100_lr_0.0001_batch_4.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -65,7 +65,12 @@ class CustomDataset(TorchDataset):
 def load_checkpoint(model, checkpoint_path):
     checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
     state_dict = checkpoint['state_dict']
-    model.load_state_dict(state_dict)
+    
+    # Remove the "module." prefix
+    new_state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+    
+    model.load_state_dict(new_state_dict)
+
 
 
 def rmse(pred, target):
@@ -93,7 +98,6 @@ def run_GCN(input_file, label_file):
     print("Label Graph:")
     print_graph_info(label_graph)
 
-
     # Assuming that the positions are the last 2 features in the feature vector
     positions = single_graph.x[:, -2:].numpy()
 
@@ -103,8 +107,8 @@ def run_GCN(input_file, label_file):
     print(f'Min y position: {np.min(positions[:, 1])}')
     print(f'Max y position: {np.max(positions[:, 1])}')
 
-    ######## MODEL ########
-    model = GraphSAGE_99()
+    ######## MODEL ########
+    model = Hole_GAT_99()
     ######## MODEL ########
     
     model.to(DEVICE)
@@ -123,8 +127,13 @@ def run_GCN(input_file, label_file):
     with torch.no_grad():
         out = model(single_graph)
 
+    # Update only nodes where the fourth feature is set to 1.0
+    indicator_nodes = single_graph.x[:, 3] == 1.0
+    out[~indicator_nodes, :3] = single_graph.x[~indicator_nodes, :3]
+
+
     # Check if output is entirely zero
-    print("Output zero check:", torch.all(out==0).item())
+    print("Output zero check:", torch.all(out == 0).item())
 
     # Define grid size
     grid_size = 256   # Increased for a smoother plot
@@ -212,10 +221,13 @@ def run_GCN(input_file, label_file):
     fig.savefig('../results/{}_plot.png'.format(os.path.basename(CHECKPOINT_PATH).split('.')[0]), dpi=300)
     plt.show()
 
+
 if __name__ == "__main__":
     #input_file = f'../dataset_graph/original_data/onehundred/test_input_graphs_50/input_interpolated_input_50.pt'
     #label_file = f'../dataset_graph/original_data/onehundred/test_label_graphs_50/label_interpolated_label_50.pt'
-    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y0_Z0_X0_input.pt'
-    label_file = f'../dataset_graph/training/test_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y0_Z0_X0_label.pt'
+    #input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y0_Z0_X0_input.pt'
+    #label_file = f'../dataset_graph/training/test_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y0_Z0_X0_label.pt'
+    input_file = f'../dataset_graph/training_hole/test_input_graphs_box_90.0/cyc10_CAD615_Y4_Z0_X2_input.pt'
+    label_file = f'../dataset_graph/training_hole/test_graphs_box_90.0/cyc10_CAD615_Y4_Z0_X2_label.pt'
     run_GCN(input_file, label_file)
     

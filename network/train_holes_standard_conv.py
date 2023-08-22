@@ -18,14 +18,14 @@ from torchsummary import summary
 
 # Hyper-parameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 NUM_WORKERS = 6
 PIN_MEMORY = True
 LEARNING_RATE = 0.0001
 SHUFFLE = True
-NUM_EPOCHS = 250
+NUM_EPOCHS = 500
 ALPHA = 0.25
-BETA = 0.5
+BETA = 0.25
 LOAD_MODEL = False
 WINDOW_SIZE = 200  
 NEW_FOLDER_NAME = f"hole_{WINDOW_SIZE}x{WINDOW_SIZE}"

@@ -4,14 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-from models import GAT_50, GCN_50, AGNN_90, GAT_95, GraphSAGE_95, GraphSAGE_99, Hole_GraphSAGE_99, Hole_GAT_99
+from models import GAT_50, GCN_50, AGNN_90, GAT_95, GraphSAGE_95, GraphSAGE_99, Hole_GraphSAGE_99, Hole_GAT_99, Hole_GCN_90
 import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
 
 MISSING_PERCENTAGE = 99
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/GAT_box_90.0_epochs_100_lr_0.0001_batch_4.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GraphSage16_box_90.0_epochs_100_lr_0.0001_batch_4.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -98,6 +98,7 @@ def run_GCN(input_file, label_file):
     print("Label Graph:")
     print_graph_info(label_graph)
 
+
     # Assuming that the positions are the last 2 features in the feature vector
     positions = single_graph.x[:, -2:].numpy()
 
@@ -107,8 +108,8 @@ def run_GCN(input_file, label_file):
     print(f'Min y position: {np.min(positions[:, 1])}')
     print(f'Max y position: {np.max(positions[:, 1])}')
 
-    ######## MODEL ########
-    model = Hole_GAT_99()
+    ######## MODEL ########
+    model = Hole_GraphSAGE_99()
     ######## MODEL ########
     
     model.to(DEVICE)
@@ -126,14 +127,17 @@ def run_GCN(input_file, label_file):
     # Perform prediction
     with torch.no_grad():
         out = model(single_graph)
-
-    # Update only nodes where the fourth feature is set to 1.0
+    
+        # Update only nodes where the fourth feature is set to 1.0
     indicator_nodes = single_graph.x[:, 3] == 1.0
     out[~indicator_nodes, :3] = single_graph.x[~indicator_nodes, :3]
 
 
     # Check if output is entirely zero
     print("Output zero check:", torch.all(out == 0).item())
+
+    # Check if output is entirely zero
+    print("Output zero check:", torch.all(out==0).item())
 
     # Define grid size
     grid_size = 256   # Increased for a smoother plot

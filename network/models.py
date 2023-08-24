@@ -311,18 +311,18 @@ class GraphSAGE_90(torch.nn.Module):
         self.feat_dim = 6
         self.output_dim = 6
 
-        self.conv1 = SAGEConv(self.feat_dim, 128*2)  # Layer 1
-        self.conv2 = SAGEConv(128*2, 256*2)  # Layer 2
-        self.conv3 = SAGEConv(256*2, 512*2)  # Layer 3
-        self.conv4 = SAGEConv(512*2, 1024*2)  # Layer 4 (peak dimensionality)
-        self.conv5 = SAGEConv(1024*2, 512*2)  # Layer 5
-        self.conv6 = SAGEConv(512*2, 256*2)  # Layer 6
-        self.conv7 = SAGEConv(256*2, 128*2)  # Layer 7
-        self.conv8 = SAGEConv(128*2, 64*2)  # Layer 8
-        self.conv9 = SAGEConv(64*2, 32*2)  # Layer 9
-        self.conv10 = SAGEConv(32*2, 16*2)  # Layer 10
-        self.conv11 = SAGEConv(16*2, 8*2)  # Layer 11
-        self.conv12 = SAGEConv(8*2, self.output_dim)  # Layer 12 (Output)
+        self.conv1 = SAGEConv(self.feat_dim, 128)  # Layer 1
+        self.conv2 = SAGEConv(128, 256)  # Layer 2
+        self.conv3 = SAGEConv(256, 512)  # Layer 3
+        self.conv4 = SAGEConv(512, 1024)  # Layer 4 (peak dimensionality)
+        self.conv5 = SAGEConv(1024, 512)  # Layer 5
+        self.conv6 = SAGEConv(512, 256)  # Layer 6
+        self.conv7 = SAGEConv(256, 128)  # Layer 7
+        self.conv8 = SAGEConv(128, 64)  # Layer 8
+        self.conv9 = SAGEConv(64, 32)  # Layer 9
+        self.conv10 = SAGEConv(32, 16)  # Layer 10
+        self.conv11 = SAGEConv(16, 8)  # Layer 11
+        self.conv12 = SAGEConv(8, self.output_dim)  # Layer 12 (Output)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -339,6 +339,7 @@ class GraphSAGE_90(torch.nn.Module):
         x = torch.relu(self.conv11(x, edge_index))
         x = self.conv12(x, edge_index)
         return x
+    
 class GAT_90(torch.nn.Module):
     def __init__(self):
         super(GAT_90, self).__init__()
@@ -346,19 +347,19 @@ class GAT_90(torch.nn.Module):
         self.output_dim = 6
         self.heads = 2
 
-        self.conv1 = GATConv(self.feat_dim, 64, heads=self.heads, concat=True)  # Layer 1
-        self.conv2 = GATConv(64 * self.heads, 128, heads=self.heads, concat=True)  # Layer 2
-        self.conv3 = GATConv(128 * self.heads, 256, heads=self.heads, concat=True)  # Layer 3
-        self.conv4 = GATConv(256 * self.heads, 512, heads=self.heads, concat=True)  # Layer 4
-        self.conv5 = GATConv(512 * self.heads, 1024, heads=self.heads, concat=True)  # Layer 5 (peak dimensionality)
-        self.conv6 = GATConv(1024 * self.heads, 512, heads=self.heads, concat=True)  # Layer 6
-        self.conv7 = GATConv(512 * self.heads, 256, heads=self.heads, concat=True)  # Layer 7
-        self.conv8 = GATConv(256 * self.heads, 128, heads=self.heads, concat=True)  # Layer 8
-        self.conv9 = GATConv(128 * self.heads, 64, heads=self.heads, concat=True)  # Layer 9
-        self.conv10 = GATConv(64 * self.heads, 32, heads=self.heads, concat=True)  # Layer 10
-        self.conv11 = GATConv(32 * self.heads, 16, heads=self.heads, concat=True)  # Layer 11
-        self.conv12 = GATConv(16 * self.heads, 8, heads=self.heads, concat=True)  # Layer 12
-        self.conv13 = GATConv(8 * self.heads, self.output_dim, heads=1, concat=False)  # Layer 13 (Output)
+        self.conv1 = GATConv(self.feat_dim, 32, heads=self.heads, concat=True)  # Layer 1
+        self.conv2 = GATConv(32 * self.heads, 64, heads=self.heads, concat=True)  # Layer 2
+        self.conv3 = GATConv(64 * self.heads, 128, heads=self.heads, concat=True)  # Layer 3
+        self.conv4 = GATConv(128 * self.heads, 256, heads=self.heads, concat=True)  # Layer 4
+        self.conv5 = GATConv(256 * self.heads, 512, heads=self.heads, concat=True)  # Layer 5 (peak dimensionality)
+        self.conv6 = GATConv(512 * self.heads, 256, heads=self.heads, concat=True)  # Layer 6
+        self.conv7 = GATConv(256 * self.heads, 128, heads=self.heads, concat=True)  # Layer 7
+        self.conv8 = GATConv(128 * self.heads, 64, heads=self.heads, concat=True)  # Layer 8
+        self.conv9 = GATConv(64 * self.heads, 32, heads=self.heads, concat=True)  # Layer 9
+        self.conv10 = GATConv(32 * self.heads, 16, heads=self.heads, concat=True)  # Layer 10
+        self.conv11 = GATConv(16 * self.heads, 8, heads=self.heads, concat=True)  # Layer 11
+        self.conv12 = GATConv(8 * self.heads, 4, heads=self.heads, concat=True)  # Layer 12
+        self.conv13 = GATConv(4 * self.heads, self.output_dim, heads=1, concat=False)  # Layer 13 (Output)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -376,7 +377,6 @@ class GAT_90(torch.nn.Module):
         x = torch.relu(self.conv12(x, edge_index))
         x = self.conv13(x, edge_index)
         return x
-
 
 
 

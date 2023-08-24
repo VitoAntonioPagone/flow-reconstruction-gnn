@@ -13,7 +13,7 @@ import os
 import matplotlib.pyplot as plt
 from torch_geometric.nn import DataParallel
 
-HOLE = True
+HOLE = False
 
 if not HOLE:
     ALPHA = 1e-4  
@@ -23,7 +23,7 @@ if not HOLE:
     PERCENTAGE_OF_MISSING_POINTS = 90
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     LOAD_MODEL = False  
-    MODEL_NAME = f"StandardGraphConv13_{PERCENTAGE_OF_MISSING_POINTS}"  
+    MODEL_NAME = f"SAGE12_{PERCENTAGE_OF_MISSING_POINTS}"  
     LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
@@ -43,7 +43,7 @@ else:
     TRAIN_TARGET_DIR = f'../dataset_graph/training_hole/train_graphs_box_{BOX_PERCENTAGE * 100}/'
     VALID_INPUT_DIR = f'../dataset_graph/training_hole/validation_input_graphs_box_{BOX_PERCENTAGE * 100}/'
     VALID_TARGET_DIR = f'../dataset_graph/training_hole/validation_graphs_box_{BOX_PERCENTAGE * 100}/'
-    MODEL_NAME = f"GCN13_box_{BOX_PERCENTAGE * 100}"
+    MODEL_NAME = f"GIN13_box_{BOX_PERCENTAGE * 100}"
     LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
@@ -85,7 +85,7 @@ valid_loader = DataListLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = Hole_GCN_90()
+model = GAT_90()
 
 # Multi-GPU setup
 if torch.cuda.device_count() > 1:

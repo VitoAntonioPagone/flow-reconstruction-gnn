@@ -12,10 +12,10 @@ from losses import GraphNavierStokesLoss
 from utils import graph_initialize_weights
 # Hyperparameters
 ALPHA = 1e-4  
-BATCH_SIZE = 1
+BATCH_SIZE = 4
 LR = 0.0001
 EPOCHS = 50
-PERCENTAGE_OF_MISSING_POINTS = 99
+PERCENTAGE_OF_MISSING_POINTS = 90
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 LOAD_MODEL = False  
 MODEL_NAME = f"GraphSAGE_{PERCENTAGE_OF_MISSING_POINTS}"  

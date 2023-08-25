@@ -221,9 +221,10 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
     torch.save(graph, file_path)
     print(f"Saved the graph to {file_path}")
 
-
 def create_graphs(data_folder, num_neighbours, save_folder, is_input):
     for i, file in enumerate(os.listdir(data_folder)):
+        if i >= 5:  # Limit to first 5 files
+            break
         if file.endswith(".npz"):
             file_path = os.path.join(data_folder, file)
             file_base = os.path.splitext(file)[0]  # Remove file extension to get the base file name
@@ -231,23 +232,24 @@ def create_graphs(data_folder, num_neighbours, save_folder, is_input):
             features, coordinates = load_npz_data(file_path)
             create_and_save_graph(features, coordinates, num_neighbours, save_folder, file_base, is_input)
 
+
 # Main script
 if __name__ == "__main__":
     # Convert train and test vtp files to npz files
-    '''
-    vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
-    vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
+ 
+    #vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
+    #vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
     # Split train data into train and validation
-    train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
-    '''
+    #train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
+
     # Process npz files
-    '''
-    process_npz_files(TRAIN_OUTPUT_FOLDER, MISSING_PERCENTAGE)
-    process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
-    process_npz_files(VALIDATION_DIR_INPUT, MISSING_PERCENTAGE)
-    '''
+
+    #process_npz_files(TRAIN_OUTPUT_FOLDER, MISSING_PERCENTAGE)
+    #process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
+    #process_npz_files(VALIDATION_DIR_INPUT, MISSING_PERCENTAGE)
+
     # Create and save graphs
-    
+    '''
     create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_{MISSING_PERCENTAGE}"), is_input=False)
     print("Validation graphs created.")
     sys.stdout.flush()
@@ -271,5 +273,5 @@ if __name__ == "__main__":
     create_graphs(TEST_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_graphs_{MISSING_PERCENTAGE}"), is_input=False)
     print("Test graphs created.")
     sys.stdout.flush()
-    '''
+
 

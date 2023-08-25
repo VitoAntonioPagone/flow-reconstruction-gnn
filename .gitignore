@@ -24,3 +24,4 @@ network/__pycache__/
 /losses_plot
 /trained_models
 network/network_images.py
+/dataset

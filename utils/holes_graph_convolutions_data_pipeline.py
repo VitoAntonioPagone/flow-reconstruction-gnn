@@ -28,8 +28,8 @@ VALIDATION_DIR_INPUT = "../dataset_graph/original_data/npz_data/validation"
 RANDOM_SEED = 1
 VALIDATION_SPLIT = 0.1
 MISSING_PERCENTAGE = 99
-NUM_NEIGHBOURS = 8
-BOX_PERCENTAGE = 0.9 
+NUM_NEIGHBOURS = 12
+BOX_PERCENTAGE = 0.95 
 SAVE_GRAPHS_FOLDER = f"../dataset_graph/training_hole"
 
 # Make sure folders exist
@@ -268,19 +268,13 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
 
 
 def create_graphs(data_folder, num_neighbours, save_folder, is_input):
-    file_count = 0
     for i, file in enumerate(os.listdir(data_folder)):
         if file.endswith(".npz"):
-            if file_count < 5:  # Only process first 5 files
-                file_path = os.path.join(data_folder, file)
-                file_base = os.path.splitext(file)[0]  # Remove file extension to get the base file name
-                print(f"Creating graphs from file: {file_path}")
-                features, coordinates = load_npz_data(file_path)
-                create_and_save_graph(features, coordinates, num_neighbours, save_folder, file_base, is_input)
-                file_count += 1
-            else:
-                break
-
+            file_path = os.path.join(data_folder, file)
+            file_base = os.path.splitext(file)[0]  # Remove file extension to get the base file name
+            print(f"Creating graphs from file: {file_path}")
+            features, coordinates = load_npz_data(file_path)
+            create_and_save_graph(features, coordinates, num_neighbours, save_folder, file_base, is_input)
 
 # Main script
 if __name__ == "__main__":
@@ -292,22 +286,22 @@ if __name__ == "__main__":
     # Process npz files
   
     #process_npz_files(TRAIN_OUTPUT_FOLDER, BOX_PERCENTAGE)
-    process_npz_files(TEST_OUTPUT_FOLDER, BOX_PERCENTAGE)
+    #process_npz_files(TEST_OUTPUT_FOLDER, BOX_PERCENTAGE)
     #process_npz_files(VALIDATION_DIR_INPUT, BOX_PERCENTAGE)
     # Create and save graphs
-    #create_graphs(VALIDATION_DIR_INPUT + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
-    #print("Validation input graphs created.")
-    #sys.stdout.flush()
-    #create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
-    #print("Validation graphs created.")
-    #sys.stdout.flush()
-    #create_graphs(TRAIN_OUTPUT_FOLDER + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
-    #print("Train input graphs created.")
-    #sys.stdout.flush()
-    #create_graphs(TRAIN_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
-    #print("Train graphs created.")
-    #sys.stdout.flush()
-    create_graphs(TEST_OUTPUT_FOLDER + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
-    print("Test input graphs created.")
-    create_graphs(TEST_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
-    print("Test graphs created.")
+    create_graphs(VALIDATION_DIR_INPUT + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
+    print("Validation input graphs created.")
+    sys.stdout.flush()
+    create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
+    print("Validation graphs created.")
+    sys.stdout.flush()
+    create_graphs(TRAIN_OUTPUT_FOLDER + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
+    print("Train input graphs created.")
+    sys.stdout.flush()
+    create_graphs(TRAIN_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
+    print("Train graphs created.")
+    sys.stdout.flush()
+    #create_graphs(TEST_OUTPUT_FOLDER + f'_modified_{BOX_PERCENTAGE * 100}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=True)
+    #print("Test input graphs created.")
+    #create_graphs(TEST_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_graphs_box_{BOX_PERCENTAGE * 100}"), is_input=False)
+    #print("Test graphs created.")

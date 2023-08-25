@@ -28,7 +28,7 @@ VALIDATION_DIR_INPUT = "../dataset_graph/original_data/npz_data/validation"
 RANDOM_SEED = 1
 VALIDATION_SPLIT = 0.1
 MISSING_PERCENTAGE = 99
-NUM_NEIGHBOURS = 12
+NUM_NEIGHBOURS = 10
 BOX_PERCENTAGE = 0.95 
 SAVE_GRAPHS_FOLDER = f"../dataset_graph/training_hole"
 

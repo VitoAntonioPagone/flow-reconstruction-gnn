@@ -339,7 +339,6 @@ class GraphSAGE_90(torch.nn.Module):
         x = torch.relu(self.conv11(x, edge_index))
         x = self.conv12(x, edge_index)
         return x
-    
 class GAT_90(torch.nn.Module):
     def __init__(self):
         super(GAT_90, self).__init__()
@@ -356,10 +355,7 @@ class GAT_90(torch.nn.Module):
         self.conv7 = GATConv(256 * self.heads, 128, heads=self.heads, concat=True)  # Layer 7
         self.conv8 = GATConv(128 * self.heads, 64, heads=self.heads, concat=True)  # Layer 8
         self.conv9 = GATConv(64 * self.heads, 32, heads=self.heads, concat=True)  # Layer 9
-        self.conv10 = GATConv(32 * self.heads, 16, heads=self.heads, concat=True)  # Layer 10
-        self.conv11 = GATConv(16 * self.heads, 8, heads=self.heads, concat=True)  # Layer 11
-        self.conv12 = GATConv(8 * self.heads, 4, heads=self.heads, concat=True)  # Layer 12
-        self.conv13 = GATConv(4 * self.heads, self.output_dim, heads=1, concat=False)  # Layer 13 (Output)
+        self.conv10 = GATConv(32 * self.heads, self.output_dim, heads=1, concat=False)  # Layer 10 (Output)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -372,11 +368,9 @@ class GAT_90(torch.nn.Module):
         x = torch.relu(self.conv7(x, edge_index))
         x = torch.relu(self.conv8(x, edge_index))
         x = torch.relu(self.conv9(x, edge_index))
-        x = torch.relu(self.conv10(x, edge_index))
-        x = torch.relu(self.conv11(x, edge_index))
-        x = torch.relu(self.conv12(x, edge_index))
-        x = self.conv13(x, edge_index)
+        x = self.conv10(x, edge_index)
         return x
+
 
 
 

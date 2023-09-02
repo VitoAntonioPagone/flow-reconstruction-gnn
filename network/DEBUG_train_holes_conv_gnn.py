@@ -4,8 +4,8 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader, DataListLoader
 from datasets import CustomDataset
-from models import (GraphSAGE_90, GraphSAGE_95, GAT_90, GAT_95, ChebNet_90, AGNN_90,
-                    GIN_90, GraphSAGE_99, Hole_GraphSAGE_99, Hole_GAT_90, Hole_GCN_90, Hole_GAT_20Layers, Hole_GAT_25Layers, Hole_GAT_30Layers)
+from models import (GraphSAGE_90, GCN_90, GraphSAGE_95, GAT_95
+                    , GraphSAGE_99, Hole_GAT_10, GAT_90)
 from torch_geometric.data import Batch
 from losses import GraphNavierStokesLoss
 from utils import graph_initialize_weights
@@ -19,11 +19,11 @@ if not HOLE:
     ALPHA = 1e-4  
     BATCH_SIZE = 4
     LR = 0.0001
-    EPOCHS = 100
+    EPOCHS = 50
     PERCENTAGE_OF_MISSING_POINTS = 90
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     LOAD_MODEL = False  
-    MODEL_NAME = f"GAT_{PERCENTAGE_OF_MISSING_POINTS}"  
+    MODEL_NAME = f"MULTIGPU-GAT_{PERCENTAGE_OF_MISSING_POINTS}"  
     LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
@@ -38,12 +38,12 @@ else:
     EPOCHS = 100
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     LOAD_MODEL = False
-    BOX_PERCENTAGE = 0.90
-    TRAIN_INPUT_DIR = f'../dataset_graph/training_hole/train_input_graphs_box_{BOX_PERCENTAGE * 100}/'
-    TRAIN_TARGET_DIR = f'../dataset_graph/training_hole/train_graphs_box_{BOX_PERCENTAGE * 100}/'
-    VALID_INPUT_DIR = f'../dataset_graph/training_hole/validation_input_graphs_box_{BOX_PERCENTAGE * 100}/'
-    VALID_TARGET_DIR = f'../dataset_graph/training_hole/validation_graphs_box_{BOX_PERCENTAGE * 100}/'
-    MODEL_NAME = f"Hole_GAT_35Layers_box_{BOX_PERCENTAGE * 100}"
+    BOX_PERCENTAGE = 0.95
+    TRAIN_INPUT_DIR = f'../dataset_graph/training_hole/train_input_graphs_box_{BOX_PERCENTAGE * 100}'
+    TRAIN_TARGET_DIR = f'../dataset_graph/training_hole/train_graphs_box_{BOX_PERCENTAGE * 100}'
+    VALID_INPUT_DIR = f'../dataset_graph/training_hole/validation_input_graphs_box_{BOX_PERCENTAGE * 100}'
+    VALID_TARGET_DIR = f'../dataset_graph/training_hole/validation_graphs_box_{BOX_PERCENTAGE * 100}'
+    MODEL_NAME = f"Hole_GAT_10_box_{BOX_PERCENTAGE * 100}"
     LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'

@@ -4,7 +4,7 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from datasets import CustomDataset
-from models import GraphSAGE_90, GraphSAGE_95, GAT_90, GAT_95, ChebNet_90, AGNN_90, GIN_90, GraphSAGE_99
+from models import GraphSAGE_90, GraphSAGE_95, GAT_90, GAT_95, GraphSAGE_99
 from collections import OrderedDict
 import os
 import matplotlib.pyplot as plt
@@ -12,13 +12,13 @@ from losses import GraphNavierStokesLoss
 from utils import graph_initialize_weights
 # Hyperparameters
 ALPHA = 1e-4  
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 LR = 0.0001
 EPOCHS = 50
 PERCENTAGE_OF_MISSING_POINTS = 90
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 LOAD_MODEL = False  
-MODEL_NAME = f"GraphSAGE_{PERCENTAGE_OF_MISSING_POINTS}"  
+MODEL_NAME = f"GAT_{PERCENTAGE_OF_MISSING_POINTS}"  
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
@@ -67,7 +67,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GraphSAGE_99()
+model = GAT_90()
 model.to(DEVICE)
 graph_initialize_weights(model)  # Initialize weights of the model
 print('Model built.')

@@ -4,14 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-from models import GAT_50, GCN_50, GAT_90, GAT_95, GraphSAGE_95, GraphSAGE_99
+from models import GAT_50, GCN_50, GAT_95, GraphSAGE_95, GraphSAGE_99, GraphSAGE_90, GAT_90
 import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
 
 MISSING_PERCENTAGE = 90
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/GAT_90_epochs_50_lr_0.0001_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GAT_90_epochs_100_lr_0.0001_batch_4.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -124,9 +124,18 @@ def run_GCN(input_file, label_file):
     single_graph.edge_index = single_graph.edge_index.to(DEVICE)
     single_graph.y = single_graph.y.to(DEVICE)
 
+
     # Perform prediction
     with torch.no_grad():
         out = model(single_graph)
+    
+        # Update only nodes where the fourth feature is set to 1.0
+    indicator_nodes = single_graph.x[:, 3] == 1.0
+    out[~indicator_nodes, :3] = single_graph.x[~indicator_nodes, :3]
+
+
+    # Check if output is entirely zero
+    print("Output zero check:", torch.all(out == 0).item())
 
     # Check if output is entirely zero
     print("Output zero check:", torch.all(out==0).item())
@@ -217,9 +226,13 @@ def run_GCN(input_file, label_file):
     fig.savefig('../results/{}_plot.png'.format(os.path.basename(CHECKPOINT_PATH).split('.')[0]), dpi=300)
     plt.show()
 
+
 if __name__ == "__main__":
     #input_file = f'../dataset_graph/original_data/onehundred/test_input_graphs_50/input_interpolated_input_50.pt'
     #label_file = f'../dataset_graph/original_data/onehundred/test_label_graphs_50/label_interpolated_label_50.pt'
-    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_input.pt'
-    label_file = f'../dataset_graph/training/test_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_label.pt'
+    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y15_Z0_X1_input.pt'
+    label_file = f'../dataset_graph/training/test_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y15_Z0_X1_label.pt'
+    #input_file = f'../dataset_graph/training_hole/test_input_graphs_box_90.0/cyc10_CAD615_Y4_Z0_X2_input.pt'
+    #label_file = f'../dataset_graph/training_hole/test_graphs_box_90.0/cyc10_CAD615_Y4_Z0_X2_label.pt'
     run_GCN(input_file, label_file)
+    

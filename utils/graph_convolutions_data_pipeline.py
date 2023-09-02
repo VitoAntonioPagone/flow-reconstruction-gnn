@@ -4,19 +4,13 @@ import shutil
 import numpy as np
 import vtk
 import random
-from torch import Tensor
 import torch
-import torch_geometric
 from torch_geometric.data import Data
 from torch_geometric.utils import to_undirected
 from scipy.spatial import cKDTree
 from natsort import natsorted
 from pathlib import Path
 import sys
-import torch_sparse
-from torch_geometric.utils import add_self_loops
-from torch_geometric.typing import Adj, OptTensor
-from torch_scatter import scatter_add
 
 # Constants
 TRAIN_INPUT_FOLDER = "../dataset_graph/original_data/train"
@@ -137,65 +131,6 @@ def load_npz_data(file_path):
 
     return torch.tensor(features, dtype=torch.float), torch.tensor(coordinates, dtype=torch.float)
 
-def get_symmetrically_normalized_adjacency(edge_index, n_nodes):
-    """
-    Given an edge_index, return the same edge_index and edge weights computed as
-    \mathbf{\hat{D}}^{-1/2} \mathbf{\hat{A}} \mathbf{\hat{D}}^{-1/2}.
-    """
-    edge_weight = torch.ones((edge_index.size(1),), device=edge_index.device)
-    row, col = edge_index[0], edge_index[1]
-    deg = scatter_add(edge_weight, col, dim=0, dim_size=n_nodes)
-    deg_inv_sqrt = deg.pow_(-0.5)
-    deg_inv_sqrt.masked_fill_(deg_inv_sqrt == float("inf"), 0)
-    DAD = deg_inv_sqrt[row] * edge_weight * deg_inv_sqrt[col]
-
-    return edge_index, DAD
-
-class FeaturePropagation(torch.nn.Module):
-    def __init__(self, num_iterations: int):
-        super(FeaturePropagation, self).__init__()
-        self.num_iterations = num_iterations
-
-    def propagate(self, x: Tensor, edge_index: Adj, mask: OptTensor = None) -> Tensor:
-        # out is initialized to 0 for missing values. However, its initialization does not matter for the final
-        # value at convergence
-        out = x
-        if mask is not None:
-            out = torch.zeros_like(x)
-            out[mask] = x[mask]
-
-        n_nodes = x.shape[0]
-        adj = self.get_propagation_matrix(out, edge_index, n_nodes)
-        for _ in range(self.num_iterations):
-            # Diffuse current features
-            out = torch.sparse.mm(adj, out)
-            # Reset original known features
-            if mask is not None:
-                out[mask] = x[mask]
-
-        return out
-
-    def get_propagation_matrix(self, x, edge_index, n_nodes):
-        # Initialize all edge weights to ones if the graph is unweighted
-        edge_index, edge_weight = get_symmetrically_normalized_adjacency(edge_index, n_nodes=n_nodes)
-        adj = torch.sparse.FloatTensor(edge_index, values=edge_weight, size=(n_nodes, n_nodes)).to(edge_index.device)
-
-        return adj
-
-def propagate_features(graph, features, num_iterations):
-    print("Starting feature propagation...")
-    edge_index = graph.edge_index
-
-    mask = features[:, 3] == 0  # Mask for the existing values, assuming indicator is the 4th feature
-
-    # Propagate features using the FeaturePropagation method
-    model = FeaturePropagation(num_iterations=num_iterations)
-    propagated_features = model.propagate(features, edge_index, mask=mask)
-
-    print("Feature propagation complete.")
-    return propagated_features
-
-
 def create_and_save_graph(features, coordinates, num_neighbours, folder, file_base, is_input):
     print("Creating graph from npz data")
     tree = cKDTree(coordinates.numpy())
@@ -212,15 +147,13 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
     # Convert to undirected graph
     edge_index = to_undirected(edge_index)
 
-    graph = Data(x=features, edge_index=edge_index)
+    graph = Data(x=features, edge_index=edge_index)  
 
     # Save the graph
     os.makedirs(folder, exist_ok=True)
     suffix = f"_input.pt" if is_input else f"_label.pt"
     file_path = os.path.join(folder, f"{file_base}{suffix}")
     torch.save(graph, file_path)
-    print(f"Saved the graph to {file_path}")
-
 
 def create_graphs(data_folder, num_neighbours, save_folder, is_input):
     for i, file in enumerate(os.listdir(data_folder)):
@@ -234,42 +167,32 @@ def create_graphs(data_folder, num_neighbours, save_folder, is_input):
 # Main script
 if __name__ == "__main__":
     # Convert train and test vtp files to npz files
-    '''
-    vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
-    vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
+    #vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
+    #vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
     # Split train data into train and validation
-    train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
-    '''
+    #train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
     # Process npz files
-    '''
     process_npz_files(TRAIN_OUTPUT_FOLDER, MISSING_PERCENTAGE)
-    process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
+    #process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
     process_npz_files(VALIDATION_DIR_INPUT, MISSING_PERCENTAGE)
-    '''
     # Create and save graphs
-    
-    create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_{MISSING_PERCENTAGE}"), is_input=False)
-    print("Validation graphs created.")
-    sys.stdout.flush()
-
-    create_graphs(VALIDATION_DIR_INPUT + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
-    print("Validation input graphs created.")
-    sys.stdout.flush()
-
     create_graphs(TRAIN_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_{MISSING_PERCENTAGE}"), is_input=False)
     print("Train graphs created.")
     sys.stdout.flush()
-
     create_graphs(TRAIN_OUTPUT_FOLDER + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
     print("Train input graphs created.")
+    sys.stdout.flush()
+    create_graphs(VALIDATION_DIR_INPUT + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
+    print("Validation input graphs created.")
+    sys.stdout.flush()
+    create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_{MISSING_PERCENTAGE}"), is_input=False)
+    print("Validation graphs created.")
     sys.stdout.flush()
     '''
     create_graphs(TEST_OUTPUT_FOLDER + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
     print("Test input graphs created.")
     sys.stdout.flush()
-
     create_graphs(TEST_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_graphs_{MISSING_PERCENTAGE}"), is_input=False)
     print("Test graphs created.")
     sys.stdout.flush()
     '''
-

@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset as TorchDataset
 
-MISSING_PERCENTAGE = 95
+MISSING_PERCENTAGE = 90
 
 
 class FlowDataset(TorchDataset):
@@ -53,7 +53,7 @@ def calculate_mae(pred, target):
 
 def run_autoencoder(input_file, label_file):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    CHECKPOINT_FILE = '../trained_models/ConvNet_95_epochs_500__alpha_0.1_beta_0.1_lr_0.0001_batch_64.pth.tar'
+    CHECKPOINT_FILE = '../trained_models/ConvNet_98_epochs_500__alpha_0.1_beta_0.1_lr_0.0001_batch_64.pth.tar'
     TEST_INPUT_FILE = input_file
     TEST_LABEL_FILE = label_file
 
@@ -80,7 +80,7 @@ def run_autoencoder(input_file, label_file):
         # Load pre-trained model 
 
         ####### MODEL #######
-        model = ConvNet_95().to(DEVICE)
+        model = ConvNet_98().to(DEVICE)
         ####### MODEL #######
         
         load_checkpoint(torch.load(CHECKPOINT_FILE, map_location=torch.device(DEVICE)), model)

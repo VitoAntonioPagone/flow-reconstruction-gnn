@@ -8,7 +8,7 @@ import shutil
 from natsort import natsorted
 
 GRID_SIZE = 256
-PERCENT_TO_REMOVE = 95
+PERCENT_TO_REMOVE = 98
 RANDOM_SEED = 1
 TRAIN_SPLIT = 0.9
 
@@ -142,14 +142,18 @@ def tran_val_split(train_dir, val_dir):
 
 if __name__ == "__main__":
     print("Starting main script execution...")
+
+    ## TRAIN
+    '''
     vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
-    vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
     interpolate_data(TRAIN_OUTPUT_FOLDER, INTERPOLATED_TRAIN_OUTPUT_FOLDER)
-    interpolate_data(TEST_OUTPUT_FOLDER, INTERPOLATED_TEST_OUTPUT_FOLDER)
     create_inputs_labels(INTERPOLATED_TRAIN_OUTPUT_FOLDER, OUTPUT_TRAIN_INPUTS_DIR, OUTPUT_TRAIN_LABELS_DIR, PERCENT_TO_REMOVE)
-    create_inputs_labels(INTERPOLATED_TEST_OUTPUT_FOLDER, OUTPUT_TEST_INPUTS_DIR, OUTPUT_TEST_LABELS_DIR, PERCENT_TO_REMOVE)
     tran_val_split(OUTPUT_TRAIN_INPUTS_DIR, OUTPUT_VAL_INPUTS_DIR)
-    tran_val_split(OUTPUT_TRAIN_LABELS_DIR, OUTPUT_VAL_LABELS_DIR)
+ '''
+    ### TEST
+    vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
+    interpolate_data(TEST_OUTPUT_FOLDER, INTERPOLATED_TEST_OUTPUT_FOLDER)
+    create_inputs_labels(INTERPOLATED_TEST_OUTPUT_FOLDER, OUTPUT_TEST_INPUTS_DIR, OUTPUT_TEST_LABELS_DIR, PERCENT_TO_REMOVE)
 
     print("Finished main script execution.")
 

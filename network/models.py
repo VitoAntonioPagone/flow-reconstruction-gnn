@@ -335,8 +335,107 @@ class GAT_90(torch.nn.Module):
         x = self.conv10(x, edge_index)
         return x
 
+class GAT_90_14(torch.nn.Module):
+    def __init__(self):
+        super(GAT_90_14, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
 
+        self.conv1 = GATConv(self.feat_dim, 8)  # Layer 1
+        self.conv2 = GATConv(8, 16)             # Layer 2
+        self.conv3 = GATConv(16, 32)            # Layer 3
+        self.conv4 = GATConv(32, 64)            # Layer 4
+        self.conv5 = GATConv(64, 128)           # Layer 5
+        self.conv6 = GATConv(128, 256)          # Layer 6
+        self.conv7 = GATConv(256, 128)          # Layer 7 (peak dimensionality)
+        self.conv8 = GATConv(128, 64)           # Layer 8
+        self.conv9 = GATConv(64, 32)            # Layer 9
+        self.conv10 = GATConv(32, 16)           # Layer 10
+        self.conv11 = GATConv(16, 8)            # Layer 11
+        self.conv12 = GATConv(8, 4)             # Layer 12
+        self.conv13 = GATConv(4, 2)             # Layer 13
+        self.conv14 = GATConv(2, self.output_dim)# Layer 14 (Output)
 
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index))
+        x = torch.relu(self.conv4(x, edge_index))
+        x = torch.relu(self.conv5(x, edge_index))
+        x = torch.relu(self.conv6(x, edge_index))
+        x = torch.relu(self.conv7(x, edge_index))
+        x = torch.relu(self.conv8(x, edge_index))
+        x = torch.relu(self.conv9(x, edge_index))
+        x = torch.relu(self.conv10(x, edge_index))
+        x = torch.relu(self.conv11(x, edge_index))
+        x = torch.relu(self.conv12(x, edge_index))
+        x = torch.relu(self.conv13(x, edge_index))
+        x = self.conv14(x, edge_index)
+        return x
+
+class GAT_90_14_2(torch.nn.Module):
+    def __init__(self):
+        super(GAT_90_14_2, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+
+        self.conv1 = GATConv(self.feat_dim, 8, heads=2)  # Layer 1
+        self.conv2 = GATConv(8*2, 16, heads=2)           # Layer 2
+        self.conv3 = GATConv(16*2, 32, heads=2)          # Layer 3
+        self.conv4 = GATConv(32*2, 64, heads=2)          # Layer 4
+        self.conv5 = GATConv(64*2, 128, heads=2)         # Layer 5
+        self.conv6 = GATConv(128*2, 256, heads=2)        # Layer 6
+        self.conv7 = GATConv(256*2, 128, heads=2)        # Layer 7 (peak dimensionality)
+        self.conv8 = GATConv(128*2, 64, heads=2)         # Layer 8
+        self.conv9 = GATConv(64*2, 32, heads=2)          # Layer 9
+        self.conv10 = GATConv(32*2, 16, heads=2)         # Layer 10
+        self.conv11 = GATConv(16*2, 8, heads=2)          # Layer 11
+        self.conv12 = GATConv(8*2, 4, heads=2)           # Layer 12
+        self.conv13 = GATConv(4*2, 2, heads=2)           # Layer 13
+        self.conv14 = GATConv(2*2, self.output_dim)      # Layer 14 (Output)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index))
+        x = torch.relu(self.conv4(x, edge_index))
+        x = torch.relu(self.conv5(x, edge_index))
+        x = torch.relu(self.conv6(x, edge_index))
+        x = torch.relu(self.conv7(x, edge_index))
+        x = torch.relu(self.conv8(x, edge_index))
+        x = torch.relu(self.conv9(x, edge_index))
+        x = torch.relu(self.conv10(x, edge_index))
+        x = torch.relu(self.conv11(x, edge_index))
+        x = torch.relu(self.conv12(x, edge_index))
+        x = torch.relu(self.conv13(x, edge_index))
+        x = self.conv14(x, edge_index)
+        return x
+    
+class GAT_90_6(torch.nn.Module):
+    def __init__(self):
+        super(GAT_90_6, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+
+        self.conv1 = GATConv(self.feat_dim, 32)   # Layer 1
+        self.conv2 = GATConv(32, 64)              # Layer 2
+        self.conv3 = GATConv(64, 256)             # Layer 3 (peak dimensionality)
+        self.conv4 = GATConv(256, 64)             # Layer 4
+        self.conv5 = GATConv(64, 32)              # Layer 5
+        self.conv6 = GATConv(32, self.output_dim) # Layer 6
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index))
+        x = torch.relu(self.conv4(x, edge_index))
+        x = torch.relu(self.conv5(x, edge_index))
+        x = self.conv6(x, edge_index)
+        return x
+    
 #### 95 % MISSING POINTS ####
 
 #### CONVOLUTIONAL NETWORKS ####
@@ -458,43 +557,43 @@ class GraphSAGE_95(torch.nn.Module):
         x = self.conv8(x, edge_index) # New conv layer
         return x
 #### 99% ####
-class ConvNet_99(nn.Module):
+class ConvNet_98(nn.Module):
     def __init__(self):
-        super(ConvNet_99, self).__init__()
+        super(ConvNet_98, self).__init__()
 
         # Encoder
         self.encoder1 = nn.Sequential(
-            nn.Conv2d(4, 32*5, kernel_size=7, stride=1, padding=3),
+            nn.Conv2d(4, 32*4, kernel_size=7, stride=1, padding=3),
             nn.ReLU()
         )
         self.encoder2 = nn.Sequential(
-            nn.Conv2d(32*5, 64*5, kernel_size=7, stride=1, padding=3),
+            nn.Conv2d(32*4, 64*4, kernel_size=7, stride=1, padding=3),
             nn.ReLU()
         )
         self.encoder3 = nn.Sequential(
-            nn.Conv2d(64*5, 128*5, kernel_size=7, stride=1, padding=3),
+            nn.Conv2d(64*4, 128*4, kernel_size=7, stride=1, padding=3),
             nn.ReLU()
         )
         self.encoder4 = nn.Sequential(
-            nn.Conv2d(128*5, 256*5, kernel_size=7, stride=1, padding=3),
+            nn.Conv2d(128*4, 256*4, kernel_size=7, stride=1, padding=3),
             nn.ReLU()
         )
 
         # Decoder
         self.decoder4 = nn.Sequential(
-            nn.ConvTranspose2d(384*5, 128*5, kernel_size=7, stride=1, padding=3),
+            nn.ConvTranspose2d(384*4, 128*4, kernel_size=7, stride=1, padding=3),
             nn.ReLU()
         )
         self.decoder3 = nn.Sequential(
-            nn.ConvTranspose2d(192*5, 64*5, kernel_size=7, stride=1, padding=3),
+            nn.ConvTranspose2d(192*4, 64*4, kernel_size=7, stride=1, padding=3),
             nn.ReLU()
         )
         self.decoder2 = nn.Sequential(
-            nn.ConvTranspose2d(96*5, 32*5, kernel_size=7, stride=1, padding=3),
+            nn.ConvTranspose2d(96*4, 32*4, kernel_size=7, stride=1, padding=3),
             nn.ReLU()
         )
         self.decoder1 = nn.Sequential(
-            nn.ConvTranspose2d(32*5, 3, kernel_size=7, stride=1, padding=3),
+            nn.ConvTranspose2d(32*4, 3, kernel_size=7, stride=1, padding=3),
         )
 
     def forward(self, x):

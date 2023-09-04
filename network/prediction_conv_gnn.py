@@ -4,14 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-from models import GAT_50, GCN_50, GAT_90, GAT_95, GraphSAGE_95, GraphSAGE_99
+from models import GAT_50, GCN_50, GAT_90, GAT_95, GraphSAGE_90, GCN_90, GraphSAGE_95, GraphSAGE_99, GAT_90_14_2, GAT_90_14
 import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
 
 MISSING_PERCENTAGE = 90
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/GAT_90_epochs_50_lr_0.0001_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/GAT_14_2_90_epochs_50_lr_0.0001_batch_1.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -109,7 +109,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = GAT_90()
+    model = GAT_90_14_2()
     ######## MODEL ########
     
     model.to(DEVICE)

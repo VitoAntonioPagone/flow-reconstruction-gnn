@@ -102,11 +102,11 @@ def extract_random_points(data, percentage):
     num_points = int(data.shape[0] * percentage)
     indices = random.sample(range(data.shape[0]), num_points)
     return np.array(indices)
+
 def process_npz_files(folder, box_percentage):
     npz_files = glob.glob(os.path.join(folder, '*.npz'))
-    output_folder = f'{folder}_modified_{BOX_PERCENTAGE * 100}'  # Folder name now includes box percentage
+    output_folder = f'{folder}_modified_{box_percentage * 100}'
     
-    # if folder already exists, delete it and create a new one
     if os.path.exists(output_folder):
         shutil.rmtree(output_folder)
     os.makedirs(output_folder, exist_ok=True)
@@ -122,22 +122,36 @@ def process_npz_files(folder, box_percentage):
 
         features = np.column_stack((x, y, x_velocity, y_velocity, z_velocity))
         
-        # Calculate the center of the x-y plane
-        x_center = (np.max(x) - np.min(x)) / 2
-        y_center = (np.max(y) - np.min(y)) / 2
+        x_center = (np.max(x) + np.min(x)) / 2
+        y_center = (np.max(y) + np.min(y)) / 2
 
-        # Determine the quantiles for x and y separately
         x_min_box = np.quantile(x, (1 - box_percentage) / 2)
         x_max_box = np.quantile(x, 1 - (1 - box_percentage) / 2)
         y_min_box = np.quantile(y, (1 - box_percentage) / 2)
         y_max_box = np.quantile(y, 1 - (1 - box_percentage) / 2)
         
-        # Identify the points outside the box
         outside_indices = np.where((x < x_min_box) | (x > x_max_box) | (y < y_min_box) | (y > y_max_box))
         
-        # Create a new copy of the features and modify it
         modified_features = features.copy()
         modified_features[outside_indices, 2:5] = 0
+
+        total_points_in_main_box = features.shape[0] - len(outside_indices[0])
+        total_missing_points_in_main_box = int(total_points_in_main_box * 0.30)
+
+        missing_points_per_box = total_missing_points_in_main_box // 3
+
+        for _ in range(3):
+            while True:
+                x_min_small = np.random.uniform(x_min_box, x_center)
+                x_max_small = np.random.uniform(x_center, x_max_box)
+                y_min_small = np.random.uniform(y_min_box, y_center)
+                y_max_small = np.random.uniform(y_center, y_max_box)
+
+                small_box_indices = np.where((x > x_min_small) & (x < x_max_small) & (y > y_min_small) & (y < y_max_small))
+
+                if len(small_box_indices[0]) >= 0.9 * missing_points_per_box and len(small_box_indices[0]) <= 1.1 * missing_points_per_box:
+                    modified_features[small_box_indices, 2:5] = 0
+                    break
 
         output_file_path = os.path.join(output_folder, os.path.basename(file_path))
         np.savez(output_file_path, x=modified_features[:, 0], y=modified_features[:, 1],

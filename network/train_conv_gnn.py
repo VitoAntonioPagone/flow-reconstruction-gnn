@@ -4,21 +4,21 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from datasets import CustomDataset
-from models import GATv2_90_8_2heads,GATv2_90_8,GraphSAGE_90_8, GAT_90_8_Increased, GAT_90_8,GCN_90_6, GraphSAGE_90,GraphSAGE_90_6, GraphSAGE_95, GAT_90, GAT_95, GraphSAGE_99, GCN_90, GAT_90_3, GAT_90_3_2heads, GAT_90_6, GAT_90_6_2heads
+from models import GAT_95_12, GAT_95_10,GAT_95_8,GAT_90_6_Double,GATv2_90_8_2heads,GATv2_90_8,GraphSAGE_90_8, GAT_90_8_Increased, GAT_90_8,GCN_90_6, GraphSAGE_90,GraphSAGE_90_6, GraphSAGE_95, GAT_90, GraphSAGE_99, GCN_90, GAT_90_3, GAT_90_3_2heads, GAT_90_6, GAT_90_6_2heads
 from collections import OrderedDict
 import os
 import matplotlib.pyplot as plt
 from losses import GraphNavierStokesLoss
 from utils import graph_initialize_weights
 # Hyperparameters
-ALPHA = 1e-4  
+ALPHA = 1e-3  
 BATCH_SIZE = 1
 LR = 0.0001
 EPOCHS = 50
-PERCENTAGE_OF_MISSING_POINTS = 90
+PERCENTAGE_OF_MISSING_POINTS = 95
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 LOAD_MODEL = False  
-MODEL_NAME = f"GATv2_2heads_8_{PERCENTAGE_OF_MISSING_POINTS}"  
+MODEL_NAME = f"GAT_12_{PERCENTAGE_OF_MISSING_POINTS}"  
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
 LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
@@ -67,7 +67,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GATv2_90_8_2heads()
+model = GAT_95_12()
 model.to(DEVICE)
 graph_initialize_weights(model)  # Initialize weights of the model
 print('Model built.')
@@ -100,7 +100,7 @@ print("--------------------------")
 
 optimizer = Adam(model.parameters(), lr=LR)
 criterion = MSELoss()
-#navier_stokes_loss = GAT_95().to(DEVICE)
+#navier_stokes_loss = GraphNavierStokesLoss()().to(DEVICE)
 
 train_losses, val_losses = [], []
 
@@ -121,7 +121,7 @@ for epoch in range(EPOCHS):
         batch.y = batch.y.to(DEVICE)
         optimizer.zero_grad()
         out = model(batch)
-        loss = criterion(out[:,:3], batch.y[:,:3])# + ALPHA * navier_stokes_loss(batch)
+        loss = criterion(out[:,:3], batch.y[:,:3]) #+ ALPHA * navier_stokes_loss(batch)
         train_loss += loss.item()
         loss.backward()
         optimizer.step()
@@ -146,7 +146,7 @@ for epoch in range(EPOCHS):
             batch.edge_index = batch.edge_index.to(DEVICE)
             batch.y = batch.y.to(DEVICE)
             out = model(batch)
-            loss = criterion(out[:,:3], batch.y[:,:3])# + ALPHA * navier_stokes_loss(batch)
+            loss = criterion(out[:,:3], batch.y[:,:3])#+ ALPHA * navier_stokes_loss(batch)
             valid_loss += loss.item()
     valid_loss /= len(valid_loader)
     val_losses.append(valid_loss)

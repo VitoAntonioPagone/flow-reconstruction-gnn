@@ -28,8 +28,8 @@ VALIDATION_DIR_INPUT = "../dataset_graph/original_data/npz_data/validation"
 RANDOM_SEED = 1
 VALIDATION_SPLIT = 0.1
 MISSING_PERCENTAGE = 99
-NUM_NEIGHBOURS = 10
-BOX_PERCENTAGE = 0.95 
+NUM_NEIGHBOURS = 8
+BOX_PERCENTAGE = 0.98 
 SAVE_GRAPHS_FOLDER = f"../dataset_graph/training_hole"
 
 # Make sure folders exist
@@ -252,7 +252,7 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
     mask = velocity_features.sum(dim=-1) != 0  # Mask for the existing velocity values
 
     # Propagate velocity features
-    model = FeaturePropagation(num_iterations=750)
+    model = FeaturePropagation(num_iterations=1500)
     propagated_velocity_features = model.propagate(velocity_features, edge_index, mask=mask)
 
     # Combine propagated velocity features with other features

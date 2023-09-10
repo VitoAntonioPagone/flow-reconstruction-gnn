@@ -68,6 +68,9 @@ class NavierStokesLoss(nn.Module):
 
         return (continuity + momentum_u + momentum_v).mean()
 
+import torch
+import torch_scatter
+
 class GraphNavierStokesLoss(torch.nn.Module):
     def __init__(self):
         super(GraphNavierStokesLoss, self).__init__()
@@ -83,18 +86,31 @@ class GraphNavierStokesLoss(torch.nn.Module):
         dx = x[data.edge_index[0]] - x[data.edge_index[1]]
         dy = y[data.edge_index[0]] - y[data.edge_index[1]]
 
-        # Calculate du/dx and dv/dy
-        du_dx = du / (dx.abs() + EPSILON)  # Take absolute value of dx
-        dv_dy = dv / (dy.abs() + EPSILON)  # Take absolute value of dy
+        # Calculate du/dx, du/dy, dv/dx, and dv/dy
+        du_dx = du / (dx.abs() + EPSILON)
+        du_dy = du / (dy.abs() + EPSILON)
+        dv_dx = dv / (dx.abs() + EPSILON)
+        dv_dy = dv / (dy.abs() + EPSILON)
+
+        # Get u and v values for the source nodes of the edges
+        u_source = u[data.edge_index[0]]
+        v_source = v[data.edge_index[0]]
+
+        # Compute the convective terms for u and v
+        conv_u = u_source * du_dx + v_source * du_dy
+        conv_v = u_source * dv_dx + v_source * dv_dy
 
         # Compute the divergence for each edge
         div_edge = du_dx + dv_dy
 
-        # Now we want to sum all the divergence contributions for each node
+        # Sum all the divergence and convective contributions for each node
         div_node = torch_scatter.scatter_add(div_edge.abs(), data.edge_index[0], dim=0, dim_size=data.num_nodes)
+        conv_u_node = torch_scatter.scatter_add(conv_u.abs(), data.edge_index[0], dim=0, dim_size=data.num_nodes)
+        conv_v_node = torch_scatter.scatter_add(conv_v.abs(), data.edge_index[0], dim=0, dim_size=data.num_nodes)
 
-        # Return the mean divergence
-        return div_node.mean()
+        # Return the mean divergence and convective terms
+        return div_node.mean() + conv_u_node.mean() + conv_v_node.mean()
+
 
 
 

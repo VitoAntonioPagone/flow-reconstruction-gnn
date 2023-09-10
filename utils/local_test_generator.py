@@ -20,7 +20,7 @@ TEST_OUTPUT_FOLDER = "../dataset_graph/original_data/npz_data/test"
 VALIDATION_DIR_INPUT = "../dataset_graph/original_data/npz_data/validation"
 RANDOM_SEED = 1
 VALIDATION_SPLIT = 0.1
-MISSING_PERCENTAGE = 95
+MISSING_PERCENTAGE = 98
 NUM_NEIGHBOURS = 8
 SAVE_GRAPHS_FOLDER = "../dataset_graph/training"
 
@@ -157,15 +157,12 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
 
 def create_graphs(data_folder, num_neighbours, save_folder, is_input):
     for i, file in enumerate(os.listdir(data_folder)):
-        if i >= 5:  # Limit to first 5 files
-            break
         if file.endswith(".npz"):
             file_path = os.path.join(data_folder, file)
             file_base = os.path.splitext(file)[0]  # Remove file extension to get the base file name
             print(f"Creating graphs from file: {file_path}")
             features, coordinates = load_npz_data(file_path)
             create_and_save_graph(features, coordinates, num_neighbours, save_folder, file_base, is_input)
-
 # Main script
 if __name__ == "__main__":
     # Convert train and test vtp files to npz files

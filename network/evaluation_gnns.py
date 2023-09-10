@@ -4,16 +4,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-from models import GAT_50, GCN_50, AGNN_90, GAT_95, GraphSAGE_95, GraphSAGE_99, Hole_GraphSAGE_99, Hole_GAT_99, Hole_GCN_90
+from models import GAT_50, GCN_50, GraphSAGE_95, GraphSAGE_99, GAT_90_6_Double, GAT_95_8, GAT_98_8_Modified
 import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
 from collections import defaultdict
 import glob
 
-MISSING_PERCENTAGE = 99
+MISSING_PERCENTAGE = 98
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/GCN13_box_90.0_epochs_100_lr_0.0001_batch_4.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/new_INCR_UNIV_NS_GAT_8_98_epochs_50_lr_1e-05_batch_1.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -110,7 +110,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = Hole_GCN_90()
+    model = GAT_98_8_Modified ()
     ######## MODEL ########
     
     model.to(DEVICE)
@@ -118,7 +118,7 @@ def run_GCN(input_file, label_file):
     # Load trained weights
     load_checkpoint(model, CHECKPOINT_PATH)
 
-    model.eval()
+    model.eval() 
 
     # Move data to the correct device
     single_graph.x = single_graph.x.to(DEVICE)
@@ -229,8 +229,8 @@ def run_GCN(input_file, label_file):
 
 if __name__ == "__main__":
     # Specify the paths to the two folders containing the input and label files
-    input_folder = '../dataset_graph/training_hole/test_input_graphs_box_90.0'
-    label_folder = '../dataset_graph/training_hole/test_graphs_box_90.0'
+    input_folder = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}'
+    label_folder = f'../dataset_graph/training/test_graphs_{MISSING_PERCENTAGE}'
 
 
     input_files = glob.glob(f"{input_folder}/*.pt")

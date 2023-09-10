@@ -6,13 +6,13 @@ import os
 import glob
 import matplotlib.pyplot as plt
 from datasets import FlowDataset
-from models import ConvNet_95, ConvNet_99, ConvNet_90, UNet
+from models import ConvNet_95, ConvNet_90, UNet, ConvNet_98
 from utils import load_checkpoint
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset as TorchDataset
 
-MISSING_PERCENTAGE = 90
+MISSING_PERCENTAGE = 98
 
 
 class FlowDataset(TorchDataset):
@@ -53,7 +53,7 @@ def calculate_mae(pred, target):
 
 def run_autoencoder(input_file, label_file):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    CHECKPOINT_FILE = '../trained_models/ConvNet_90_epochs_500__alpha_0.1_beta_0.1_lr_0.0001_batch_64.pth.tar'
+    CHECKPOINT_FILE = '../trained_models/ConvNet_98_epochs_500__alpha_0.1_beta_0.1_lr_0.0001_batch_64.pth.tar'
     TEST_INPUT_FILE = input_file
     TEST_LABEL_FILE = label_file
 
@@ -74,7 +74,7 @@ def run_autoencoder(input_file, label_file):
         test_label_tensor = test_label_tensor.unsqueeze(0)
         test_missing_mask_tensor = test_missing_mask_tensor.unsqueeze(0)
 
-        model = ConvNet_90().to(DEVICE)
+        model = ConvNet_98().to(DEVICE)
         load_checkpoint(torch.load(CHECKPOINT_FILE, map_location=torch.device(DEVICE)), model)
         reconstructed_flow_tensor = reconstruct_flow(model, test_input_tensor, test_missing_mask_tensor)
 

@@ -4,14 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-from models import GAT_95_12, GAT_95_10, GAT_95_8 ,GraphSAGE_90_8,GATv2_90_8,GAT_90_8,GAT_90_8_Increased,GAT_90_3,GAT_90_3_2heads, GAT_50, GCN_50, GAT_90, GraphSAGE_90_6,GraphSAGE_90, GCN_90, GraphSAGE_95, GraphSAGE_99, GAT_90_6, GCN_90_6, GAT_90_6_2heads
+from models import GAT_98_8_Modified,GAT_98_8,GAT_90_6_Double,GAT_95_12, GAT_95_10, GAT_95_8 ,GraphSAGE_90_8,GATv2_90_8,GAT_90_8,GAT_90_8_Increased,GAT_90_3,GAT_90_3_2heads, GAT_50, GCN_50, GAT_90, GraphSAGE_90_6,GraphSAGE_90, GCN_90, GraphSAGE_95, GraphSAGE_99, GAT_90_6, GAT_90_6_2heads
 import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
 
-MISSING_PERCENTAGE = 95
+MISSING_PERCENTAGE = 98
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/GAT_10_95_epochs_50_lr_0.0001_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/new_INCR_UNIV_NS_GAT_8_98_epochs_50_lr_1e-05_batch_1.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -109,7 +109,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = GAT_95_10()
+    model = GAT_98_8_Modified()
     ######## MODEL ########
     
     model.to(DEVICE)
@@ -214,7 +214,7 @@ def run_GCN(input_file, label_file):
         cbar4.ax.tick_params(labelsize=8)
 
     plt.tight_layout()
-    fig.savefig('../results/{}_plot.png'.format(os.path.basename(CHECKPOINT_PATH).split('.')[0]), dpi=300)
+    fig.savefig('../results/{}_plot.png'.format(os.path.basename(CHECKPOINT_PATH).split('.')[0]), dpi=600)
     plt.show()
 
 if __name__ == "__main__":

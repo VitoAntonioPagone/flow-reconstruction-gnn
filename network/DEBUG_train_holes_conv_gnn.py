@@ -4,7 +4,7 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader, DataListLoader
 from datasets import CustomDataset
-from models import (GraphSAGE_90, GCN_90, GraphSAGE_95, GAT_95
+from models import (GraphSAGE_90, GCN_90, GraphSAGE_95, GAT_90_6_Double
                     , GraphSAGE_99, Hole_GAT_10, GAT_90)
 from torch_geometric.data import Batch
 from losses import GraphNavierStokesLoss
@@ -13,10 +13,10 @@ import os
 import matplotlib.pyplot as plt
 from torch_geometric.nn import DataParallel
 
-HOLE = False
+HOLE = True
 
 if not HOLE:
-    ALPHA = 1e-4  
+    ALPHA = 1e-8  
     BATCH_SIZE = 4
     LR = 0.0001
     EPOCHS = 50
@@ -32,13 +32,13 @@ if not HOLE:
     VALID_INPUT_DIR = f'../dataset_graph/training/validation_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
     VALID_TARGET_DIR = f'../dataset_graph/training/validation_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'
 else:
-    ALPHA = 1e-4  
+    ALPHA = 1e-8  
     BATCH_SIZE = 4
-    LR = 0.0001
+    LR = 0.00001
     EPOCHS = 100
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     LOAD_MODEL = False
-    BOX_PERCENTAGE = 0.95
+    BOX_PERCENTAGE = 0.90
     TRAIN_INPUT_DIR = f'../dataset_graph/training_hole/train_input_graphs_box_{BOX_PERCENTAGE * 100}'
     TRAIN_TARGET_DIR = f'../dataset_graph/training_hole/train_graphs_box_{BOX_PERCENTAGE * 100}'
     VALID_INPUT_DIR = f'../dataset_graph/training_hole/validation_input_graphs_box_{BOX_PERCENTAGE * 100}'
@@ -85,7 +85,7 @@ valid_loader = DataListLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GAT_90()
+model = GAT_90_6_Double()
 
 # Multi-GPU setup
 if torch.cuda.device_count() > 1:
@@ -101,7 +101,7 @@ print(model)  # Print the model's structure
 
 optimizer = Adam(model.parameters(), lr=LR)
 criterion = MSELoss()
-#navier_stokes_loss = GAT_95().to(DEVICE)
+navier_stokes_loss = GraphNavierStokesLoss().to(DEVICE)
 
 train_losses, val_losses = [], []
 
@@ -121,7 +121,7 @@ for epoch in range(EPOCHS):
         optimizer.zero_grad()
         out = model(data_list)  # Pass data_list to model
         batch = Batch.from_data_list(data_list) # Convert to Batch for loss calculation
-        loss = criterion(out[:, :3], batch.y[:, :3])
+        loss = criterion(out[:,:3], batch.y[:,:3]) + ALPHA * navier_stokes_loss(batch)
         train_loss += loss.item()
         loss.backward()
         optimizer.step()
@@ -145,7 +145,7 @@ for epoch in range(EPOCHS):
             data_list = [data.to(DEVICE) for data in data_list] # Send each Data object to the correct device
             out = model(data_list)  # Pass data_list to model
             batch = Batch.from_data_list(data_list) # Convert to Batch for loss calculation
-            loss = criterion(out[:, :3], batch.y[:, :3])
+            loss = criterion(out[:,:3], batch.y[:,:3]) + ALPHA * navier_stokes_loss(batch)
             valid_loss += loss.item()
     valid_loss /= len(valid_loader)
     val_losses.append(valid_loss)

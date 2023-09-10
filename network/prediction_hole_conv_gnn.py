@@ -4,14 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-from models import GAT_50, GCN_50, GAT_95, GraphSAGE_95, GraphSAGE_99, GraphSAGE_90, GAT_90
+from models import GAT_50, GCN_50, GraphSAGE_95, GraphSAGE_99, GraphSAGE_90, GAT_90, GAT_90_6_Double
 import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
 
-MISSING_PERCENTAGE = 90
+MISSING_PERCENTAGE = 98
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/GAT_90_epochs_100_lr_0.0001_batch_4.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/Hole_GAT_10_box_90.0_epochs_100_lr_1e-05_batch_4.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -109,7 +109,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = GAT_90()
+    model = GAT_90_6_Double()
     ######## MODEL ########
     
     model.to(DEVICE)
@@ -230,9 +230,9 @@ def run_GCN(input_file, label_file):
 if __name__ == "__main__":
     #input_file = f'../dataset_graph/original_data/onehundred/test_input_graphs_50/input_interpolated_input_50.pt'
     #label_file = f'../dataset_graph/original_data/onehundred/test_label_graphs_50/label_interpolated_label_50.pt'
-    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y15_Z0_X1_input.pt'
-    label_file = f'../dataset_graph/training/test_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y15_Z0_X1_label.pt'
-    #input_file = f'../dataset_graph/training_hole/test_input_graphs_box_90.0/cyc10_CAD615_Y4_Z0_X2_input.pt'
-    #label_file = f'../dataset_graph/training_hole/test_graphs_box_90.0/cyc10_CAD615_Y4_Z0_X2_label.pt'
+    #input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y15_Z0_X1_input.pt'
+    #label_file = f'../dataset_graph/training/test_graphs_{MISSING_PERCENTAGE}/cyc10_CAD615_Y15_Z0_X1_label.pt'
+    input_file = f'../dataset_graph/training_hole/test_input_graphs_box_90.0/cyc10_CAD615_Y15_Z0_X1_input.pt'
+    label_file = f'../dataset_graph/training_hole/test_graphs_box_90.0/cyc10_CAD615_Y15_Z0_X1_label.pt'
     run_GCN(input_file, label_file)
     

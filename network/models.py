@@ -377,6 +377,7 @@ class GraphSAGE_90_8(torch.nn.Module):
         x = torch.relu(self.conv7(x, edge_index))
         x = self.conv8(x, edge_index)
         return x    
+    
 class GAT_90(torch.nn.Module):
     def __init__(self):
         super(GAT_90, self).__init__()
@@ -727,6 +728,7 @@ class GAT_95_8(torch.nn.Module):
         x = self.conv8(x, edge_index)  # Last layer without ReLU
         return x
 
+
 class GAT_95_10(torch.nn.Module):
     def __init__(self):
         super(GAT_95_10, self).__init__()
@@ -884,6 +886,39 @@ class ConvNet_98(nn.Module):
         dec1 = self.decoder1(dec2)
 
         return dec1
+    
+class GAT_98_10(torch.nn.Module):
+    def __init__(self):
+        super(GAT_98_10, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.num_heads = 1
+
+        # Layers
+        self.conv1 = GATConv(self.feat_dim, 64, heads=self.num_heads)
+        self.conv2 = GATConv(64, 128, heads=self.num_heads)
+        self.conv3 = GATConv(128, 256, heads=self.num_heads)
+        self.conv4 = GATConv(256, 384, heads=self.num_heads)
+        self.conv5 = GATConv(384, 512, heads=self.num_heads)  # Bottleneck layer
+        self.conv6 = GATConv(512, 384, heads=self.num_heads)
+        self.conv7 = GATConv(384, 256, heads=self.num_heads)
+        self.conv8 = GATConv(256, 128, heads=self.num_heads)
+        self.conv9 = GATConv(128, 64, heads=self.num_heads)
+        self.conv10 = GATConv(64, self.output_dim, heads=self.num_heads, concat=False)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index))
+        x = torch.relu(self.conv4(x, edge_index))
+        x = torch.relu(self.conv5(x, edge_index))
+        x = torch.relu(self.conv6(x, edge_index))
+        x = torch.relu(self.conv7(x, edge_index))
+        x = torch.relu(self.conv8(x, edge_index))
+        x = torch.relu(self.conv9(x, edge_index))
+        x = self.conv10(x, edge_index)
+        return x
 
 class GraphSAGE_99(torch.nn.Module):
     def __init__(self):
@@ -1018,4 +1053,63 @@ class Hole_GAT_10(torch.nn.Module):
         x = torch.relu(self.conv9(x, edge_index))
         x = self.conv10(x, edge_index)
         return x
+    
+class GAT_98_8(torch.nn.Module):
+    def __init__(self):
+        super(GAT_98_8, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.num_heads = 1  # Use single head
 
+        # Layers
+        self.conv1 = GATConv(self.feat_dim, 64, heads=self.num_heads)
+        self.conv2 = GATConv(64, 128, heads=self.num_heads)
+        self.conv3 = GATConv(128, 256, heads=self.num_heads)
+        self.conv4 = GATConv(256, 512, heads=self.num_heads)  # Bottleneck layer
+        self.conv5 = GATConv(512, 256, heads=self.num_heads)
+        self.conv6 = GATConv(256, 128, heads=self.num_heads)
+        self.conv7 = GATConv(128, 64, heads=self.num_heads)
+        self.conv8 = GATConv(64, self.output_dim, heads=self.num_heads, concat=False)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index))
+        x = torch.relu(self.conv4(x, edge_index))
+        x = torch.relu(self.conv5(x, edge_index))
+        x = torch.relu(self.conv6(x, edge_index))
+        x = torch.relu(self.conv7(x, edge_index))
+        x = self.conv8(x, edge_index)  # Last layer without ReLU
+        return x
+
+class GAT_98_8_Modified(torch.nn.Module):
+    def __init__(self):
+        super(GAT_98_8_Modified, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.num_heads = 1  # Use single head
+
+        # Layers
+        self.conv1 = GATConv(self.feat_dim, 80, heads=self.num_heads)
+        self.conv2 = GATConv(80, 160, heads=self.num_heads)
+        self.conv3 = GATConv(160, 320, heads=self.num_heads)
+        self.conv4 = GATConv(320, 640, heads=self.num_heads)  # Bottleneck layer
+        self.conv5 = GATConv(640, 320, heads=self.num_heads)
+        self.conv6 = GATConv(320, 160, heads=self.num_heads)
+        self.conv7 = GATConv(160, 80, heads=self.num_heads)
+        self.conv8 = GATConv(80, self.output_dim, heads=self.num_heads, concat=False)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index))
+        x = torch.relu(self.conv4(x, edge_index))
+        x = torch.relu(self.conv5(x, edge_index))
+        x = torch.relu(self.conv6(x, edge_index))
+        x = torch.relu(self.conv7(x, edge_index))
+        x = self.conv8(x, edge_index)  # Last layer without ReLU
+        return x

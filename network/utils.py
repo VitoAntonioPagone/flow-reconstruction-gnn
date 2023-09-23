@@ -9,6 +9,7 @@ import pickle
 from collections import OrderedDict
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import GATConv, GINConv, SAGEConv
+import scienceplots
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
@@ -139,7 +140,9 @@ def plot_losses(train_losses, val_losses, alpha, beta, learning_rate, batch_size
     # Generate the plot filename based on the hyperparameters and the model name
     plot_filename = f'../losses_plot/{model_name}_losses_plot_{epochs}_alpha_{alpha}_beta_{beta}_lr_{learning_rate}_batch_{batch_size}.jpg'
 
-    plt.savefig(plot_filename, format='jpg', dpi=350)
+    plt.savefig(plot_filename, format='jpg', dpi=500)
+
+
 
 def graph_initialize_weights(model):
     for module in model.modules():

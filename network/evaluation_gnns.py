@@ -4,16 +4,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-from models import GAT_50, GCN_50, GraphSAGE_95, GraphSAGE_99, GAT_90_6_Double, GAT_95_8, GAT_98_8_Modified
+from models import GAT_98_10,GCN_98_10, GraphSAGE_98_10, GCN_95_8,GraphSAGE_95_8,GCN_90_6_Double,GraphSAGE_90_6_Double, GAT_50, GCN_50, GraphSAGE_95, GraphSAGE_99, GAT_90_6_Double, GAT_95_8, GAT_98_8_Modified, GAT_98_10
 import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
 from collections import defaultdict
 import glob
 
-MISSING_PERCENTAGE = 98
+MISSING_PERCENTAGE = 90
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/new_INCR_UNIV_NS_GAT_8_98_epochs_50_lr_1e-05_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models/NS_GAT_10_98_epochs_100_lr_1e-05_batch_1.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -110,7 +110,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = GAT_98_8_Modified ()
+    model = GAT_98_10()
     ######## MODEL ########
     
     model.to(DEVICE)
@@ -224,10 +224,14 @@ def run_GCN(input_file, label_file):
         axs[3, i].set_yticks([])
         cbar4 = fig.colorbar(im, ax=axs[3, i], orientation='vertical')
         cbar4.ax.tick_params(labelsize=8)
+        plt.close(fig)
 
     return rmse_values, mae_values
 
 if __name__ == "__main__":
+    print(f"Missing Data Percentage: {MISSING_PERCENTAGE}%")
+    print(f"Checkpoint Name: {os.path.basename(CHECKPOINT_PATH)}")
+    print("---------------------------------------------------")
     # Specify the paths to the two folders containing the input and label files
     input_folder = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}'
     label_folder = f'../dataset_graph/training/test_graphs_{MISSING_PERCENTAGE}'

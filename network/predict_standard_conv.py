@@ -110,28 +110,28 @@ def run_autoencoder(input_file, label_file):
             vmin = test_label_tensor_denorm.min()
             vmax = test_label_tensor_denorm.max()
 
-            im1 = axes[0, i].imshow(test_input_tensor_denorm.cpu(), cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
+            im1 = axes[0, i].imshow(test_input_tensor_denorm.cpu(), cmap='jet',  vmin=vmin, vmax=vmax, aspect='equal')
             axes[0, i].set_title(f"Input Tensor ({channel_names[i]})", fontsize=10)
             axes[0, i].set_xticks([])
             axes[0, i].set_yticks([])
             cbar1 = fig.colorbar(im1, ax=axes[0, i])
             cbar1.ax.tick_params(labelsize=8)
 
-            im2 = axes[2, i].imshow(test_label_tensor_denorm.cpu(), cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
+            im2 = axes[2, i].imshow(test_label_tensor_denorm.cpu(), cmap='jet',  vmin=vmin, vmax=vmax, aspect='equal')
             axes[2, i].set_title(f"Ground Truth ({channel_names[i]})", fontsize=10)
             axes[2, i].set_xticks([])
             axes[2, i].set_yticks([])
             cbar2 = fig.colorbar(im2, ax=axes[2, i])
             cbar2.ax.tick_params(labelsize=8)
 
-            im3 = axes[1, i].imshow(reconstructed_flow_tensor_denorm, cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
-            axes[1, i].set_title(f"Reconstructed Flow ({channel_names[i]})", fontsize=10)
+            im3 = axes[1, i].imshow(reconstructed_flow_tensor_denorm, cmap='jet',  vmin=vmin, vmax=vmax, aspect='equal')
+            axes[1, i].set_title(f"Output ({channel_names[i]})", fontsize=10)
             axes[1, i].set_xticks([])
             axes[1, i].set_yticks([])
             cbar3 = fig.colorbar(im3, ax=axes[1, i])
             cbar3.ax.tick_params(labelsize=8)
 
-            im4 = axes[3, i].imshow(difference_tensor_denorm.cpu(), cmap='jet', aspect='auto')
+            im4 = axes[3, i].imshow(difference_tensor_denorm.cpu(), cmap='jet', aspect='equal')
             axes[3, i].set_title(f"Difference ({channel_names[i]})", fontsize=10)
             axes[3, i].set_xticks([])
             axes[3, i].set_yticks([])
@@ -140,7 +140,7 @@ def run_autoencoder(input_file, label_file):
 
         plt.tight_layout(pad=1)  
         plt.show()
-        fig.savefig('../results/{}_plot.png'.format(os.path.basename(CHECKPOINT_FILE)), dpi=300)
+        fig.savefig('../results/{}_plot.png'.format(os.path.basename(CHECKPOINT_FILE)), dpi=600)
         plt.show()
 
     # Call the function

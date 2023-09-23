@@ -228,8 +228,7 @@ class ConvNet_90(nn.Module):
         enc4 = self.encoder4(enc3)
         
         dec4 = self.decoder4(torch.cat((enc4, enc3), dim=1))  # Skip connection from encoder3
-        print(f'dec4 shape: {dec4.shape}')
-        print(f'enc3 shape: {enc3.shape}')
+
 
         dec3 = self.decoder3(torch.cat((dec4, enc2), dim=1))  # Skip connection from encoder2
         dec2 = self.decoder2(torch.cat((dec3, enc1), dim=1))  # Skip connection from encoder1
@@ -328,18 +327,18 @@ class GraphSAGE_90(torch.nn.Module):
         x = self.conv10(x, edge_index)
         return x
     
-class GraphSAGE_90_6(torch.nn.Module):
+class GraphSAGE_90_6_Double(torch.nn.Module):
     def __init__(self):
-        super(GraphSAGE_90_6, self).__init__()
+        super(GraphSAGE_90_6_Double, self).__init__()
         self.feat_dim = 6
         self.output_dim = 6
 
-        self.conv1 = SAGEConv(self.feat_dim, 32)   # Layer 1
-        self.conv2 = SAGEConv(32, 64)              # Layer 2
-        self.conv3 = SAGEConv(64, 256)             # Layer 3 (peak dimensionality)
-        self.conv4 = SAGEConv(256, 64)             # Layer 4
-        self.conv5 = SAGEConv(64, 32)              # Layer 5
-        self.conv6 = SAGEConv(32, self.output_dim) # Layer 6
+        self.conv1 = SAGEConv(self.feat_dim, 64)     # Layer 1
+        self.conv2 = SAGEConv(64, 128)               # Layer 2
+        self.conv3 = SAGEConv(128, 512)              # Layer 3 (peak dimensionality)
+        self.conv4 = SAGEConv(512, 128)              # Layer 4
+        self.conv5 = SAGEConv(128, 64)               # Layer 5
+        self.conv6 = SAGEConv(64, self.output_dim)   # Layer 6
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -351,6 +350,28 @@ class GraphSAGE_90_6(torch.nn.Module):
         x = self.conv6(x, edge_index)
         return x
 
+class GCN_90_6_Double(torch.nn.Module):
+    def __init__(self):
+        super(GCN_90_6_Double, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+
+        self.conv1 = GCNConv(self.feat_dim, 64)     # Layer 1
+        self.conv2 = GCNConv(64, 128)               # Layer 2
+        self.conv3 = GCNConv(128, 512)              # Layer 3 (peak dimensionality)
+        self.conv4 = GCNConv(512, 128)              # Layer 4
+        self.conv5 = GCNConv(128, 64)               # Layer 5
+        self.conv6 = GCNConv(64, self.output_dim)   # Layer 6
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index))
+        x = torch.relu(self.conv4(x, edge_index))
+        x = torch.relu(self.conv5(x, edge_index))
+        x = self.conv6(x, edge_index)
+        return x
 class GraphSAGE_90_8(torch.nn.Module):
     def __init__(self):
         super(GraphSAGE_90_8, self).__init__()
@@ -728,7 +749,64 @@ class GAT_95_8(torch.nn.Module):
         x = self.conv8(x, edge_index)  # Last layer without ReLU
         return x
 
+class GraphSAGE_95_8(torch.nn.Module):
+    def __init__(self):
+        super(GraphSAGE_95_8, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
 
+        # Layers
+        self.conv1 = SAGEConv(self.feat_dim, 64)     # Layer 1
+        self.conv2 = SAGEConv(64, 128)               # Layer 2
+        self.conv3 = SAGEConv(128, 256)              # Layer 3
+        self.conv4 = SAGEConv(256, 512)              # Layer 4 (Bottleneck layer)
+        self.conv5 = SAGEConv(512, 256)              # Layer 5
+        self.conv6 = SAGEConv(256, 128)              # Layer 6
+        self.conv7 = SAGEConv(128, 64)               # Layer 7
+        self.conv8 = SAGEConv(64, self.output_dim)   # Layer 8
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index))
+        x = torch.relu(self.conv4(x, edge_index))
+        x = torch.relu(self.conv5(x, edge_index))
+        x = torch.relu(self.conv6(x, edge_index))
+        x = torch.relu(self.conv7(x, edge_index))
+        x = self.conv8(x, edge_index)  # Last layer without ReLU
+        return x
+
+class GCN_95_8(torch.nn.Module):
+    def __init__(self):
+        super(GCN_95_8, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+
+        # Layers
+        self.conv1 = GCNConv(self.feat_dim, 64)     # Layer 1
+        self.conv2 = GCNConv(64, 128)               # Layer 2
+        self.conv3 = GCNConv(128, 256)              # Layer 3
+        self.conv4 = GCNConv(256, 512)              # Layer 4 (Bottleneck layer)
+        self.conv5 = GCNConv(512, 256)              # Layer 5
+        self.conv6 = GCNConv(256, 128)              # Layer 6
+        self.conv7 = GCNConv(128, 64)               # Layer 7
+        self.conv8 = GCNConv(64, self.output_dim)   # Layer 8
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index))
+        x = torch.relu(self.conv4(x, edge_index))
+        x = torch.relu(self.conv5(x, edge_index))
+        x = torch.relu(self.conv6(x, edge_index))
+        x = torch.relu(self.conv7(x, edge_index))
+        x = self.conv8(x, edge_index)  # Last layer without ReLU
+        return x
+    
 class GAT_95_10(torch.nn.Module):
     def __init__(self):
         super(GAT_95_10, self).__init__()
@@ -920,6 +998,69 @@ class GAT_98_10(torch.nn.Module):
         x = self.conv10(x, edge_index)
         return x
 
+class GCN_98_10(torch.nn.Module):
+    def __init__(self):
+        super(GCN_98_10, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+
+        # Layers
+        self.conv1 = GCNConv(self.feat_dim, 64)     # Layer 1
+        self.conv2 = GCNConv(64, 128)               # Layer 2
+        self.conv3 = GCNConv(128, 256)              # Layer 3
+        self.conv4 = GCNConv(256, 384)              # Layer 4
+        self.conv5 = GCNConv(384, 512)              # Layer 5 (Bottleneck layer)
+        self.conv6 = GCNConv(512, 384)              # Layer 6
+        self.conv7 = GCNConv(384, 256)              # Layer 7
+        self.conv8 = GCNConv(256, 128)              # Layer 8
+        self.conv9 = GCNConv(128, 64)               # Layer 9
+        self.conv10 = GCNConv(64, self.output_dim)  # Layer 10
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index))
+        x = torch.relu(self.conv4(x, edge_index))
+        x = torch.relu(self.conv5(x, edge_index))
+        x = torch.relu(self.conv6(x, edge_index))
+        x = torch.relu(self.conv7(x, edge_index))
+        x = torch.relu(self.conv8(x, edge_index))
+        x = torch.relu(self.conv9(x, edge_index))
+        x = self.conv10(x, edge_index)
+        return x    
+
+class GraphSAGE_98_10(torch.nn.Module):
+    def __init__(self):
+        super(GraphSAGE_98_10, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+
+        # Layers
+        self.conv1 = SAGEConv(self.feat_dim, 64)     # Layer 1
+        self.conv2 = SAGEConv(64, 128)               # Layer 2
+        self.conv3 = SAGEConv(128, 256)              # Layer 3
+        self.conv4 = SAGEConv(256, 384)              # Layer 4
+        self.conv5 = SAGEConv(384, 512)              # Layer 5 (Bottleneck layer)
+        self.conv6 = SAGEConv(512, 384)              # Layer 6
+        self.conv7 = SAGEConv(384, 256)              # Layer 7
+        self.conv8 = SAGEConv(256, 128)              # Layer 8
+        self.conv9 = SAGEConv(128, 64)               # Layer 9
+        self.conv10 = SAGEConv(64, self.output_dim)  # Layer 10
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index))
+        x = torch.relu(self.conv4(x, edge_index))
+        x = torch.relu(self.conv5(x, edge_index))
+        x = torch.relu(self.conv6(x, edge_index))
+        x = torch.relu(self.conv7(x, edge_index))
+        x = torch.relu(self.conv8(x, edge_index))
+        x = torch.relu(self.conv9(x, edge_index))
+        x = self.conv10(x, edge_index)
+        return x
 class GraphSAGE_99(torch.nn.Module):
     def __init__(self):
         super(GraphSAGE_99, self).__init__()

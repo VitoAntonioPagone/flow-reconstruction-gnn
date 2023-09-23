@@ -34,7 +34,7 @@ NUM_EPOCHS = 500
 ALPHA = 0.1
 BETA = 0.1
 LOAD_MODEL = False  
-PERCENTAGE_OF_MISSING_POINTS = 98
+PERCENTAGE_OF_MISSING_POINTS = 50
 MODEL_NAME = f"ConvNet_{PERCENTAGE_OF_MISSING_POINTS}"  
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}__alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}__alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
@@ -84,7 +84,7 @@ def train_fn(loader, model, optimizer, loss_fn, ns_loss, tv_loss, alpha, beta, s
 def train_unet_conv_autoencoder():
     print(f"Selected device: {DEVICE}")
 
-    model = ConvNet_98().to(DEVICE)
+    model = ConvNet_50().to(DEVICE)
 
     # Print model summary
     print("Model Summary:")

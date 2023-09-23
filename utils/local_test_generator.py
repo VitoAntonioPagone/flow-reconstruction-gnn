@@ -20,7 +20,7 @@ TEST_OUTPUT_FOLDER = "../dataset_graph/original_data/npz_data/test"
 VALIDATION_DIR_INPUT = "../dataset_graph/original_data/npz_data/validation"
 RANDOM_SEED = 1
 VALIDATION_SPLIT = 0.1
-MISSING_PERCENTAGE = 98
+MISSING_PERCENTAGE = 90
 NUM_NEIGHBOURS = 8
 SAVE_GRAPHS_FOLDER = "../dataset_graph/training"
 

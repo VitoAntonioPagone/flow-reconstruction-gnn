@@ -30,7 +30,7 @@ VALIDATION_SPLIT = 0.1
 MISSING_PERCENTAGE = 99
 NUM_NEIGHBOURS = 10
 BOX_PERCENTAGE = 0.90
-SAVE_GRAPHS_FOLDER = f"../dataset_graph/training_hole"
+SAVE_GRAPHS_FOLDER = f"../dataset_graph/training_propagated"
 
 # Make sure folders exist
 os.makedirs(TRAIN_INPUT_FOLDER, exist_ok=True)

@@ -12,24 +12,24 @@ from losses import GraphNavierStokesLoss
 from utils import graph_initialize_weights
 
 HOLE = False
-USE_LINF_LOSS = True  # set this to False to use L2 loss
+USE_LINF_LOSS = False  # set this to False to use L2 loss
 
 if not HOLE:
     ALPHA = 1e-7  
     BATCH_SIZE = 1
     LR = 0.0001
     EPOCHS = 50
-    PERCENTAGE_OF_MISSING_POINTS = 90
+    #PERCENTAGE_OF_MISSING_POINTS = 90
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     LOAD_MODEL = False  
-    MODEL_NAME = f"GCN_10_{PERCENTAGE_OF_MISSING_POINTS}"  
+    MODEL_NAME = f"GCN_10_variable"  
     LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
-    TRAIN_INPUT_DIR = f'../dataset_graph/training/train_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
-    TRAIN_TARGET_DIR = f'../dataset_graph/training/train_graphs_{PERCENTAGE_OF_MISSING_POINTS}/' 
-    VALID_INPUT_DIR = f'../dataset_graph/training/validation_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
-    VALID_TARGET_DIR = f'../dataset_graph/training/validation_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'
+    TRAIN_INPUT_DIR = f'../dataset_graph/training_FP/train_input_graphs_variable/'  
+    TRAIN_TARGET_DIR = f'../dataset_graph/training_FP/train_graphs_variable/' 
+    VALID_INPUT_DIR = f'../dataset_graph/training_FP/validation_input_graphs_variable/'  
+    VALID_TARGET_DIR = f'../dataset_graph/training_FP/validation_graphs_variable/'
 else:
     ALPHA = 1e-4  
     BATCH_SIZE = 1

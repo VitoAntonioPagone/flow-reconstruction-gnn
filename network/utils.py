@@ -9,7 +9,6 @@ import pickle
 from collections import OrderedDict
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import GATConv, GINConv, SAGEConv
-import scienceplots
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")

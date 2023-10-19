@@ -11,9 +11,9 @@ import networkx as nx
 from collections import defaultdict
 import glob
 
-MISSING_PERCENTAGE = 90
+MISSING_PERCENTAGE = 98
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/NS_GAT_10_98_epochs_100_lr_1e-05_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models_FP/FP_GAT_10_98_epochs_50_lr_0.0001_batch_1.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")

@@ -156,19 +156,21 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
 
     graph = Data(x=features, edge_index=edge_index)
 
-    # Separate velocity features (to be propagated) from other features
-    velocity_features = features[:, :3]  # Assuming velocity features are the first 3
-    other_features = features[:, 3:]
+    # Only propagate features for input data, not for labels
+    if is_input:
+        # Separate velocity features (to be propagated) from other features
+        velocity_features = features[:, :3]  # Assuming velocity features are the first 3
+        other_features = features[:, 3:]
 
-    mask = velocity_features.sum(dim=-1) != 0  # Mask for the existing velocity values
+        mask = velocity_features.sum(dim=-1) != 0  # Mask for the existing velocity values
 
-    # Propagate velocity features
-    model = FeaturePropagation(num_iterations=800)
-    propagated_velocity_features = model.propagate(velocity_features, edge_index, mask=mask)
+        # Propagate velocity features
+        model = FeaturePropagation(num_iterations=700)
+        propagated_velocity_features = model.propagate(velocity_features, edge_index, mask=mask)
 
-    # Combine propagated velocity features with other features
-    propagated_features = torch.cat([propagated_velocity_features, other_features], dim=-1)
-    graph.x = propagated_features
+        # Combine propagated velocity features with other features
+        propagated_features = torch.cat([propagated_velocity_features, other_features], dim=-1)
+        graph.x = propagated_features
 
     # Save the graph
     os.makedirs(folder, exist_ok=True)
@@ -176,6 +178,7 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
     file_path = os.path.join(folder, f"{file_base}{suffix}")
     torch.save(graph, file_path)
     print(f"Saved the graph to {file_path}")
+
 
 
 def create_graphs(data_folder, num_neighbours, save_folder, is_input):
@@ -244,9 +247,22 @@ def propagate_features(graph, features, num_iterations):
 
     print("Feature propagation complete.")
     return propagated_features
-
+'''
 def create_graphs(data_folder, num_neighbours, save_folder, is_input):
     for i, file in enumerate(os.listdir(data_folder)):
+        if file.endswith(".npz"):
+            file_path = os.path.join(data_folder, file)
+            file_base = os.path.splitext(file)[0]  # Remove file extension to get the base file name
+            print(f"Creating graphs from file: {file_path}")
+            features, coordinates = load_npz_data(file_path)
+            create_and_save_graph(features, coordinates, num_neighbours, save_folder, file_base, is_input)
+'''
+def create_graphs(data_folder, num_neighbours, save_folder, is_input):
+    for i, file in enumerate(os.listdir(data_folder)):
+        # Stop after processing 5 files
+        if i >= 5:
+            break
+
         if file.endswith(".npz"):
             file_path = os.path.join(data_folder, file)
             file_base = os.path.splitext(file)[0]  # Remove file extension to get the base file name
@@ -263,9 +279,10 @@ if __name__ == "__main__":
     #train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
     # Process npz files
     #process_npz_files(TRAIN_OUTPUT_FOLDER, MISSING_PERCENTAGE)
-    #process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
+    process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
     #process_npz_files(VALIDATION_DIR_INPUT, MISSING_PERCENTAGE)
     # Create and save graphs
+    '''
     create_graphs(TRAIN_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_{MISSING_PERCENTAGE}"), is_input=False)
     print("Train graphs created.")
     sys.stdout.flush()
@@ -277,13 +294,13 @@ if __name__ == "__main__":
     create_graphs(VALIDATION_DIR_INPUT + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
     print("Validation input graphs created.")
     sys.stdout.flush()
-    create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_{MISSING_PERCENTAGE}"), is_input=False)
+    create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_{MISSING_PERCENTAGE}"), is_input=False)  
     print("Validation graphs created.")
     sys.stdout.flush()
+    '''
     create_graphs(TEST_OUTPUT_FOLDER + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
     print("Test input graphs created.")
     sys.stdout.flush()
     create_graphs(TEST_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_graphs_{MISSING_PERCENTAGE}"), is_input=False)
     print("Test graphs created.")
     sys.stdout.flush()
-  

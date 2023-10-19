@@ -9,6 +9,7 @@ from torch_geometric.utils import to_networkx
 import networkx as nx
 
 from models import (
+    GAT_98_3, GAT_98_6, GAT_98_4,
     GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double, GraphSAGE_90_6_Double,
     GAT_98_10, GAT_98_8_Modified, GAT_98_8, GAT_90_6_Double, GAT_95_12,
     GAT_95_10, GAT_95_8, GraphSAGE_90_8, GATv2_90_8, GAT_90_8,
@@ -17,9 +18,9 @@ from models import (
     GAT_90_6_2heads
 )
 
-MISSING_PERCENTAGE = 95
+MISSING_PERCENTAGE = 98
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models/GCN_8_95_epochs_100_lr_0.0001_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models_FP/FP_GAT_4_98_epochs_50_lr_1e-06_batch_1.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -117,7 +118,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = GCN_95_8()
+    model = GAT_98_4()
     ######## MODEL ########
     
     model.to(DEVICE)
@@ -140,7 +141,7 @@ def run_GCN(input_file, label_file):
     print("Output zero check:", torch.all(out==0).item())
 
     # Define grid size
-    grid_size = 256   # Increased for a smoother plot
+    grid_size = 2048   # Increased for a smoother plot
 
     # Get minimum and maximum position values
     min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
@@ -228,6 +229,6 @@ def run_GCN(input_file, label_file):
 if __name__ == "__main__":
     #input_file = f'../dataset_graph/original_data/onehundred/test_input_graphs_50/input_interpolated_input_50.pt'
     #label_file = f'../dataset_graph/original_data/onehundred/test_label_graphs_50/label_interpolated_label_50.pt'
-    input_file = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_input.pt'
-    label_file = f'../dataset_graph/training/test_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_label.pt'
+    input_file = f'../dataset_graph/training_FP/test_input_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_input.pt'
+    label_file = f'../dataset_graph/training_FP/test_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_label.pt'
     run_GCN(input_file, label_file)

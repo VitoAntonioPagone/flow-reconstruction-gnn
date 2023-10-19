@@ -15,9 +15,9 @@ HOLE = False
 USE_LINF_LOSS = False  # set this to False to use L2 loss
 
 if not HOLE:
-    ALPHA = 1e-7  
-    BATCH_SIZE = 1
-    LR = 0.0001
+    ALPHA = 1e-6  
+    BATCH_SIZE = 2
+    LR = 1e-6
     EPOCHS = 50
     #PERCENTAGE_OF_MISSING_POINTS = 90
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -110,7 +110,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GAT_50()
+model = GCN_98_10()
 model.to(DEVICE)
 graph_initialize_weights(model)  # Initialize weights of the model
 

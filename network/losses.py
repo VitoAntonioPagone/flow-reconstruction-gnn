@@ -104,7 +104,7 @@ class GraphNavierStokesLoss(torch.nn.Module):
         div_edge = du_dx + dv_dy
 
         # Sum all the divergence and convective contributions for each node
-        div_node = torch_scatter.scatter_add(div_edge.abs(), data.edge_index[0], dim=0, dim_size=data.num_nodes)
+        div_node  = torch_scatter.scatter_add(div_edge.abs(), data.edge_index[0], dim=0, dim_size=data.num_nodes)
         conv_u_node = torch_scatter.scatter_add(conv_u.abs(), data.edge_index[0], dim=0, dim_size=data.num_nodes)
         conv_v_node = torch_scatter.scatter_add(conv_v.abs(), data.edge_index[0], dim=0, dim_size=data.num_nodes)
 

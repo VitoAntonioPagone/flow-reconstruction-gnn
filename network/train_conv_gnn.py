@@ -4,32 +4,35 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from datasets import CustomDataset
-from models import GAT_50, GCN_98_10,GraphSAGE_98_10,GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double,GAT_98_8_Modified, GAT_98_8,GAT_98_10, GAT_95_12, GAT_95_10,GAT_95_8,GAT_90_6_Double,GATv2_90_8_2heads,GATv2_90_8,GraphSAGE_90_8, GAT_90_8_Increased, GAT_90_8,GCN_90_6, GraphSAGE_90,GraphSAGE_90_6_Double, GraphSAGE_95, GAT_90, GraphSAGE_99, GCN_90, GAT_90_3, GAT_90_3_2heads, GAT_90_6, GAT_90_6_2heads
+from models import GAT_98_2, GAT_98_3, GAT_98_6,GAT_98_4, GAT_50, GCN_98_10,GraphSAGE_98_10,GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double,GAT_98_8_Modified, GAT_98_8,GAT_98_10, GAT_95_12, GAT_95_10,GAT_95_8,GAT_90_6_Double,GATv2_90_8_2heads,GATv2_90_8,GraphSAGE_90_8, GAT_90_8_Increased, GAT_90_8,GCN_90_6, GraphSAGE_90,GraphSAGE_90_6_Double, GraphSAGE_95, GAT_90, GraphSAGE_99, GCN_90, GAT_90_3, GAT_90_3_2heads, GAT_90_6, GAT_90_6_2heads
 from collections import OrderedDict
 import os
 import matplotlib.pyplot as plt
 from losses import GraphNavierStokesLoss
 from utils import graph_initialize_weights
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch_geometric.utils import get_laplacian
 
 HOLE = False
-USE_LINF_LOSS = True  # set this to False to use L2 loss
+USE_LINF_LOSS = False  # set this to False to use L2 loss
 
 if not HOLE:
-    ALPHA = 1e-7  
+    ALPHA = 1e-7
+    LAPLACIAN_REG_WEIGHT = 1e-4      
     BATCH_SIZE = 1
-    LR = 0.0001
-    EPOCHS = 50
-    PERCENTAGE_OF_MISSING_POINTS = 90
+    LR = 1e-3
+    EPOCHS = 100
+    PERCENTAGE_OF_MISSING_POINTS = 98
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     LOAD_MODEL = False  
-    MODEL_NAME = f"GCN_10_{PERCENTAGE_OF_MISSING_POINTS}"  
-    LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
-    SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
+    MODEL_NAME = f"FP_GAT_6_{PERCENTAGE_OF_MISSING_POINTS}"  
+    LOAD_CHECKPOINT_FILE = f'../trained_models_FP/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
+    SAVE_CHECKPOINT_FILE = f'../trained_models_FP/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
-    TRAIN_INPUT_DIR = f'../dataset_graph/training/train_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
-    TRAIN_TARGET_DIR = f'../dataset_graph/training/train_graphs_{PERCENTAGE_OF_MISSING_POINTS}/' 
-    VALID_INPUT_DIR = f'../dataset_graph/training/validation_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
-    VALID_TARGET_DIR = f'../dataset_graph/training/validation_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'
+    TRAIN_INPUT_DIR = f'../dataset_graph/training_FP/train_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
+    TRAIN_TARGET_DIR = f'../dataset_graph/training_FP/train_graphs_{PERCENTAGE_OF_MISSING_POINTS}/' 
+    VALID_INPUT_DIR = f'../dataset_graph/training_FP/validation_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
+    VALID_TARGET_DIR = f'../dataset_graph/training_FP/validation_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'
 else:
     ALPHA = 1e-4  
     BATCH_SIZE = 1
@@ -71,6 +74,26 @@ VALID_TARGET_DIR = f'../dataset_graph/training/validation_graphs_{PERCENTAGE_OF_
 '''
 print(f'Starting script with Device: {DEVICE}')
 
+def laplacian_regularization(graph):
+    features = graph.x[:, :3]  # Select only the first three features
+    laplacian_indices, laplacian_values = get_laplacian(graph.edge_index, normalization=None)
+
+    # Create Laplacian matrix
+    num_nodes = graph.num_nodes
+    laplacian = torch.sparse_coo_tensor(laplacian_indices, laplacian_values, size=(num_nodes, num_nodes))
+
+    # Compute L * X
+    LX = torch.sparse.mm(laplacian, features)
+    
+    # Compute X^T * (L * X)
+    regularization_matrix = torch.mm(features.transpose(0, 1), LX)
+    
+    regularization = torch.trace(regularization_matrix)
+    
+    return regularization
+
+
+
 def Linfinity_loss(pred, target):
     return (pred - target).abs().max()
 
@@ -110,7 +133,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GAT_50()
+model = GAT_98_6()
 model.to(DEVICE)
 graph_initialize_weights(model)  # Initialize weights of the model
 
@@ -142,7 +165,8 @@ print("--------------------------")
 
 
 
-optimizer = Adam(model.parameters(), lr=LR)
+optimizer = Adam(model.parameters(), lr=LR, weight_decay=0.001)
+scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)
 criterion = MSELoss()
 navier_stokes_loss = GraphNavierStokesLoss().to(DEVICE)
 
@@ -155,7 +179,8 @@ if LOAD_MODEL and os.path.isfile(LOAD_CHECKPOINT_FILE):
     print("Checkpoint loaded successfully.")
 
 for epoch in range(EPOCHS):
-    print(f'Starting epoch {epoch + 1}...')
+    current_lr = optimizer.param_groups[0]['lr']
+    print(f'Epoch: {epoch+1}, Learning Rate: {current_lr}')
     model.train()
     train_loss = 0
     print('Processing training data...')
@@ -166,13 +191,21 @@ for epoch in range(EPOCHS):
         optimizer.zero_grad()
         out = model(batch)
         l2_loss = criterion(out[:,:3], batch.y[:,:3])
+        rmse_loss = torch.sqrt(l2_loss)  # Calculate RMSE loss
         linf_loss = Linfinity_loss(out[:,:3], batch.y[:,:3])
         main_loss = linf_loss if USE_LINF_LOSS else l2_loss
-        loss = main_loss + ALPHA * navier_stokes_loss(batch)
-        train_loss += loss.item()
-        loss.backward()
-        optimizer.step()
-        print(f"  Batch {batch_idx + 1}, Training Loss: {loss.item()}")
+        ns_loss = ALPHA * navier_stokes_loss(batch)
+        laplacian_loss = LAPLACIAN_REG_WEIGHT * laplacian_regularization(batch)
+        total_loss = main_loss + ns_loss + laplacian_loss
+        train_loss += total_loss.item()
+
+        
+        # Printing individual loss components
+        print(f"  Batch {batch_idx + 1}, RMSE Loss: {rmse_loss.item()}, Training Loss: {total_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
+
+    train_loss /= len(train_loader)
+    train_losses.append(train_loss)
+    print(f'Epoch: {epoch+1}, Training Loss: {train_loss}')
 
     train_loss /= len(train_loader)
     train_losses.append(train_loss)
@@ -194,12 +227,20 @@ for epoch in range(EPOCHS):
             batch.y = batch.y.to(DEVICE)
             out = model(batch)
             l2_loss = criterion(out[:,:3], batch.y[:,:3])
+            rmse_loss = torch.sqrt(l2_loss)  # Calculate RMSE loss
             linf_loss = Linfinity_loss(out[:,:3], batch.y[:,:3])
             main_loss = linf_loss if USE_LINF_LOSS else l2_loss
-            loss = main_loss + ALPHA * navier_stokes_loss(batch)
-            valid_loss += loss.item()
+            ns_loss = ALPHA * navier_stokes_loss(batch)
+            laplacian_loss = LAPLACIAN_REG_WEIGHT * laplacian_regularization(batch)
+            total_loss = main_loss + ns_loss + laplacian_loss
+            valid_loss += total_loss.item()
+
+
+            # Printing individual loss components for validation
+            print(f"  Validation Batch, RMSE Loss: {rmse_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
     valid_loss /= len(valid_loader)
     val_losses.append(valid_loss)
+    scheduler.step(valid_loss)
     print(f'Epoch: {epoch+1}, Validation Loss: {valid_loss}')
 
 plot_losses(train_losses, val_losses)

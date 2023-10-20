@@ -20,7 +20,7 @@ from models import (
 
 MISSING_PERCENTAGE = 98
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models_FP/FP_GAT_4_98_epochs_50_lr_1e-06_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models_FP/FP_GAT_6_98_epochs_100_lr_0.001_batch_1.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -118,7 +118,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = GAT_98_4()
+    model = GAT_98_6()
     ######## MODEL ########
     
     model.to(DEVICE)

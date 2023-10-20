@@ -4,7 +4,7 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from datasets import CustomDataset
-from models import GAT_98_2, GAT_98_3, GAT_98_6,GAT_98_4, GAT_50, GCN_98_10,GraphSAGE_98_10,GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double,GAT_98_8_Modified, GAT_98_8,GAT_98_10, GAT_95_12, GAT_95_10,GAT_95_8,GAT_90_6_Double,GATv2_90_8_2heads,GATv2_90_8,GraphSAGE_90_8, GAT_90_8_Increased, GAT_90_8,GCN_90_6, GraphSAGE_90,GraphSAGE_90_6_Double, GraphSAGE_95, GAT_90, GraphSAGE_99, GCN_90, GAT_90_3, GAT_90_3_2heads, GAT_90_6, GAT_90_6_2heads
+from models import red_GAT_98_6,GAT_98_2, GAT_98_3, GAT_98_6,GAT_98_4, GAT_50, GCN_98_10,GraphSAGE_98_10,GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double,GAT_98_8_Modified, GAT_98_8,GAT_98_10, GAT_95_12, GAT_95_10,GAT_95_8,GAT_90_6_Double,GATv2_90_8_2heads,GATv2_90_8,GraphSAGE_90_8, GAT_90_8_Increased, GAT_90_8,GCN_90_6, GraphSAGE_90,GraphSAGE_90_6_Double, GraphSAGE_95, GAT_90, GraphSAGE_99, GCN_90, GAT_90_3, GAT_90_3_2heads, GAT_90_6, GAT_90_6_2heads
 from collections import OrderedDict
 import os
 import matplotlib.pyplot as plt
@@ -18,14 +18,14 @@ USE_LINF_LOSS = False  # set this to False to use L2 loss
 
 if not HOLE:
     ALPHA = 1e-7
-    LAPLACIAN_REG_WEIGHT = 1e-4      
+    LAPLACIAN_REG_WEIGHT = 1e-5      
     BATCH_SIZE = 1
     LR = 1e-3
     EPOCHS = 100
     PERCENTAGE_OF_MISSING_POINTS = 98
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     LOAD_MODEL = False  
-    MODEL_NAME = f"FP_GAT_6_{PERCENTAGE_OF_MISSING_POINTS}"  
+    MODEL_NAME = f"RED_LAPLLESS_FP_GAT_6_{PERCENTAGE_OF_MISSING_POINTS}"  
     LOAD_CHECKPOINT_FILE = f'../trained_models_FP/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     SAVE_CHECKPOINT_FILE = f'../trained_models_FP/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
@@ -133,7 +133,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GAT_98_6()
+model = red_GAT_98_6()
 model.to(DEVICE)
 graph_initialize_weights(model)  # Initialize weights of the model
 

@@ -1033,19 +1033,38 @@ class GAT_98_6(torch.nn.Module):
         self.conv4 = GATConv(128, 256, heads=self.num_heads, concat=True)
         self.conv5 = GATConv(256, 512, heads=self.num_heads, concat=True)
         self.conv6 = GATConv(512, self.output_dim, heads=self.num_heads, concat=False)
-        
-        self.skip_12 = Linear(32, 64)
-        self.skip_23 = Linear(64, 128)
-        self.skip_34 = Linear(128, 256)
-        self.skip_45 = Linear(256, 512)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
         x1 = torch.relu(self.conv1(x, edge_index))
-        x2 = torch.relu(self.conv2(x1, edge_index) + self.skip_12(x1))
-        x3 = torch.relu(self.conv3(x2, edge_index) + self.skip_23(x2))
-        x4 = torch.relu(self.conv4(x3, edge_index) + self.skip_34(x3))
-        x5 = torch.relu(self.conv5(x4, edge_index) + self.skip_45(x4))
+        x2 = torch.relu(self.conv2(x1, edge_index))
+        x3 = torch.relu(self.conv3(x2, edge_index)) 
+        x4 = torch.relu(self.conv4(x3, edge_index)) 
+        x5 = torch.relu(self.conv5(x4, edge_index))
+        x6 = self.conv6(x5, edge_index)
+        return x6
+
+class red_GAT_98_6(torch.nn.Module):
+    def __init__(self):
+        super(red_GAT_98_6, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.num_heads = 1
+
+        self.conv1 = GATConv(self.feat_dim, 16, heads=self.num_heads, concat=True)
+        self.conv2 = GATConv(16, 32, heads=self.num_heads, concat=True)
+        self.conv3 = GATConv(32, 64, heads=self.num_heads, concat=True) 
+        self.conv4 = GATConv(64, 128, heads=self.num_heads, concat=True)
+        self.conv5 = GATConv(128, 256, heads=self.num_heads, concat=True)
+        self.conv6 = GATConv(256, self.output_dim, heads=self.num_heads, concat=False)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x1 = torch.relu(self.conv1(x, edge_index))
+        x2 = torch.relu(self.conv2(x1, edge_index))
+        x3 = torch.relu(self.conv3(x2, edge_index)) 
+        x4 = torch.relu(self.conv4(x3, edge_index)) 
+        x5 = torch.relu(self.conv5(x4, edge_index))
         x6 = self.conv6(x5, edge_index)
         return x6
 

@@ -1027,19 +1027,17 @@ class GAT_98_6(torch.nn.Module):
         self.output_dim = 6
         self.num_heads = 1
 
-        # Layers
-        self.conv1 = GATConv(self.feat_dim, 64, heads=self.num_heads, concat=True)
-        self.conv2 = GATConv(64, 128, heads=self.num_heads, concat=True)
-        self.conv3 = GATConv(128, 256, heads=self.num_heads, concat=True) 
-        self.conv4 = GATConv(256, 512, heads=self.num_heads, concat=True)
-        self.conv5 = GATConv(512, 1024, heads=self.num_heads, concat=True)
-        self.conv6 = GATConv(1024, self.output_dim, heads=self.num_heads, concat=False)
+        self.conv1 = GATConv(self.feat_dim, 32, heads=self.num_heads, concat=True)
+        self.conv2 = GATConv(32, 64, heads=self.num_heads, concat=True)
+        self.conv3 = GATConv(64, 128, heads=self.num_heads, concat=True) 
+        self.conv4 = GATConv(128, 256, heads=self.num_heads, concat=True)
+        self.conv5 = GATConv(256, 512, heads=self.num_heads, concat=True)
+        self.conv6 = GATConv(512, self.output_dim, heads=self.num_heads, concat=False)
         
-        # Skip connection adjustment layers
-        self.skip_12 = Linear(64, 128)
-        self.skip_23 = Linear(128, 256)
-        self.skip_34 = Linear(256, 512)
-        self.skip_45 = Linear(512, 1024)
+        self.skip_12 = Linear(32, 64)
+        self.skip_23 = Linear(64, 128)
+        self.skip_34 = Linear(128, 256)
+        self.skip_45 = Linear(256, 512)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index

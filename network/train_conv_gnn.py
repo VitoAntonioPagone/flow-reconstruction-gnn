@@ -16,16 +16,17 @@ from torch_geometric.utils import get_laplacian
 HOLE = False
 USE_LINF_LOSS = False  # set this to False to use L2 loss
 
+
 if not HOLE:
-    ALPHA = 1e-8
+    ALPHA = 1e-7
     LAPLACIAN_REG_WEIGHT = 1e-5      
     BATCH_SIZE = 1
-    LR = 1e-3
-    EPOCHS = 100
+    LR = 1e-4
+    EPOCHS = 50
     PERCENTAGE_OF_MISSING_POINTS = 98
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     LOAD_MODEL = False  
-    MODEL_NAME = f"GAT_98_4_{PERCENTAGE_OF_MISSING_POINTS}"  
+    MODEL_NAME = f"GAT_98_6_{PERCENTAGE_OF_MISSING_POINTS}"  
     LOAD_CHECKPOINT_FILE = f'../trained_models_FP/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     SAVE_CHECKPOINT_FILE = f'../trained_models_FP/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
@@ -92,8 +93,6 @@ def laplacian_regularization(graph):
     
     return regularization
 
-
-
 def Linfinity_loss(pred, target):
     return (pred - target).abs().max()
 
@@ -133,7 +132,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 print('Data loaders created.')
 
 print('Building model...')
-model = GAT_98_4()
+model = GAT_98_6()
 model.to(DEVICE)
 graph_initialize_weights(model)  # Initialize weights of the model
 
@@ -165,12 +164,13 @@ print("--------------------------")
 
 
 
-optimizer = Adam(model.parameters(), lr=LR, weight_decay=0.001)
+optimizer = Adam(model.parameters(), lr=LR)
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)
 criterion = MSELoss()
 navier_stokes_loss = GraphNavierStokesLoss().to(DEVICE)
 
 train_losses, val_losses = [], []
+PRINT_INTERVAL = 100  # adjust this value to print every n batches
 
 if LOAD_MODEL and os.path.isfile(LOAD_CHECKPOINT_FILE):
     print('Loading checkpoint...')
@@ -191,22 +191,18 @@ for epoch in range(EPOCHS):
         optimizer.zero_grad()
         out = model(batch)
         l2_loss = criterion(out[:,:3], batch.y[:,:3])
-        rmse_loss = torch.sqrt(l2_loss)  # Calculate RMSE loss
+        rmse_loss = l2_loss
         linf_loss = Linfinity_loss(out[:,:3], batch.y[:,:3])
         main_loss = linf_loss if USE_LINF_LOSS else l2_loss
         ns_loss = ALPHA * navier_stokes_loss(batch)
         laplacian_loss = LAPLACIAN_REG_WEIGHT * laplacian_regularization(batch)
         total_loss = main_loss + ns_loss + laplacian_loss
         train_loss += total_loss.item()
-
-        
+        total_loss.backward()
+        optimizer.step()        
         # Printing individual loss components
-        print(f"  Batch {batch_idx + 1}, RMSE Loss: {rmse_loss.item()}, Training Loss: {total_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
-
-    train_loss /= len(train_loader)
-    train_losses.append(train_loss)
-    print(f'Epoch: {epoch+1}, Training Loss: {train_loss}')
-
+        if batch_idx % PRINT_INTERVAL == 0:   # Only print every PRINT_INTERVAL batches
+            print(f"  Batch {batch_idx + 1}/{len(train_loader)},Training Loss: {total_loss.item()} --> MSE Loss: {rmse_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
     train_loss /= len(train_loader)
     train_losses.append(train_loss)
     print(f'Epoch: {epoch+1}, Training Loss: {train_loss}')
@@ -227,20 +223,20 @@ for epoch in range(EPOCHS):
             batch.y = batch.y.to(DEVICE)
             out = model(batch)
             l2_loss = criterion(out[:,:3], batch.y[:,:3])
-            rmse_loss = torch.sqrt(l2_loss)  # Calculate RMSE loss
+            rmse_loss = l2_loss
             linf_loss = Linfinity_loss(out[:,:3], batch.y[:,:3])
             main_loss = linf_loss if USE_LINF_LOSS else l2_loss
             ns_loss = ALPHA * navier_stokes_loss(batch)
             laplacian_loss = LAPLACIAN_REG_WEIGHT * laplacian_regularization(batch)
             total_loss = main_loss + ns_loss + laplacian_loss
             valid_loss += total_loss.item()
+            if batch_idx % PRINT_INTERVAL == 0:   # Only print every PRINT_INTERVAL batches
+                print(f"  Validation Batch {batch_idx + 1}/{len(valid_loader)}, Training Loss: {total_loss.item()} --> RMSE Loss: {rmse_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
 
-
-            # Printing individual loss components for validation
-            print(f"  Validation Batch, RMSE Loss: {rmse_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
     valid_loss /= len(valid_loader)
     val_losses.append(valid_loss)
     scheduler.step(valid_loss)
     print(f'Epoch: {epoch+1}, Validation Loss: {valid_loss}')
+
 
 plot_losses(train_losses, val_losses)

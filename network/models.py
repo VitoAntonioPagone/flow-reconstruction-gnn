@@ -1065,7 +1065,36 @@ class GAT_98_6(torch.nn.Module):
         x5 = torch.relu(self.conv5(x4, edge_index))
         x6 = self.conv6(x5, edge_index)
         return x6
+class GAT_98_10(torch.nn.Module):
+    def __init__(self):
+        super(GAT_98_10, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6
+        self.num_heads = 1
+        self.conv1 = GATConv(self.feat_dim, 8, heads=self.num_heads, concat=True)
+        self.conv2 = GATConv(8, 16, heads=self.num_heads, concat=True)
+        self.conv3 = GATConv(16, 32, heads=self.num_heads, concat=True)
+        self.conv4 = GATConv(32, 64, heads=self.num_heads, concat=True)
+        self.conv5 = GATConv(64, 128, heads=self.num_heads, concat=True)
+        self.conv6 = GATConv(128, 256, heads=self.num_heads, concat=True)
+        self.conv7 = GATConv(256, 512, heads=self.num_heads, concat=True)
+        self.conv8 = GATConv(512, 512, heads=self.num_heads, concat=True)
+        self.conv9 = GATConv(512, 512, heads=self.num_heads, concat=True)
+        self.conv10 = GATConv(512, 512, heads=self.num_heads, concat=False)
 
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = torch.relu(self.conv1(x, edge_index))
+        x = torch.relu(self.conv2(x, edge_index))
+        x = torch.relu(self.conv3(x, edge_index)) 
+        x = torch.relu(self.conv4(x, edge_index)) 
+        x = torch.relu(self.conv5(x, edge_index))
+        x = torch.relu(self.conv6(x, edge_index))
+        x = torch.relu(self.conv7(x, edge_index))
+        x = torch.relu(self.conv8(x, edge_index))
+        x = torch.relu(self.conv9(x, edge_index))
+        x = self.conv10(x, edge_index)
+        return x
 class red_GAT_98_6(torch.nn.Module):
     def __init__(self):
         super(red_GAT_98_6, self).__init__()
@@ -1100,11 +1129,11 @@ class GAT_98_3(torch.nn.Module):
         self.num_heads = 1
 
         # Layers
-        self.conv1 = GATConv(self.feat_dim, 128, heads=self.num_heads, concat=True)
+        self.conv1 = GATConv(self.feat_dim, 512, heads=self.num_heads, concat=True)
         # Bottleneck layer
-        self.conv2 = GATConv(128, 64, heads=self.num_heads, concat=True)
+        self.conv2 = GATConv(512, 256, heads=self.num_heads, concat=True)
         # Expand back
-        self.conv3 = GATConv(64, self.output_dim, heads=self.num_heads, concat=False)
+        self.conv3 = GATConv(256, self.output_dim, heads=self.num_heads, concat=False)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -1332,18 +1361,18 @@ class GAT_98_8(torch.nn.Module):
     def __init__(self):
         super(GAT_98_8, self).__init__()
         self.feat_dim = 6
-        self.output_dim = 6
+        self.output_dim = 6  # Adjusted output dimension
         self.num_heads = 1  # Use single head
 
         # Layers
-        self.conv1 = GATConv(self.feat_dim, 64, heads=self.num_heads)
-        self.conv2 = GATConv(64, 128, heads=self.num_heads)
-        self.conv3 = GATConv(128, 256, heads=self.num_heads)
-        self.conv4 = GATConv(256, 512, heads=self.num_heads)  # Bottleneck layer
-        self.conv5 = GATConv(512, 256, heads=self.num_heads)
-        self.conv6 = GATConv(256, 128, heads=self.num_heads)
-        self.conv7 = GATConv(128, 64, heads=self.num_heads)
-        self.conv8 = GATConv(64, self.output_dim, heads=self.num_heads, concat=False)
+        self.conv1 = GATConv(self.feat_dim, 16, heads=self.num_heads)
+        self.conv2 = GATConv(16, 32, heads=self.num_heads)
+        self.conv3 = GATConv(32, 64, heads=self.num_heads)
+        self.conv4 = GATConv(64, 128, heads=self.num_heads)
+        self.conv5 = GATConv(128, 256, heads=self.num_heads)
+        self.conv6 = GATConv(256, 512, heads=self.num_heads)
+        self.conv7 = GATConv(512, 512, heads=self.num_heads)
+        self.conv8 = GATConv(512, self.output_dim, heads=self.num_heads, concat=False)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -1358,6 +1387,51 @@ class GAT_98_8(torch.nn.Module):
         x = self.conv8(x, edge_index)  # Last layer without ReLU
         return x
 
+class GAT_98_8_SkipConnections(torch.nn.Module):
+    def __init__(self):
+        super(GAT_98_8_SkipConnections, self).__init__()
+        self.feat_dim = 6
+        self.output_dim = 6  # Adjusted output dimension
+        self.num_heads = 1  # Use single head
+
+        # Layers
+        self.conv1 = GATConv(self.feat_dim, 16, heads=self.num_heads)
+        self.conv2 = GATConv(16, 32, heads=self.num_heads)
+        self.conv3 = GATConv(32, 64, heads=self.num_heads)
+        self.conv4 = GATConv(64, 128, heads=self.num_heads)
+        self.conv5 = GATConv(128, 256, heads=self.num_heads)
+        self.conv6 = GATConv(256, 512, heads=self.num_heads)
+        self.conv7 = GATConv(512, 512, heads=self.num_heads)
+        self.conv8 = GATConv(512, self.output_dim, heads=self.num_heads, concat=False)
+        
+        # Projection layers for skip connections
+        self.proj1_to_3 = torch.nn.Linear(16, 32)
+        self.proj3_to_5 = torch.nn.Linear(64, 128)
+        self.proj5_to_7 = torch.nn.Linear(256, 512)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+
+        x1 = torch.relu(self.conv1(x, edge_index))
+        x2 = torch.relu(self.conv2(x1, edge_index))
+        
+        # Project x1 to match x2's dimensions and then add
+        x3 = torch.relu(self.conv3(x2 + self.proj1_to_3(x1), edge_index))
+        
+        x4 = torch.relu(self.conv4(x3, edge_index))
+        
+        # Project x3 to match x4's dimensions and then add
+        x5 = torch.relu(self.conv5(x4 + self.proj3_to_5(x3), edge_index))
+        
+        x6 = torch.relu(self.conv6(x5, edge_index))
+        
+        # Project x5 to match x6's dimensions and then add
+        x7 = torch.relu(self.conv7(x6 + self.proj5_to_7(x5), edge_index))
+        
+        x8 = self.conv8(x7, edge_index)  # Last layer without ReLU
+
+        return x8
+    
 class GAT_98_8_Modified(torch.nn.Module):
     def __init__(self):
         super(GAT_98_8_Modified, self).__init__()

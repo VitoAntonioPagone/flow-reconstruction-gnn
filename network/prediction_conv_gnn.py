@@ -8,8 +8,8 @@ import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
 
-from models import (red_GAT_98_6,
-    GAT_98_3, GAT_98_6, GAT_98_4,
+from models import (red_GAT_98_6,GAT_98_8_SkipConnections,
+    GAT_98_3, GAT_98_4,GAT_98_6,
     GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double, GraphSAGE_90_6_Double,
     GAT_98_10, GAT_98_8_Modified, GAT_98_8, GAT_90_6_Double, GAT_95_12,
     GAT_95_10, GAT_95_8, GraphSAGE_90_8, GATv2_90_8, GAT_90_8,
@@ -20,7 +20,7 @@ from models import (red_GAT_98_6,
 
 MISSING_PERCENTAGE = 98
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models_FP/RED_LAPLLESS_FP_GAT_6_98_epochs_100_lr_0.001_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models_FP/skip_GAT_8_98_epochs_50_lr_0.0001_batch_1.pth.tar' 
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -118,7 +118,7 @@ def run_GCN(input_file, label_file):
     print(f'Max y position: {np.max(positions[:, 1])}')
 
     ######## MODEL ########
-    model = red_GAT_98_6()
+    model = GAT_98_8_SkipConnections()
     ######## MODEL ########
     
     model.to(DEVICE)
@@ -141,7 +141,7 @@ def run_GCN(input_file, label_file):
     print("Output zero check:", torch.all(out==0).item())
 
     # Define grid size
-    grid_size = 256   # Increased for a smoother plot
+    grid_size = 512   # Increased for a smoother plot
 
     # Get minimum and maximum position values
     min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])

@@ -12,10 +12,10 @@ from losses import GraphNavierStokesLoss
 from utils import graph_initialize_weights
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch_geometric.utils import get_laplacian
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+from torch_geometric.nn import DataParallel
 
 HOLE = False
-USE_LINF_LOSS = False  # set this to False to use L2 loss
-use_nmse = False
 
 
 if not HOLE:
@@ -24,11 +24,11 @@ if not HOLE:
     LAPLACIAN_REG_WEIGHT = 1e-5     
     BATCH_SIZE = 1
     LR = 1e-4
-    EPOCHS = 50
+    EPOCHS = 20
     PERCENTAGE_OF_MISSING_POINTS = 98
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     LOAD_MODEL = False  
-    MODEL_NAME = f"skip_GAT_8_{PERCENTAGE_OF_MISSING_POINTS}"  
+    MODEL_NAME = f"4gp_skip_GAT_8_{PERCENTAGE_OF_MISSING_POINTS}"  
     LOAD_CHECKPOINT_FILE = f'../trained_models_FP/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     SAVE_CHECKPOINT_FILE = f'../trained_models_FP/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
@@ -170,6 +170,17 @@ print("--------------------------")
 print(f"  Model Structure: \n{model}")
 print("--------------------------")
 
+space = {
+    'main_loss_weight': hp.uniform('main_loss_weight', 0.1, 10),
+    'ns_loss_weight': hp.uniform('ns_loss_weight', 1e-8, 1e-4),
+    'laplacian_loss_weight': hp.uniform('laplacian_loss_weight', 1e-6, 1e-4),
+}
+
+space = {
+    'main_loss_weight': hp.uniform('main_loss_weight', 0.1, 10),
+    'ns_loss_weight': hp.uniform('ns_loss_weight', 1e-8, 1e-5),
+    'laplacian_loss_weight': hp.uniform('laplacian_loss_weight', 1e-6, 1e-4),
+}
 
 
 optimizer = Adam(model.parameters(), lr=LR)
@@ -186,77 +197,86 @@ if LOAD_MODEL and os.path.isfile(LOAD_CHECKPOINT_FILE):
     load_checkpoint(checkpoint, model, optimizer)
     print("Checkpoint loaded successfully.")
 
-for epoch in range(EPOCHS):
-    current_lr = optimizer.param_groups[0]['lr']
-    print(f'Epoch: {epoch+1}, Learning Rate: {current_lr}')
-    model.train()
-    train_loss = 0
-    print('Processing training data...')
-    for batch_idx, batch in enumerate(train_loader):
-        batch.x = batch.x.to(DEVICE)  
-        batch.edge_index = batch.edge_index.to(DEVICE)
-        batch.y = batch.y.to(DEVICE)
-        optimizer.zero_grad()
-        out = model(batch)
-        l2_loss = criterion(out[:,:3], batch.y[:,:3])
-        rmse_loss = l2_loss
-        linf_loss = Linfinity_loss(out[:,:3], batch.y[:,:3])
-        loss_value_nmse = loss_nmse(out[:,:3], batch.y[:,:3])
-        if USE_LINF_LOSS:
-            main_loss = GAMMA*linf_loss
-        elif use_nmse:
-            main_loss = GAMMA*loss_value_nmse
-        else:
-            main_loss = GAMMA*l2_loss
-        ns_loss = ALPHA * navier_stokes_loss(batch)
-        laplacian_loss = LAPLACIAN_REG_WEIGHT * laplacian_regularization(batch)
+
+def objective(params):
+    # Extract hyperparameters from params
+    main_loss_weight = params['main_loss_weight']
+    ns_loss_weight = params['ns_loss_weight']
+    laplacian_loss_weight = params['laplacian_loss_weight']
+    print(f"\nHyperparameters for this trial:")
+    print(f"Main Loss Weight: {main_loss_weight}")
+    print(f"Navier-Stokes Loss Weight: {ns_loss_weight}")
+    print(f"Laplacian Regularization Loss Weight: {laplacian_loss_weight}\n")
+    train_losses, val_losses = [], []
+
+    def compute_losses(batch, out):
+        l2_loss = criterion(out[:, :3], batch.y[:, :3])
+        main_loss = main_loss_weight * l2_loss
+        ns_loss = ns_loss_weight * navier_stokes_loss(batch)
+        laplacian_loss = laplacian_loss_weight * laplacian_regularization(batch)
         total_loss = main_loss + ns_loss + laplacian_loss
-        train_loss += total_loss.item()
-        total_loss.backward()
-        optimizer.step()        
-        # Printing individual loss components
-        if batch_idx % PRINT_INTERVAL == 0:   # Only print every PRINT_INTERVAL batches
-            print(f"  Batch {batch_idx + 1}/{len(train_loader)},Training Loss: {total_loss.item()} --> MAIN Loss: {main_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
-    train_loss /= len(train_loader)
-    train_losses.append(train_loss)
-    print(f'Epoch: {epoch+1}, Training Loss: {train_loss}')
+        return total_loss, main_loss, ns_loss, laplacian_loss
 
-    checkpoint = {
-        "state_dict": model.state_dict(),
-        "optimizer": optimizer.state_dict(),
-    }
-    save_checkpoint(checkpoint)
-
-    model.eval()
-    valid_loss = 0
-    print('Processing validation data...')
-    with torch.no_grad():
-        for batch in valid_loader:
-            batch.x = batch.x.to(DEVICE)  
-            batch.edge_index = batch.edge_index.to(DEVICE)
-            batch.y = batch.y.to(DEVICE)
+    for epoch in range(EPOCHS):
+        current_lr = optimizer.param_groups[0]['lr']
+        print(f'Epoch: {epoch+1}, Learning Rate: {current_lr}')
+        model.train()
+        train_loss = 0
+        print('Processing training data...')
+        for batch_idx, batch in enumerate(train_loader):
+            batch.x, batch.edge_index, batch.y = batch.x.to(DEVICE), batch.edge_index.to(DEVICE), batch.y.to(DEVICE)
+            optimizer.zero_grad()
             out = model(batch)
-            l2_loss = criterion(out[:,:3], batch.y[:,:3])
-            rmse_loss = l2_loss
-            linf_loss = Linfinity_loss(out[:,:3], batch.y[:,:3])
-            loss_value_nmse = loss_nmse(out[:,:3], batch.y[:,:3])
-            if USE_LINF_LOSS:
-                main_loss = GAMMA*linf_loss
-            elif use_nmse:
-                main_loss = GAMMA*loss_value_nmse
-            else:
-                main_loss = GAMMA*l2_loss
-            ns_loss = ALPHA * navier_stokes_loss(batch)
-            laplacian_loss = LAPLACIAN_REG_WEIGHT * laplacian_regularization(batch)
-            total_loss = main_loss + ns_loss + laplacian_loss
-            valid_loss += total_loss.item()
-            if batch_idx % PRINT_INTERVAL == 0:   # Only print every PRINT_INTERVAL batches
-                print(f"  Validation Batch {batch_idx + 1}/{len(valid_loader)}, Training Loss: {total_loss.item()} --> MAIN Loss: {main_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
 
-    valid_loss /= len(valid_loader)
-    val_losses.append(valid_loss)
-    scheduler.step(valid_loss)
-    print(f'Epoch: {epoch+1}, Validation Loss: {valid_loss}')
+            total_loss, main_loss, ns_loss, laplacian_loss = compute_losses(batch, out)
+            train_loss += total_loss.item()
+            total_loss.backward()
+            optimizer.step()
+
+            if batch_idx % PRINT_INTERVAL == 0:
+                print(f"  Batch {batch_idx + 1}/{len(train_loader)}, Training Loss: {total_loss.item()} --> MAIN Loss: {main_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
+
+        train_loss /= len(train_loader)
+        train_losses.append(train_loss)
+        print(f'Epoch: {epoch+1}, Training Loss: {train_loss}')
+
+        checkpoint = {
+            "state_dict": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+        }
+        save_checkpoint(checkpoint)
+
+        model.eval()
+        valid_loss = 0
+        print('Processing validation data...')
+        with torch.no_grad():
+            for batch_idx, batch in enumerate(valid_loader):
+                batch.x, batch.edge_index, batch.y = batch.x.to(DEVICE), batch.edge_index.to(DEVICE), batch.y.to(DEVICE)
+                out = model(batch)
+
+                total_loss, main_loss, ns_loss, laplacian_loss = compute_losses(batch, out)
+                valid_loss += total_loss.item()
+
+                if batch_idx % PRINT_INTERVAL == 0:
+                    print(f"  Validation Batch {batch_idx + 1}/{len(valid_loader)}, Validation Loss: {total_loss.item()} --> MAIN Loss: {main_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
+
+        valid_loss /= len(valid_loader)
+        val_losses.append(valid_loss)
+        scheduler.step(valid_loss)
+        print(f'Epoch: {epoch+1}, Validation Loss: {valid_loss}')
+
+    plot_losses(train_losses, val_losses)
+
+    # Return validation loss for optimization
+    return {
+        'loss': valid_loss,
+        'status': STATUS_OK,
+    }
+# Call Hyperopt's fmin function
+trials = Trials()
+best = fmin(fn=objective, space=space, algo=tpe.suggest, max_evals=15, trials=trials)
+print(f"Found minimum after {len(trials)} trials.")
+print(f"Best parameters are {best}")
 
 
 plot_losses(train_losses, val_losses)

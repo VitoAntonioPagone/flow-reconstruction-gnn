@@ -279,7 +279,7 @@ if __name__ == "__main__":
     #train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
     # Process npz files
     #process_npz_files(TRAIN_OUTPUT_FOLDER, MISSING_PERCENTAGE)
-    process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
+    #process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
     #process_npz_files(VALIDATION_DIR_INPUT, MISSING_PERCENTAGE)
     # Create and save graphs
     '''

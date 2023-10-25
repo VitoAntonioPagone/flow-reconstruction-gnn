@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from torch.nn import MSELoss
 from torch.optim import Adam
@@ -19,9 +20,9 @@ use_nmse = False
 
 
 if not HOLE:
-    GAMMA = 10
+    GAMMA = 1
     ALPHA = 1e-7
-    LAPLACIAN_REG_WEIGHT = 1e-5     
+    LAPLACIAN_REG_WEIGHT = 1e-4     
     BATCH_SIZE = 1
     LR = 1e-4
     EPOCHS = 50
@@ -76,6 +77,42 @@ VALID_INPUT_DIR = f'../dataset_graph/training/validation_input_graphs_{PERCENTAG
 VALID_TARGET_DIR = f'../dataset_graph/training/validation_graphs_{PERCENTAGE_OF_MISSING_POINTS}'
 '''
 print(f'Starting script with Device: {DEVICE}')
+
+def relobralo(model, f_loss, b_losses, args:dict):
+    T = args['T']
+    losses = [f_loss] + b_losses
+
+    # Compute dynamic weights
+    lambs_hat = (F.softmax(torch.tensor([losses[i] / (T + 1e-12) for i in range(len(losses))]), dim=0) * len(losses)).detach()
+
+    # Ensure the dynamic weights are at least the initial values
+    for i in range(len(lambs_hat)):
+        lambs_hat[i] = max(lambs_hat[i], args['lam'+str(i)])
+
+    # Compute the weighted total loss using the dynamic weights
+    total_loss = sum([lambs_hat[i] * losses[i] for i in range(len(losses))])
+    
+    # Update args to store the computed dynamic weights and losses
+    args = args.copy()
+    for i in range(len(b_losses) + 1):
+        args['lam'+str(i)] = lambs_hat[i]
+        args['l'+str(i)] = losses[i]
+    
+    return total_loss, f_loss, b_losses, args
+
+
+args = {
+    'T': 10,     
+    'rho': 0.5,    
+    'alpha': 0.5,  
+    'lam0': 1,    
+    'lam1': 1,  
+    'lam2': 1, 
+    'l0': 1,    
+    'l1': 1,  
+    'l2': 1,  
+}
+
 
 def laplacian_regularization(graph):
     features = graph.x[:, :3]  # Select only the first three features
@@ -178,7 +215,7 @@ criterion = MSELoss()
 navier_stokes_loss = GraphNavierStokesLoss().to(DEVICE)
 
 train_losses, val_losses = [], []
-PRINT_INTERVAL = 50  # adjust this value to print every n batches
+PRINT_INTERVAL = 1  # adjust this value to print every n batches
 
 if LOAD_MODEL and os.path.isfile(LOAD_CHECKPOINT_FILE):
     print('Loading checkpoint...')
@@ -198,25 +235,29 @@ for epoch in range(EPOCHS):
         batch.y = batch.y.to(DEVICE)
         optimizer.zero_grad()
         out = model(batch)
+        # Compute the three losses
         l2_loss = criterion(out[:,:3], batch.y[:,:3])
-        rmse_loss = l2_loss
-        linf_loss = Linfinity_loss(out[:,:3], batch.y[:,:3])
-        loss_value_nmse = loss_nmse(out[:,:3], batch.y[:,:3])
-        if USE_LINF_LOSS:
-            main_loss = GAMMA*linf_loss
-        elif use_nmse:
-            main_loss = GAMMA*loss_value_nmse
-        else:
-            main_loss = GAMMA*l2_loss
-        ns_loss = ALPHA * navier_stokes_loss(batch)
-        laplacian_loss = LAPLACIAN_REG_WEIGHT * laplacian_regularization(batch)
-        total_loss = main_loss + ns_loss + laplacian_loss
-        train_loss += total_loss.item()
+
+        main_loss = GAMMA*l2_loss
+        ns_loss = ALPHA*navier_stokes_loss(batch)
+        laplacian_loss = LAPLACIAN_REG_WEIGHT*laplacian_regularization(batch)
+
+        _, _, _, updated_args = relobralo(model, main_loss, [ns_loss, laplacian_loss], args)
+        args.update(updated_args)  # Update the args dictionary with the new values
+
+        # Compute the weighted total loss using the updated weights
+        lam_main = args['lam0']
+        lam_ns = args['lam1']
+        lam_laplacian = args['lam2']
+        total_loss = lam_main *  main_loss + lam_ns *  ns_loss + lam_laplacian * laplacian_loss
+
+        # Backpropagate and update the model parameters
         total_loss.backward()
-        optimizer.step()        
+        optimizer.step()
+       
         # Printing individual loss components
         if batch_idx % PRINT_INTERVAL == 0:   # Only print every PRINT_INTERVAL batches
-            print(f"  Batch {batch_idx + 1}/{len(train_loader)},Training Loss: {total_loss.item()} --> MAIN Loss: {main_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
+            print(f"  Batch {batch_idx + 1}/{len(train_loader)},Training Loss: {total_loss.item()} --> MAIN Loss: {(lam_main * main_loss).item()} (Weight: {lam_main}), Navier-Stokes Loss: {(lam_ns * ns_loss).item()} (Weight: {lam_ns}), Laplacian Regularization Loss: {(lam_laplacian*laplacian_loss).item()} (Weight: {lam_laplacian})")
     train_loss /= len(train_loader)
     train_losses.append(train_loss)
     print(f'Epoch: {epoch+1}, Training Loss: {train_loss}')
@@ -237,21 +278,19 @@ for epoch in range(EPOCHS):
             batch.y = batch.y.to(DEVICE)
             out = model(batch)
             l2_loss = criterion(out[:,:3], batch.y[:,:3])
-            rmse_loss = l2_loss
-            linf_loss = Linfinity_loss(out[:,:3], batch.y[:,:3])
-            loss_value_nmse = loss_nmse(out[:,:3], batch.y[:,:3])
-            if USE_LINF_LOSS:
-                main_loss = GAMMA*linf_loss
-            elif use_nmse:
-                main_loss = GAMMA*loss_value_nmse
-            else:
-                main_loss = GAMMA*l2_loss
-            ns_loss = ALPHA * navier_stokes_loss(batch)
-            laplacian_loss = LAPLACIAN_REG_WEIGHT * laplacian_regularization(batch)
-            total_loss = main_loss + ns_loss + laplacian_loss
+            main_loss = GAMMA*l2_loss
+            ns_loss = ALPHA*navier_stokes_loss(batch)
+            laplacian_loss = LAPLACIAN_REG_WEIGHT*laplacian_regularization(batch)
+
+            # Compute the weighted total loss using the updated weights from training
+            lam_main = args['lam0']
+            lam_ns = args['lam1']
+            lam_laplacian = args['lam2']
+            total_loss = lam_main * GAMMA* main_loss + lam_ns * ALPHA* ns_loss + lam_laplacian * LAPLACIAN_REG_WEIGHT*laplacian_loss
+
             valid_loss += total_loss.item()
             if batch_idx % PRINT_INTERVAL == 0:   # Only print every PRINT_INTERVAL batches
-                print(f"  Validation Batch {batch_idx + 1}/{len(valid_loader)}, Training Loss: {total_loss.item()} --> MAIN Loss: {main_loss.item()}, Navier-Stokes Loss: {ns_loss.item()}, Laplacian Regularization Loss: {laplacian_loss.item()}")
+                print(f"Validation Batch {batch_idx + 1}/{len(train_loader)},Training Loss: {total_loss.item()} --> MAIN Loss: {(lam_main * main_loss).item()} (Weight: {lam_main}), Navier-Stokes Loss: {(lam_ns * ns_loss).item()} (Weight: {lam_ns}), Laplacian Regularization Loss: {(lam_laplacian*laplacian_loss).item()} (Weight: {lam_laplacian})")
 
     valid_loss /= len(valid_loader)
     val_losses.append(valid_loss)

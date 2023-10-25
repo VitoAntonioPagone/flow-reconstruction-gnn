@@ -5,7 +5,7 @@ from scipy.interpolate import griddata
 
 # Load the .pt file
 #graph = torch.load("../dataset_graph/training/validation_input_graphs_box_90.0/cyc11_CAD605_Y3_Z1_X1_input.pt")
-graph = torch.load("../dataset_graph/training_FP/test_graphs_98/cyc10_CAD615_Y4_Z0_X2_label.pt")
+graph = torch.load("../dataset_graph/training_FP/test_input_graphs_98/cyc10_CAD615_Y4_Z0_X2_input.pt")
 
 # Get node features
 node_features = graph.x

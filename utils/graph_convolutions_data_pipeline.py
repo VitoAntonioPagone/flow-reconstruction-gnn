@@ -25,12 +25,25 @@ NUM_NEIGHBOURS = 8
 SAVE_GRAPHS_FOLDER = "../dataset_graph/training"
 
 # Function definitions
+def get_dynamic_viscosity(temp):
+    # Returns dynamic viscosity based on temperature
+    T_ref = 333.15  # reference temperature [K]
+    nu_ref = 1.947959242645e-4  # reference dynamic viscosity [g/cm/s]
+    t = temp * T_ref
+    nu = (2.46317040e-05 +
+          t*(6.10895392e-07 + t*(-3.5394496e-10 + t*(1.75040791e-13 + t*(-4.5734874e-17 + 4.7456719e-21*t)))))
+    nu = nu / nu_ref
+    return nu
+
+
 def read_vtp_slice(file_name):
     print(f"Reading VTP slice from {file_name}...")
     reader = vtk.vtkXMLPolyDataReader()
     reader.SetFileName(file_name)
     reader.Update()
     data_in = reader.GetOutput()
+    temperature = np.array(data_in.GetPointData().GetArray("temperature"))
+    viscosity = get_dynamic_viscosity(temperature)
 
     data_out = {
         'x': np.array(data_in.GetPoints().GetData())[:, 0],
@@ -38,6 +51,8 @@ def read_vtp_slice(file_name):
         'x_velocity': np.array(data_in.GetPointData().GetArray("x_velocity")),
         'y_velocity': np.array(data_in.GetPointData().GetArray("y_velocity")),
         'z_velocity': np.array(data_in.GetPointData().GetArray("z_velocity")),
+        'pressure': np.array(data_in.GetPointData().GetArray("pressure")),
+        'viscosity': viscosity
     }
     return data_out
 

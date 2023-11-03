@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 
 # Load the .npz file
-data = np.load("../dataset/original_data/npz_data/train/cyc11_CAD605_Y0_Z0_X0.npz")  # Replace with your file path
+data = np.load("../dataset_graph/original_data/npz_data/test/cyc10_CAD615_Y0_Z0_X0.npz")  # Replace with your file path
 
 # Get velocity data
 x_velocity = data['x_velocity']

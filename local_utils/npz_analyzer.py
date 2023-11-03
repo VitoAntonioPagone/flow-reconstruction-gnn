@@ -19,6 +19,6 @@ def print_npz_info(npz_data):
         zero_velocity_percentage = np.mean(zero_velocity_samples) * 100
         print(f"Percentage of samples with zero velocity: {zero_velocity_percentage:.2f}%")
 
-npz_file_path = "../dataset/npz_data_interpolated/test/interpolated_cyc10_CAD615_Y0_Z0_X0.npz"
+npz_file_path = "../dataset_graph/original_data/npz_data/test/cyc10_CAD615_Y0_Z0_X0.npz"
 npz_data = load_npz_file(npz_file_path)
 print_npz_info(npz_data)

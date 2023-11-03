@@ -5,7 +5,7 @@ from scipy.interpolate import griddata
 
 # Load the .pt file
 #graph = torch.load("../dataset_graph/training/validation_input_graphs_box_90.0/cyc11_CAD605_Y3_Z1_X1_input.pt")
-graph = torch.load("../dataset_graph/training_FP/test_input_graphs_98/cyc10_CAD615_Y4_Z0_X2_input.pt")
+graph = torch.load("../PIV_data/test_graphs/test_graphs_98/PIV_cyc_10_CAD_610_label.pt")
 
 # Get node features
 node_features = graph.x
@@ -26,8 +26,21 @@ print(f"Percentage of nodes with zero velocity: {percentage_zero_velocity_nodes:
 # Assuming that the positions are the last 2 features in the feature vector
 positions = node_features[:, -2:].numpy()
 
+# Print the features for 5 random nodes
+random_indices = np.random.choice(node_features.shape[0], 5, replace=False)
+print("Features for 5 random nodes:")
+for idx in random_indices:
+    print(f"Node {idx}: {node_features[idx].numpy()}")
+
+# Print the dimensionality of the graph
+if hasattr(graph, 'edge_index'):
+    num_edges = graph.edge_index.shape[1]
+    print(f"Dimensionality of the graph: Nodes={node_features.shape[0]}, Edges={num_edges}")
+else:
+    print(f"Dimensionality of the graph: Nodes={node_features.shape[0]}")
+
 # Define grid size
-grid_size = 512  # Increased for a smoother plot
+grid_size = 2048  # Increased for a smoother plot
 
 # Get minimum and maximum position values
 min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
@@ -42,7 +55,7 @@ for i in range(3):  # iterate over velocity channels
     velocities = node_features[:, i].numpy()  # Retrieve the velocity for the current channel
 
     # Interpolate the values onto the regular grid
-    grid_velocities = griddata(positions, velocities, (grid_x, grid_y), method='linear')
+    grid_velocities = griddata(positions, velocities, (grid_x, grid_y), method='nearest')
 
     # Plotting the grid
     im = axs[i].imshow(grid_velocities.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet')

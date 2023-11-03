@@ -7,6 +7,8 @@ from torch_geometric.nn import (GCNConv, SAGEConv, GATConv, GravNetConv,
 from torch_geometric.data import Data
 from torch_geometric.data import Batch
 from torch_geometric.nn import conv
+from torch_geometric.utils import get_laplacian
+from torch_geometric.nn import MessagePassing
 
 #### 50 % MISSING POINTS #####
 
@@ -1386,6 +1388,36 @@ class GAT_98_8(torch.nn.Module):
         x = torch.relu(self.conv7(x, edge_index))
         x = self.conv8(x, edge_index)  # Last layer without ReLU
         return x
+    
+class FluidDynamicsConv(MessagePassing):
+    def __init__(self, in_channels, out_channels):
+        super(FluidDynamicsConv, self).__init__(aggr='add')  # "Add" aggregation
+        self.lin = torch.nn.Linear(in_channels, out_channels)
+
+    def forward(self, x, edge_index):
+        return self.propagate(edge_index, size=(x.size(0), x.size(0)), x=x)
+
+    def message(self, x_i, x_j):
+        # Extract features: velocities and positions
+        v_i, pos_i = x_i[:, :3], x_i[:, 3:]
+        v_j, pos_j = x_j[:, :3], x_j[:, 3:]
+
+        # Calculate gradient approximation for velocities
+        delta_v = v_j - v_i
+        delta_pos = pos_j - pos_i + 1e-9  # Add small value to avoid division by zero
+        gradient_approx = delta_v / delta_pos.norm(dim=1, keepdim=True)
+
+        # Calculate spatial influence based on relative positions
+        spatial_influence = 1.0 / (1.0 + torch.norm(pos_j - pos_i, dim=1, keepdim=True))
+
+        # Combine messages
+        combined_msg = spatial_influence * gradient_approx
+
+        return combined_msg
+
+    def update(self, aggr_out):
+        # Use aggregated messages to update node features
+        return self.lin(aggr_out)
 
 class GAT_98_8_SkipConnections(torch.nn.Module):
     def __init__(self):
@@ -1393,6 +1425,7 @@ class GAT_98_8_SkipConnections(torch.nn.Module):
         self.feat_dim = 6
         self.output_dim = 6  # Adjusted output dimension
         self.num_heads = 1  # Use single head
+        self.alpha = torch.nn.Parameter(torch.tensor(0.25))
 
         # Layers
         self.conv1 = GATConv(self.feat_dim, 16, heads=self.num_heads)
@@ -1408,7 +1441,14 @@ class GAT_98_8_SkipConnections(torch.nn.Module):
         self.proj1_to_3 = torch.nn.Linear(16, 32)
         self.proj3_to_5 = torch.nn.Linear(64, 128)
         self.proj5_to_7 = torch.nn.Linear(256, 512)
-
+    
+    def diffuse_with_laplacian(self, x, edge_index):
+        laplacian_indices, laplacian_values = get_laplacian(edge_index, normalization=None)
+        num_nodes = x.size(0)
+        laplacian = torch.sparse_coo_tensor(laplacian_indices, laplacian_values, size=(num_nodes, num_nodes))
+        
+        return x + self.alpha * torch.sparse.mm(laplacian, x - x.mean(dim=0))
+    
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
 
@@ -1430,34 +1470,71 @@ class GAT_98_8_SkipConnections(torch.nn.Module):
         
         x8 = self.conv8(x7, edge_index)  # Last layer without ReLU
 
-        return x8
+        # Diffuse features with Laplacian
+        x8_diffused = self.diffuse_with_laplacian(x8, edge_index)
+
+        return x8_diffused
     
-class GAT_98_8_Modified(torch.nn.Module):
+class fluid_GAT_98_8_SkipConnections(torch.nn.Module):
     def __init__(self):
-        super(GAT_98_8_Modified, self).__init__()
+        super(fluid_GAT_98_8_SkipConnections, self).__init__()
         self.feat_dim = 6
-        self.output_dim = 6
+        self.output_dim = 6  # Adjusted output dimension
         self.num_heads = 1  # Use single head
+        self.alpha = torch.nn.Parameter(torch.tensor(0.25))
 
         # Layers
-        self.conv1 = GATConv(self.feat_dim, 80, heads=self.num_heads)
-        self.conv2 = GATConv(80, 160, heads=self.num_heads)
-        self.conv3 = GATConv(160, 320, heads=self.num_heads)
-        self.conv4 = GATConv(320, 640, heads=self.num_heads)  # Bottleneck layer
-        self.conv5 = GATConv(640, 320, heads=self.num_heads)
-        self.conv6 = GATConv(320, 160, heads=self.num_heads)
-        self.conv7 = GATConv(160, 80, heads=self.num_heads)
-        self.conv8 = GATConv(80, self.output_dim, heads=self.num_heads, concat=False)
-
+        self.conv1 = GATConv(self.feat_dim, 16, heads=self.num_heads)
+        self.fluid_conv1 = FluidDynamicsConv(16, 32)
+        
+        self.conv2 = GATConv(32, 64, heads=self.num_heads)
+        self.fluid_conv2 = FluidDynamicsConv(64, 64)
+        
+        self.conv3 = GATConv(64, 128, heads=self.num_heads)
+        
+        self.conv4 = GATConv(128, 256, heads=self.num_heads)
+        self.fluid_conv3 = FluidDynamicsConv(256, 256)
+        
+        self.conv5 = GATConv(256, 512, heads=self.num_heads)
+        
+        self.conv6 = GATConv(512, 512, heads=self.num_heads)
+        self.fluid_conv4 = FluidDynamicsConv(512, 512)
+        
+        self.conv7 = GATConv(512, 512, heads=self.num_heads)
+        self.conv8 = GATConv(512, self.output_dim, heads=self.num_heads, concat=False)
+        
+        # Projection layers for skip connections
+        self.proj1_to_3 = torch.nn.Linear(32, 64)
+        self.proj3_to_5 = torch.nn.Linear(128, 256)
+        self.proj5_to_7 = torch.nn.Linear(512, 512)
+    
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
 
-        x = torch.relu(self.conv1(x, edge_index))
-        x = torch.relu(self.conv2(x, edge_index))
-        x = torch.relu(self.conv3(x, edge_index))
-        x = torch.relu(self.conv4(x, edge_index))
-        x = torch.relu(self.conv5(x, edge_index))
-        x = torch.relu(self.conv6(x, edge_index))
-        x = torch.relu(self.conv7(x, edge_index))
-        x = self.conv8(x, edge_index)  # Last layer without ReLU
-        return x
+        x1 = torch.relu(self.conv1(x, edge_index))
+        x1_fluid = torch.relu(self.fluid_conv1(x1, edge_index))
+        
+        x2 = torch.relu(self.conv2(x1_fluid, edge_index))
+        x2_fluid = torch.relu(self.fluid_conv2(x2, edge_index))
+        
+        # Project x1_fluid to match x2's dimensions and then add
+        x3 = torch.relu(self.conv3(x2_fluid + self.proj1_to_3(x1_fluid), edge_index))
+        
+        x4 = torch.relu(self.conv4(x3, edge_index))
+        x4_fluid = torch.relu(self.fluid_conv3(x4, edge_index))
+        
+        # Project x3 to match x4's dimensions and then add
+        x5 = torch.relu(self.conv5(x4_fluid + self.proj3_to_5(x3), edge_index))
+        
+        x6 = torch.relu(self.conv6(x5, edge_index))
+        x6_fluid = torch.relu(self.fluid_conv4(x6, edge_index))
+        
+        # Project x5 to match x6's dimensions and then add
+        x7 = torch.relu(self.conv7(x6_fluid + self.proj5_to_7(x5), edge_index))
+        
+        x8 = self.conv8(x7, edge_index)  # Last layer without ReLU
+
+        # Diffuse features with Laplacian
+        x8_diffused = self.diffuse_with_laplacian(x8, edge_index)
+
+        return x8_diffused

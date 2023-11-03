@@ -7,20 +7,66 @@ from torch.utils.data import Dataset as TorchDataset
 import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
+from multiprocessing import Pool
+from pykrige.ok import OrdinaryKriging
+from scipy.ndimage import gaussian_filter
+from scipy.ndimage import uniform_filter
 
 from models import (red_GAT_98_6,GAT_98_8_SkipConnections,
     GAT_98_3, GAT_98_4,GAT_98_6,
     GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double, GraphSAGE_90_6_Double,
-    GAT_98_10, GAT_98_8_Modified, GAT_98_8, GAT_90_6_Double, GAT_95_12,
+    GAT_98_10, GAT_98_8, GAT_90_6_Double, GAT_95_12,
     GAT_95_10, GAT_95_8, GraphSAGE_90_8, GATv2_90_8, GAT_90_8,
     GAT_90_8_Increased, GAT_90_3, GAT_90_3_2heads, GAT_50, GCN_50,
     GAT_90, GraphSAGE_90, GCN_90, GraphSAGE_95, GraphSAGE_99, GAT_90_6,
     GAT_90_6_2heads
 )
 
-MISSING_PERCENTAGE = 98
+MISSING_PERCENTAGE = 95
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 CHECKPOINT_PATH = '../trained_models_FP/skip_GAT_8_98_epochs_50_lr_0.0001_batch_1.pth.tar' 
+
+def get_adj_list(edge_index, num_nodes):
+    """
+    Convert edge_index to an adjacency list representation.
+    
+    Parameters:
+    - edge_index (LongTensor): The edge indices.
+    - num_nodes (int): Total number of nodes in the graph.
+    
+    Returns:
+    - List[List[int]]: Adjacency list of the graph.
+    """
+    adj_list = [[] for _ in range(num_nodes)]
+    for i, j in edge_index.t().tolist():
+        adj_list[i].append(j)
+        adj_list[j].append(i)  # since the graph is undirected
+    return adj_list
+
+def diffuse_graph_signal(edge_index, x, num_iterations=0, alpha=0.2):
+    """
+    Perform heat-based graph signal diffusion using adjacency list.
+    
+    Parameters:
+    - edge_index (LongTensor): The edge indices.
+    - x (Tensor): Node features to be diffused.
+    - num_iterations (int): Number of diffusion iterations.
+    - alpha (float): Diffusion coefficient. Determines the rate of diffusion.
+    
+    Returns:
+    - Tensor: Diffused node features.
+    """
+    num_nodes = x.size(0)
+    adj_list = get_adj_list(edge_index, num_nodes)
+
+    for _ in range(num_iterations):
+        diffusion_term = torch.zeros_like(x)
+        for node, neighbors in enumerate(adj_list):
+            diffusion_term[node] = x[node] - torch.mean(x[neighbors], dim=0)
+        
+        x = x - alpha * diffusion_term
+    
+    return x
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -136,12 +182,13 @@ def run_GCN(input_file, label_file):
     # Perform prediction
     with torch.no_grad():
         out = model(single_graph)
-
+    diffused_out = out.clone()
+    diffused_out[:, :3] = diffuse_graph_signal(single_graph.edge_index, out[:, :3].cpu())
     # Check if output is entirely zero
-    print("Output zero check:", torch.all(out==0).item())
+    print("Output zero check:", torch.all(diffused_out==0).item())
 
     # Define grid size
-    grid_size = 512   # Increased for a smoother plot
+    grid_size = 256   # Increased for a smoother plot
 
     # Get minimum and maximum position values
     min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
@@ -169,11 +216,16 @@ def run_GCN(input_file, label_file):
 
     for i in range(3):
         input_values = single_graph.x.cpu()[:, i].numpy() * 7.035423
-        output_values = out.cpu()[:, i].numpy() * 7.035423
+        output_values = diffused_out.cpu()[:, i].numpy() * 7.035423
         target_values = single_graph.y.cpu()[:, i].numpy() * 7.035423
+        # Replace the current interpolation method with griddata
         grid_input_values  = griddata(positions, input_values, (grid_x, grid_y), method='nearest')
         grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='nearest')
+        #grid_output_values = gaussian_filter(grid_output_values, sigma=3.5)
+
         grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='nearest')
+
+
         vmin, vmax = target_values.min(), target_values.max()
         pixel_wise_rmse = rmse(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
         print(f"Pixel-wise RMSE for {channels[i]}: {pixel_wise_rmse}")
@@ -206,7 +258,7 @@ def run_GCN(input_file, label_file):
 
     for i in range(3):
         # Use the scaled data for calculating the difference
-        scaled_output_values = out.cpu()[:, i].numpy() * 7.035423
+        scaled_output_values = diffused_out.cpu()[:, i].numpy() * 7.035423
         scaled_target_values = single_graph.y.cpu()[:, i].numpy() * 7.035423
 
         # Calculate the difference using scaled data
@@ -229,6 +281,9 @@ def run_GCN(input_file, label_file):
 if __name__ == "__main__":
     #input_file = f'../dataset_graph/original_data/onehundred/test_input_graphs_50/input_interpolated_input_50.pt'
     #label_file = f'../dataset_graph/original_data/onehundred/test_label_graphs_50/label_interpolated_label_50.pt'
-    input_file = f'../dataset_graph/training_FP/test_input_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_input.pt'
-    label_file = f'../dataset_graph/training_FP/test_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_label.pt'
+    #input_file = f'../dataset_graph/training_FP/test_input_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_input.pt'
+    #label_file = f'../dataset_graph/training_FP/test_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_label.pt'
+    input_file = f'../PIV_data/test_graphs/test_input_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_input.pt'
+    label_file = f'../PIV_data/test_graphs/test_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_label.pt'
     run_GCN(input_file, label_file)
+    

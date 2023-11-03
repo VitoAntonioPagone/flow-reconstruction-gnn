@@ -19,37 +19,20 @@ from torch_geometric.typing import Adj, OptTensor
 from torch_scatter import scatter_add
 
 # Constants
-TRAIN_INPUT_FOLDER = "../dataset_graph/original_data/train"
-TRAIN_OUTPUT_FOLDER = "../dataset_graph/original_data/npz_data/train"
-TEST_INPUT_FOLDER = "../dataset_graph/original_data/test"
-TEST_OUTPUT_FOLDER = "../dataset_graph/original_data/npz_data/test"
-VALIDATION_DIR_INPUT = "../dataset_graph/original_data/npz_data/validation"
+TEST_OUTPUT_FOLDER = "../PIV_data/labels_npz"
 RANDOM_SEED = 1
 VALIDATION_SPLIT = 0.1
-MISSING_PERCENTAGE = 98
+MISSING_PERCENTAGE = 95
 NUM_NEIGHBOURS = 8
-SAVE_GRAPHS_FOLDER = "../dataset_graph/training_FP"
+SAVE_GRAPHS_FOLDER = "../PIV_data/test_graphs"
 
 # Function definitions
-def get_dynamic_viscosity(temp):
-    # Returns dynamic viscosity based on temperature
-    T_ref = 333.15  # reference temperature [K]
-    nu_ref = 1.947959242645e-4  # reference dynamic viscosity [g/cm/s]
-    t = temp * T_ref
-    nu = (2.46317040e-05 +
-          t*(6.10895392e-07 + t*(-3.5394496e-10 + t*(1.75040791e-13 + t*(-4.5734874e-17 + 4.7456719e-21*t)))))
-    nu = nu / nu_ref
-    return nu
-
-
 def read_vtp_slice(file_name):
     print(f"Reading VTP slice from {file_name}...")
     reader = vtk.vtkXMLPolyDataReader()
     reader.SetFileName(file_name)
     reader.Update()
     data_in = reader.GetOutput()
-    temperature = np.array(data_in.GetPointData().GetArray("temperature"))
-    viscosity = get_dynamic_viscosity(temperature)
 
     data_out = {
         'x': np.array(data_in.GetPoints().GetData())[:, 0],
@@ -57,8 +40,6 @@ def read_vtp_slice(file_name):
         'x_velocity': np.array(data_in.GetPointData().GetArray("x_velocity")),
         'y_velocity': np.array(data_in.GetPointData().GetArray("y_velocity")),
         'z_velocity': np.array(data_in.GetPointData().GetArray("z_velocity")),
-        'pressure': np.array(data_in.GetPointData().GetArray("pressure")),
-        'viscosity': viscosity
     }
     return data_out
 
@@ -180,7 +161,7 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
         mask = velocity_features.sum(dim=-1) != 0  # Mask for the existing velocity values
 
         # Propagate velocity features
-        model = FeaturePropagation(num_iterations=800)
+        model = FeaturePropagation(num_iterations=10)
         propagated_velocity_features = model.propagate(velocity_features, edge_index, mask=mask)
 
         # Combine propagated velocity features with other features
@@ -288,31 +269,8 @@ def create_graphs(data_folder, num_neighbours, save_folder, is_input):
 # Main script
 if __name__ == "__main__":
     # Convert train and test vtp files to npz files
-    #vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
     #vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
-    # Split train data into train and validation
-    #train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
-    # Process npz files
-    #process_npz_files(TRAIN_OUTPUT_FOLDER, MISSING_PERCENTAGE)
-    #process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
-    #process_npz_files(VALIDATION_DIR_INPUT, MISSING_PERCENTAGE)
-    # Create and save graphs
-    '''
-    create_graphs(TRAIN_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_{MISSING_PERCENTAGE}"), is_input=False)
-    print("Train graphs created.")
-    sys.stdout.flush()
-     
-    create_graphs(TRAIN_OUTPUT_FOLDER + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
-    print("Train input graphs created.")
-    sys.stdout.flush()
-
-    create_graphs(VALIDATION_DIR_INPUT + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
-    print("Validation input graphs created.")
-    sys.stdout.flush()
-    create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_{MISSING_PERCENTAGE}"), is_input=False)  
-    print("Validation graphs created.")
-    sys.stdout.flush()
-    '''
+    process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
     create_graphs(TEST_OUTPUT_FOLDER + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
     print("Test input graphs created.")
     sys.stdout.flush()

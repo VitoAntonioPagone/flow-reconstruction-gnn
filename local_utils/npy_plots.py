@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-DATA_FILE = '../dataset/train_data_hole_128x128/test_inputs_hole_128x128/interpolated_cyc10_CAD615_Y0_Z0_X0_input.npy' 
+DATA_FILE = '../dataset/train_data_hole_128x128/flow_reconstruction/PIV_data/labels_npz/PIV_cyc_10_CAD_610.npz' 
 
 def plot_npy_file(file_name):
     print(f"Plotting NPY file: {file_name}")

@@ -70,48 +70,52 @@ class NavierStokesLoss(nn.Module):
 
 import torch
 import torch_scatter
+from torch_geometric.utils import get_laplacian
 
 class GraphNavierStokesLoss(torch.nn.Module):
     def __init__(self):
         super(GraphNavierStokesLoss, self).__init__()
 
     def forward(self, data):
-        u, v, x, y = data.x[:, 0], data.x[:, 1], data.x[:, 4], data.x[:, 5]
+        u, v, p, nu = data.x[:, 0], data.x[:, 1], data.x[:, 4], data.x[:, 5]
+        x, y = data.x[:, 6], data.x[:, 7]
 
-        EPSILON = 1e-7  # Small constant to avoid division by zero
+        # Get the Laplacian matrix in a sparse format
+        laplacian_indices, laplacian_values = get_laplacian(data.edge_index, normalization=None)
+        num_nodes = data.num_nodes
+        laplacian = torch.sparse_coo_tensor(laplacian_indices, laplacian_values, size=(num_nodes, num_nodes))
 
-        # Compute differences in velocities and positions for each edge
-        du = u[data.edge_index[0]] - u[data.edge_index[1]]
-        dv = v[data.edge_index[0]] - v[data.edge_index[1]]
-        dx = x[data.edge_index[0]] - x[data.edge_index[1]]
-        dy = y[data.edge_index[0]] - y[data.edge_index[1]]
+        # Compute gradients using edge relations
+        du_dx = (u[data.edge_index[1]] - u[data.edge_index[0]]) / (x[data.edge_index[1]] - x[data.edge_index[0]])
+        du_dy = (u[data.edge_index[1]] - u[data.edge_index[0]]) / (y[data.edge_index[1]] - y[data.edge_index[0]])
+        dv_dx = (v[data.edge_index[1]] - v[data.edge_index[0]]) / (x[data.edge_index[1]] - x[data.edge_index[0]])
+        dv_dy = (v[data.edge_index[1]] - v[data.edge_index[0]]) / (y[data.edge_index[1]] - y[data.edge_index[0]])
 
-        # Calculate du/dx, du/dy, dv/dx, and dv/dy
-        du_dx = du / (dx.abs() + EPSILON)
-        du_dy = du / (dy.abs() + EPSILON)
-        dv_dx = dv / (dx.abs() + EPSILON)
-        dv_dy = dv / (dy.abs() + EPSILON)
+        # Continuity Loss (based on divergence-free condition)
+        div_u = du_dx + dv_dy
+        continuity_loss = div_u.abs().mean()
 
-        # Get u and v values for the source nodes of the edges
-        u_source = u[data.edge_index[0]]
-        v_source = v[data.edge_index[0]]
+        # Convection terms
+        conv_u = u * du_dx + v * du_dy
+        conv_v = u * dv_dx + v * dv_dy
 
-        # Compute the convective terms for u and v
-        conv_u = u_source * du_dx + v_source * du_dy
-        conv_v = u_source * dv_dx + v_source * dv_dy
+        # Second order viscous terms (Laplacian)
+        # Using the sparse Laplacian matrix for computing the second order terms
+        laplacian_u = torch.sparse.mm(laplacian, u.unsqueeze(-1)).squeeze()
+        laplacian_v = torch.sparse.mm(laplacian, v.unsqueeze(-1)).squeeze()
 
-        # Compute the divergence for each edge
-        div_edge = du_dx + dv_dy
+        # Pressure gradients
+        dp_dx = (p[data.edge_index[1]] - p[data.edge_index[0]]) / (x[data.edge_index[1]] - x[data.edge_index[0]])
+        dp_dy = (p[data.edge_index[1]] - p[data.edge_index[0]]) / (y[data.edge_index[1]] - y[data.edge_index[0]])
 
-        # Sum all the divergence and convective contributions for each node
-        div_node  = torch_scatter.scatter_add(div_edge.abs(), data.edge_index[0], dim=0, dim_size=data.num_nodes)
-        conv_u_node = torch_scatter.scatter_add(conv_u.abs(), data.edge_index[0], dim=0, dim_size=data.num_nodes)
-        conv_v_node = torch_scatter.scatter_add(conv_v.abs(), data.edge_index[0], dim=0, dim_size=data.num_nodes)
+        # Momentum Loss for u and v components
+        momentum_loss_u = (conv_u + dp_dx - nu * laplacian_u).abs().mean()
+        momentum_loss_v = (conv_v + dp_dy - nu * laplacian_v).abs().mean()
 
-        # Return the mean divergence and convective terms
-        return div_node.mean() + conv_u_node.mean() + conv_v_node.mean()
+        total_momentum_loss = momentum_loss_u + momentum_loss_v
 
-
+        # Return the sum of the continuity loss and the total momentum loss
+        return continuity_loss + total_momentum_loss
 
 
 

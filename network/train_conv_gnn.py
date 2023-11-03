@@ -19,7 +19,7 @@ use_nmse = False
 
 
 if not HOLE:
-    GAMMA = 10
+    GAMMA = 1000
     ALPHA = 1e-7
     LAPLACIAN_REG_WEIGHT = 1e-5     
     BATCH_SIZE = 1

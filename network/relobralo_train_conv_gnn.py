@@ -5,7 +5,7 @@ from torch.nn import MSELoss
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from datasets import CustomDataset
-from models import GAT_98_8_SkipConnections, GAT_98_10, red_GAT_98_5,red_GAT_98_6,GAT_98_2, GAT_98_3, GAT_98_6,GAT_98_4, GAT_50, GCN_98_10,GraphSAGE_98_10,GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double,GAT_98_8_Modified, GAT_98_8,GAT_98_10, GAT_95_12, GAT_95_10,GAT_95_8,GAT_90_6_Double,GATv2_90_8_2heads,GATv2_90_8,GraphSAGE_90_8, GAT_90_8_Increased, GAT_90_8,GCN_90_6, GraphSAGE_90,GraphSAGE_90_6_Double, GraphSAGE_95, GAT_90, GraphSAGE_99, GCN_90, GAT_90_3, GAT_90_3_2heads, GAT_90_6, GAT_90_6_2heads
+from models import fluid_GAT_98_8_SkipConnections,GAT_98_8_SkipConnections, GAT_98_10, red_GAT_98_5,red_GAT_98_6,GAT_98_2, GAT_98_3, GAT_98_6,GAT_98_4, GAT_50, GCN_98_10,GraphSAGE_98_10,GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double, GAT_98_8,GAT_98_10, GAT_95_12, GAT_95_10,GAT_95_8,GAT_90_6_Double,GATv2_90_8_2heads,GATv2_90_8,GraphSAGE_90_8, GAT_90_8_Increased, GAT_90_8,GCN_90_6, GraphSAGE_90,GraphSAGE_90_6_Double, GraphSAGE_95, GAT_90, GraphSAGE_99, GCN_90, GAT_90_3, GAT_90_3_2heads, GAT_90_6, GAT_90_6_2heads
 from collections import OrderedDict
 import os
 import matplotlib.pyplot as plt
@@ -18,25 +18,50 @@ HOLE = False
 USE_LINF_LOSS = False  # set this to False to use L2 loss
 use_nmse = False
 
-
 if not HOLE:
-    GAMMA = 1
+    """
+    Configuration Parameters for Graph-Based Model Training
+
+    This section defines various configuration parameters required for training and evaluation of a graph-based model. 
+    These parameters may vary based on the dataset, model architecture, and training requirements.
+
+    Parameters:
+        HOLE (externally defined): Indicates whether the training is being done with a hole in the data.
+        GAMMA: Weighting factor for the main L2 loss component.
+        ALPHA: Weighting factor for the Navier-Stokes loss component.
+        LAPLACIAN_REG_WEIGHT: Weighting factor for the Laplacian regularization loss component.
+        BATCH_SIZE: The number of samples that will be propagated through the network simultaneously.
+        LR: Learning rate for the optimizer.
+        EPOCHS: Number of times the entire dataset is passed through the network.
+        PERCENTAGE_OF_MISSING_POINTS: Percentage of data points that are missing from the training dataset.
+        DEVICE: The device on which the model will run, e.g., 'cuda' for GPU or 'cpu' for CPU.
+        LOAD_MODEL: Boolean flag to determine whether to load a pre-trained model for further training or evaluation.
+        MODEL_NAME: A name assigned to the model, used mainly for saving and retrieving checkpoints.
+        LOAD_CHECKPOINT_FILE: Path to the file from which a pre-trained model checkpoint should be loaded.
+        SAVE_CHECKPOINT_FILE: Path to the file where the model checkpoint will be saved.
+        LOSS_PLOT_DIR: Directory path for saving the plot that displays the training and validation loss.
+        TRAIN_INPUT_DIR: Directory path for the input graphs used during training.
+        TRAIN_TARGET_DIR: Directory path for the target graphs used during training.
+        VALID_INPUT_DIR: Directory path for the input graphs used during validation.
+        VALID_TARGET_DIR: Directory path for the target graphs used during validation.
+    """
+    GAMMA = 10
     ALPHA = 1e-7
-    LAPLACIAN_REG_WEIGHT = 1e-4     
+    LAPLACIAN_REG_WEIGHT = 1e-5     
     BATCH_SIZE = 1
     LR = 1e-4
     EPOCHS = 50
     PERCENTAGE_OF_MISSING_POINTS = 98
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     LOAD_MODEL = False  
-    MODEL_NAME = f"skip_GAT_8_{PERCENTAGE_OF_MISSING_POINTS}"  
+    MODEL_NAME = f"FLUID_skip_GAT_8_{PERCENTAGE_OF_MISSING_POINTS}"  
     LOAD_CHECKPOINT_FILE = f'../trained_models_FP/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     SAVE_CHECKPOINT_FILE = f'../trained_models_FP/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
-    TRAIN_INPUT_DIR = f'../dataset_graph/training_FP/train_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
-    TRAIN_TARGET_DIR = f'../dataset_graph/training_FP/train_graphs_{PERCENTAGE_OF_MISSING_POINTS}/' 
-    VALID_INPUT_DIR = f'../dataset_graph/training_FP/validation_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
-    VALID_TARGET_DIR = f'../dataset_graph/training_FP/validation_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'
+    TRAIN_INPUT_DIR = f'../dataset_graph/training_FP_10/train_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
+    TRAIN_TARGET_DIR = f'../dataset_graph/training_FP_10/train_graphs_{PERCENTAGE_OF_MISSING_POINTS}/' 
+    VALID_INPUT_DIR = f'../dataset_graph/training_FP_10/validation_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
+    VALID_TARGET_DIR = f'../dataset_graph/training_FP_10/validation_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'
 else:
     ALPHA = 1e-4  
     BATCH_SIZE = 1
@@ -55,44 +80,46 @@ else:
     LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
-'''
-# Hyperparameters
-ALPHA = 1e-7  
-BATCH_SIZE = 1
-LR = 0.00001
-EPOCHS = 50
-PERCENTAGE_OF_MISSING_POINTS = 98
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-LOAD_MODEL = False  
-MODEL_NAME = f"INCR_UNIV_NS_GAT_8'_{PERCENTAGE_OF_MISSING_POINTS}"  
-LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
-SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
-LOSS_PLOT_DIR = f'../losses_plot/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
 
-print(f'Starting script with Device: {DEVICE}')
-
-TRAIN_INPUT_DIR = f'../dataset_graph/training/train_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}'  
-TRAIN_TARGET_DIR = f'../dataset_graph/training/train_graphs_{PERCENTAGE_OF_MISSING_POINTS}' 
-VALID_INPUT_DIR = f'../dataset_graph/training/validation_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}'  
-VALID_TARGET_DIR = f'../dataset_graph/training/validation_graphs_{PERCENTAGE_OF_MISSING_POINTS}'
-'''
 print(f'Starting script with Device: {DEVICE}')
 
 def relobralo(model, f_loss, b_losses, args:dict):
-    T = args['T']
+    """
+    Computes the weighted total loss using dynamic weights based on the provided forward and backward losses.
+
+    Parameters:
+    - model: The model on which the loss is being computed (though it's not used in this snippet).
+    - f_loss: The forward loss.
+    - b_losses: A list of backward losses.
+    - args: A dictionary containing arguments. Expected keys:
+        - 'T': A temperature parameter for the softmax computation.
+        - 'lamX': The initial weight values, where X is an index (e.g., 'lam0', 'lam1', etc.).
+    
+    Returns:
+    - total_loss: The computed weighted total loss.
+    - f_loss: The forward loss (unchanged).
+    - b_losses: A list of backward losses (unchanged).
+    - args: An updated dictionary with computed dynamic weights and losses.
+
+    Notes:
+    The function uses the provided losses to compute dynamic weights via a softmax mechanism. The resulting dynamic weights
+    are then used to calculate the weighted total loss. The weights are also stored in the returned args dictionary.
+    """
+    
+    # Combine forward loss and backward losses into a single list for processing
     losses = [f_loss] + b_losses
 
-    # Compute dynamic weights
-    lambs_hat = (F.softmax(torch.tensor([losses[i] / (T + 1e-12) for i in range(len(losses))]), dim=0) * len(losses)).detach()
+    # Compute dynamic weights using softmax, with a temperature parameter to control sharpness
+    lambs_hat = (F.softmax(torch.tensor([losses[i] / (args['T'] + 1e-12) for i in range(len(losses))]), dim=0) * len(losses)).detach()
 
-    # Ensure the dynamic weights are at least the initial values
+    # Ensure the computed dynamic weights are at least as large as the provided initial values
     for i in range(len(lambs_hat)):
         lambs_hat[i] = max(lambs_hat[i], args['lam'+str(i)])
 
-    # Compute the weighted total loss using the dynamic weights
+    # Calculate the weighted total loss using the dynamic weights
     total_loss = sum([lambs_hat[i] * losses[i] for i in range(len(losses))])
-    
-    # Update args to store the computed dynamic weights and losses
+
+    # Update args dictionary to include the computed dynamic weights and the individual losses
     args = args.copy()
     for i in range(len(b_losses) + 1):
         args['lam'+str(i)] = lambs_hat[i]
@@ -115,6 +142,24 @@ args = {
 
 
 def laplacian_regularization(graph):
+    """
+    Computes the Laplacian regularization term for the given graph.
+
+    Parameters:
+    - graph: An object representing the graph. Expected to have attributes:
+        - x: A tensor representing node features.
+        - edge_index: A tensor representing edge indices.
+        - num_nodes: An integer indicating the number of nodes in the graph.
+    
+    Returns:
+    - regularization: A scalar tensor representing the Laplacian regularization term.
+
+    Notes:
+    The function extracts the first three features of each node from the graph, then computes the Laplacian matrix.
+    The regularization term is derived from the product of the node features and the Laplacian matrix. This term is
+    useful in various graph-related learning tasks to promote smoothness of node features.
+    """
+
     features = graph.x[:, :3]  # Select only the first three features
     laplacian_indices, laplacian_values = get_laplacian(graph.edge_index, normalization=None)
 
@@ -215,13 +260,44 @@ criterion = MSELoss()
 navier_stokes_loss = GraphNavierStokesLoss().to(DEVICE)
 
 train_losses, val_losses = [], []
-PRINT_INTERVAL = 1  # adjust this value to print every n batches
+PRINT_INTERVAL = 100  # adjust this value to print every n batches
 
 if LOAD_MODEL and os.path.isfile(LOAD_CHECKPOINT_FILE):
     print('Loading checkpoint...')
     checkpoint = torch.load(LOAD_CHECKPOINT_FILE, map_location=DEVICE)
     load_checkpoint(checkpoint, model, optimizer)
     print("Checkpoint loaded successfully.")
+
+"""
+This script performs training and validation for a given number of epochs on a graph-based model.
+For each epoch, the model is trained using a combination of three loss functions: 
+- A main L2 loss
+- A Navier-Stokes loss
+- A Laplacian regularization loss
+
+The weights for these losses are dynamically computed using the `relobralo` function. 
+During training, the loss values and their corresponding weights are printed periodically for insight.
+
+At the end of each epoch:
+- The model's state is saved as a checkpoint.
+- The model is evaluated on a validation set, using the same loss components.
+
+Required external variables (not defined in this code snippet):
+- EPOCHS: The number of epochs for training.
+- optimizer: The optimization algorithm used for training.
+- DEVICE: The device on which tensors are processed, e.g., 'cuda' for GPU or 'cpu' for CPU.
+- train_loader: Data loader providing batches for training.
+- valid_loader: Data loader providing batches for validation.
+- model: The graph-based model being trained.
+- GAMMA, ALPHA, LAPLACIAN_REG_WEIGHT: Constants specifying the initial weights for the main, Navier-Stokes, and Laplacian losses, respectively.
+- criterion: The loss function for computing the L2 loss.
+- navier_stokes_loss: A function that computes the Navier-Stokes loss for a given batch.
+- laplacian_regularization: A function that computes the Laplacian regularization for a given batch.
+- PRINT_INTERVAL: Specifies how often loss values should be printed during training and validation.
+- save_checkpoint: A function to save the model and optimizer states.
+- scheduler: Learning rate scheduler which adjusts the learning rate based on validation loss.
+- args: A dictionary containing arguments for the `relobralo` function.
+"""
 
 for epoch in range(EPOCHS):
     current_lr = optimizer.param_groups[0]['lr']
@@ -250,14 +326,14 @@ for epoch in range(EPOCHS):
         lam_ns = args['lam1']
         lam_laplacian = args['lam2']
         total_loss = lam_main *  main_loss + lam_ns *  ns_loss + lam_laplacian * laplacian_loss
-
+        train_loss += total_loss.item()
         # Backpropagate and update the model parameters
         total_loss.backward()
         optimizer.step()
        
         # Printing individual loss components
         if batch_idx % PRINT_INTERVAL == 0:   # Only print every PRINT_INTERVAL batches
-            print(f"  Batch {batch_idx + 1}/{len(train_loader)},Training Loss: {total_loss.item()} --> MAIN Loss: {(lam_main * main_loss).item()} (Weight: {lam_main}), Navier-Stokes Loss: {(lam_ns * ns_loss).item()} (Weight: {lam_ns}), Laplacian Regularization Loss: {(lam_laplacian*laplacian_loss).item()} (Weight: {lam_laplacian})")
+            print(f"  Batch {batch_idx + 1}/{len(train_loader)},,AlphaDIFFUSION: {model.alpha.item():.4f},Training Loss: {total_loss.item()} --> MAIN Loss: {(lam_main * main_loss).item()} (Weight: {lam_main}), Navier-Stokes Loss: {(lam_ns * ns_loss).item()} (Weight: {lam_ns}), Laplacian Regularization Loss: {(lam_laplacian*laplacian_loss).item()} (Weight: {lam_laplacian})")
     train_loss /= len(train_loader)
     train_losses.append(train_loss)
     print(f'Epoch: {epoch+1}, Training Loss: {train_loss}')
@@ -290,7 +366,7 @@ for epoch in range(EPOCHS):
 
             valid_loss += total_loss.item()
             if batch_idx % PRINT_INTERVAL == 0:   # Only print every PRINT_INTERVAL batches
-                print(f"Validation Batch {batch_idx + 1}/{len(train_loader)},Training Loss: {total_loss.item()} --> MAIN Loss: {(lam_main * main_loss).item()} (Weight: {lam_main}), Navier-Stokes Loss: {(lam_ns * ns_loss).item()} (Weight: {lam_ns}), Laplacian Regularization Loss: {(lam_laplacian*laplacian_loss).item()} (Weight: {lam_laplacian})")
+                print(f"Validation Batch {batch_idx + 1}/{len(train_loader)},AlphaDIFFUSION: {model.alpha.item():.4f},Training Loss: {total_loss.item()} --> MAIN Loss: {(lam_main * main_loss).item()} (Weight: {lam_main}), Navier-Stokes Loss: {(lam_ns * ns_loss).item()} (Weight: {lam_ns}), Laplacian Regularization Loss: {(lam_laplacian*laplacian_loss).item()} (Weight: {lam_laplacian})")
 
     valid_loss /= len(valid_loader)
     val_losses.append(valid_loss)

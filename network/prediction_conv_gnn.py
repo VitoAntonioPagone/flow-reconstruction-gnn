@@ -273,7 +273,7 @@ def run_GCN(input_file, label_file):
         #print("Mean divergence of the graph:", mean_divergence)
         #node_wise_rmse = rmse_per_node(scaled_output_values, scaled_target_values)
         
-        #print(f"Node-wise RMSE for channel {i}: {node_wise_rmse}")
+        print(f"Node-wise RMSE for channel {i}: {node_wise_rmse}")
 
         input_values = single_graph.x.cpu()[:, i].numpy() * 7.035423
         output_values = diffused_out.cpu()[:, i].numpy() * 7.035423
@@ -350,7 +350,7 @@ if __name__ == "__main__":
     #label_file = f'../dataset_graph/training_FP/test_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_label.pt'
     #input_file = f'../PIV_data/test_graphs/test_input_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_input.pt'
     #label_file = f'../PIV_data/test_graphs/test_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_label.pt'
-    label_file  = f'../dataset_graph_full/training_FP/test_graphs_98/cyc09_CAD635_Y8_Z1_X1_label.pt'
-    input_file  = f'../dataset_graph_full/training_FP/test_input_graphs_98/cyc09_CAD635_Y8_Z1_X1_input.pt'
+    label_file  = f'../dataset_graph_full/training_FP/test_graphs_98/cyc11_CAD660_Y7_Z0_X0_label.pt'
+    input_file  = f'../dataset_graph_full/training_FP/test_input_graphs_98/cyc11_CAD660_Y7_Z0_X0_input.pt'
     run_GCN(input_file, label_file)
     

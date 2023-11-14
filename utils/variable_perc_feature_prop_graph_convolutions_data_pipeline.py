@@ -26,9 +26,9 @@ TEST_OUTPUT_FOLDER = "../dataset_graph/original_data/npz_data/test"
 VALIDATION_DIR_INPUT = "../dataset_graph/original_data/npz_data/validation"
 RANDOM_SEED = 1
 VALIDATION_SPLIT = 0.1
-MISSING_PERCENTAGE = 90
+MISSING_PERCENTAGE = 98
 NUM_NEIGHBOURS = 8
-SAVE_GRAPHS_FOLDER = "../dataset_graph/training_FP"
+SAVE_GRAPHS_FOLDER = "../dataset_graph/training_FP_noisy"
 
 # Function definitions
 def read_vtp_slice(file_name):
@@ -271,7 +271,7 @@ if __name__ == "__main__":
     #process_npz_files(VALIDATION_DIR_INPUT)
 
     # Create and save graphs
-    '''
+
     create_graphs(TRAIN_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, "train_graphs_variable"), is_input=False)
     print("Train graphs created.")
     sys.stdout.flush()
@@ -287,7 +287,6 @@ if __name__ == "__main__":
     create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, "validation_graphs_variable"), is_input=False)
     print("Validation graphs created.")
     sys.stdout.flush()
-    '''
     create_graphs(TEST_OUTPUT_FOLDER + '_variable', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, "test_input_graphs_variable"), is_input=True)
     print("Test input graphs created.")
     sys.stdout.flush()

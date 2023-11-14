@@ -10,6 +10,7 @@ from torch_geometric.nn import conv
 from torch_geometric.utils import get_laplacian
 from torch_geometric.nn import MessagePassing
 
+
 #### 50 % MISSING POINTS #####
 
 #### CONVOLUTIONAL NETWORKS ####
@@ -1003,8 +1004,8 @@ class GAT_98_10(torch.nn.Module):
 class GAT_98_4(torch.nn.Module):
     def __init__(self):
         super(GAT_98_4, self).__init__()
-        self.feat_dim = 6
-        self.output_dim = 6
+        self.feat_dim = 8
+        self.output_dim = 8
         self.num_heads = 1
 
         # Layers
@@ -1422,26 +1423,25 @@ class FluidDynamicsConv(MessagePassing):
 class GAT_98_8_SkipConnections(torch.nn.Module):
     def __init__(self):
         super(GAT_98_8_SkipConnections, self).__init__()
-        self.feat_dim = 6
-        self.output_dim = 6  # Adjusted output dimension
+        self.feat_dim = 8
+        self.output_dim = 8
         self.num_heads = 1  # Use single head
         self.alpha = torch.nn.Parameter(torch.tensor(0.25))
 
-        # Layers
-        self.conv1 = GATConv(self.feat_dim, 16, heads=self.num_heads)
-        self.conv2 = GATConv(16, 32, heads=self.num_heads)
-        self.conv3 = GATConv(32, 64, heads=self.num_heads)
-        self.conv4 = GATConv(64, 128, heads=self.num_heads)
-        self.conv5 = GATConv(128, 256, heads=self.num_heads)
-        self.conv6 = GATConv(256, 512, heads=self.num_heads)
-        self.conv7 = GATConv(512, 512, heads=self.num_heads)
-        self.conv8 = GATConv(512, self.output_dim, heads=self.num_heads, concat=False)
+        # Layers with direct numbers instead of division
+        self.conv1 = GATConv(self.feat_dim, 8, heads=self.num_heads)  # 16/2 = 8
+        self.conv2 = GATConv(8, 16, heads=self.num_heads)             # 32/2 = 16
+        self.conv3 = GATConv(16, 32, heads=self.num_heads)            # 64/2 = 32
+        self.conv4 = GATConv(32, 64, heads=self.num_heads)            # 128/2 = 64
+        self.conv5 = GATConv(64, 128, heads=self.num_heads)           # 256/2 = 128
+        self.conv6 = GATConv(128, 256, heads=self.num_heads)          # 512/2 = 256
+        self.conv7 = GATConv(256, 256, heads=self.num_heads)          # 512/2 = 256
+        self.conv8 = GATConv(256, self.output_dim, heads=self.num_heads, concat=False)
         
-        # Projection layers for skip connections
-        self.proj1_to_3 = torch.nn.Linear(16, 32)
-        self.proj3_to_5 = torch.nn.Linear(64, 128)
-        self.proj5_to_7 = torch.nn.Linear(256, 512)
-    
+        # Projection layers for skip connections with direct numbers
+        self.proj1_to_3 = torch.nn.Linear(8, 16)   # 16/2 = 8, 32/2 = 16
+        self.proj3_to_5 = torch.nn.Linear(32, 64)  # 64/2 = 32, 128/2 = 64
+        self.proj5_to_7 = torch.nn.Linear(128, 256) # 256/2 = 128, 512/2 = 256
     def diffuse_with_laplacian(self, x, edge_index):
         laplacian_indices, laplacian_values = get_laplacian(edge_index, normalization=None)
         num_nodes = x.size(0)

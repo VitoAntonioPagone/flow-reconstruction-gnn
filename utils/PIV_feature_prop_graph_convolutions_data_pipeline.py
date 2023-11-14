@@ -22,17 +22,41 @@ from torch_scatter import scatter_add
 TEST_OUTPUT_FOLDER = "../PIV_data/labels_npz"
 RANDOM_SEED = 1
 VALIDATION_SPLIT = 0.1
-MISSING_PERCENTAGE = 95
+MISSING_PERCENTAGE = 90
 NUM_NEIGHBOURS = 8
 SAVE_GRAPHS_FOLDER = "../PIV_data/test_graphs"
 
+mean = 0
+variance = 0.01
+std_dev = np.sqrt(variance)
+
+# Function to add Gaussian noise to the first three features of the nodes
+def add_gaussian_noise_to_features(features, mean, std_dev):
+    # Generate Gaussian noise for the first three features
+    noise = np.random.normal(mean, std_dev, (features.shape[0], 3))
+    # Add the noise to the first three features
+    features[:, :3] += noise
+    return features
 # Function definitions
+def get_dynamic_viscosity(temp):
+    # Returns dynamic viscosity based on temperature
+    T_ref = 333.15  # reference temperature [K]
+    nu_ref = 1.947959242645e-4  # reference dynamic viscosity [g/cm/s]
+    t = temp * T_ref
+    nu = (2.46317040e-05 +
+          t*(6.10895392e-07 + t*(-3.5394496e-10 + t*(1.75040791e-13 + t*(-4.5734874e-17 + 4.7456719e-21*t)))))
+    nu = nu / nu_ref
+    return nu
+
+
 def read_vtp_slice(file_name):
     print(f"Reading VTP slice from {file_name}...")
     reader = vtk.vtkXMLPolyDataReader()
     reader.SetFileName(file_name)
     reader.Update()
     data_in = reader.GetOutput()
+    temperature = np.array(data_in.GetPointData().GetArray("temperature"))
+    viscosity = get_dynamic_viscosity(temperature)
 
     data_out = {
         'x': np.array(data_in.GetPoints().GetData())[:, 0],
@@ -40,6 +64,8 @@ def read_vtp_slice(file_name):
         'x_velocity': np.array(data_in.GetPointData().GetArray("x_velocity")),
         'y_velocity': np.array(data_in.GetPointData().GetArray("y_velocity")),
         'z_velocity': np.array(data_in.GetPointData().GetArray("z_velocity")),
+        'pressure': np.array(data_in.GetPointData().GetArray("pressure")),
+        'viscosity': viscosity
     }
     return data_out
 
@@ -97,25 +123,30 @@ def process_npz_files(folder, percentage):
         with np.load(file_path) as data:
             x = data['x']
             y = data['y']
+            p = data['pressure']  # Assuming that pressure is stored under the key 'pressure'
+            viscosity = data['viscosity']  # Assuming viscosity is stored under the key 'viscosity'
             x_velocity = data['x_velocity']
             y_velocity = data['y_velocity']
             z_velocity = data['z_velocity']
 
-        features = np.column_stack((x, y, x_velocity, y_velocity, z_velocity))
+        velocities = np.column_stack((x_velocity, y_velocity, z_velocity))
+        indices_to_remove = extract_random_points(velocities, percentage / 100)  # Apply to velocities only
+        velocities[indices_to_remove] = 0
 
-        indices_to_remove = extract_random_points(features, percentage / 100)  # Convert percentage to a proportion
-        features[indices_to_remove, 2:] = 0
+        features = np.column_stack((velocities, p, viscosity, x, y))
 
         output_file_path = os.path.join(output_folder, os.path.basename(file_path))
-        np.savez(output_file_path, x=features[:, 0], y=features[:, 1],
-                 x_velocity=features[:, 2], y_velocity=features[:, 3],
-                 z_velocity=features[:, 4])
+        np.savez(output_file_path, x=features[:, -2], y=features[:, -1],
+                 x_velocity=features[:, 0], y_velocity=features[:, 1],
+                 z_velocity=features[:, 2], pressure=features[:, 3], viscosity=features[:, 4])
 
 def load_npz_data(file_path):
     print(f"Loading data from npz file: {file_path}")
     with np.load(file_path) as data:
         x = data['x']
         y = data['y']
+        p = data['pressure']
+        viscosity = data['viscosity']
         x_velocity = data['x_velocity']
         y_velocity = data['y_velocity']
         z_velocity = data['z_velocity']
@@ -128,7 +159,7 @@ def load_npz_data(file_path):
     print(f"Percentage of missing nodes: {missing_percentage}%")
     
     # Assemble all the features together
-    features = np.column_stack((x_velocity, y_velocity, z_velocity, indicator, x, y))  # Added indicator feature as the 4th feature
+    features = np.column_stack((x_velocity, y_velocity, z_velocity, p, viscosity, indicator, x, y))
 
     coordinates = np.column_stack((x, y))
 
@@ -140,28 +171,33 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
     distances, indices = tree.query(coordinates.numpy(), k=num_neighbours+1)
 
     edge_index = []
+    edge_attr = []  # List to store edge weights
     for v in range(len(indices)):
         for j, neighbor in enumerate(indices[v]):
             if neighbor != v:  # remove self-connections
                 edge_index.append([v, neighbor])
+                edge_attr.append(distances[v][j])  # Add the corresponding distance as an edge weight
 
     edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
+    edge_attr = torch.tensor(edge_attr, dtype=torch.float)  # Convert edge weights to a tensor
 
-    # Convert to undirected graph
-    edge_index = to_undirected(edge_index)
+    # Convert to undirected graph and ensure edge attributes are also undirected
+    edge_index, edge_attr = to_undirected(edge_index, edge_attr)
 
-    graph = Data(x=features, edge_index=edge_index)
+    graph = Data(x=features, edge_index=edge_index, edge_attr=edge_attr)
 
     # Only propagate features for input data, not for labels
     if is_input:
         # Separate velocity features (to be propagated) from other features
+        features[:, :3] = add_gaussian_noise_to_features(features[:, :3], mean, std_dev)
+
         velocity_features = features[:, :3]  # Assuming velocity features are the first 3
         other_features = features[:, 3:]
 
         mask = velocity_features.sum(dim=-1) != 0  # Mask for the existing velocity values
 
         # Propagate velocity features
-        model = FeaturePropagation(num_iterations=10)
+        model = FeaturePropagation(num_iterations=5)
         propagated_velocity_features = model.propagate(velocity_features, edge_index, mask=mask)
 
         # Combine propagated velocity features with other features
@@ -256,7 +292,7 @@ def create_graphs(data_folder, num_neighbours, save_folder, is_input):
 def create_graphs(data_folder, num_neighbours, save_folder, is_input):
     for i, file in enumerate(os.listdir(data_folder)):
         # Stop after processing 5 files
-        if i >= 5:
+        if i >= 3:
             break
 
         if file.endswith(".npz"):
@@ -269,8 +305,34 @@ def create_graphs(data_folder, num_neighbours, save_folder, is_input):
 # Main script
 if __name__ == "__main__":
     # Convert train and test vtp files to npz files
+    #vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
     #vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
+    # Split train data into train and validation
+    #train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
+    # Process npz files
+    #process_npz_files(TRAIN_OUTPUT_FOLDER, MISSING_PERCENTAGE)
     process_npz_files(TEST_OUTPUT_FOLDER, MISSING_PERCENTAGE)
+    #process_npz_files(VALIDATION_DIR_INPUT, MISSING_PERCENTAGE)
+    # Create and save graphs
+    '''
+
+    create_graphs(TRAIN_OUTPUT_FOLDER, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_graphs_{MISSING_PERCENTAGE}"), is_input=False)
+    print("Train graphs created.")
+    sys.stdout.flush()
+     
+    create_graphs(TRAIN_OUTPUT_FOLDER + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"train_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
+    print("Train input graphs created.")
+    sys.stdout.flush()
+
+
+
+    create_graphs(VALIDATION_DIR_INPUT + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
+    print("Validation input graphs created.")
+    sys.stdout.flush()
+    create_graphs(VALIDATION_DIR_INPUT, NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"validation_graphs_{MISSING_PERCENTAGE}"), is_input=False)  
+    print("Validation graphs created.")
+    sys.stdout.flush()
+    '''
     create_graphs(TEST_OUTPUT_FOLDER + f'_inputs_{MISSING_PERCENTAGE}', NUM_NEIGHBOURS, os.path.join(SAVE_GRAPHS_FOLDER, f"test_input_graphs_{MISSING_PERCENTAGE}"), is_input=True)
     print("Test input graphs created.")
     sys.stdout.flush()

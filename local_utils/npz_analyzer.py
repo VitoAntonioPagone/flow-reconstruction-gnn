@@ -7,10 +7,19 @@ def load_npz_file(file_path):
 def print_npz_info(npz_data):
     print("NPZ Information:")
     print("------------------")
-    for key, value in npz_data.items():
+    for key in npz_data.files:
+        value = npz_data[key]
         print(f"Name: {key}")
         print(f"Shape: {value.shape}")
-        print(f"Data Type: {value.dtype}\n")
+        print(f"Data Type: {value.dtype}")
+        
+        if value.shape[0] >= 10:  
+            print("First 10 data points:")
+            print(value[:10])  # Slice to get the first 10 elements
+        else:
+            print("Data points:")
+            print(value)  # If less than 10, print all the data points
+        print()
 
     # If the .npz file contains the expected keys, calculate the percentage of samples where all velocities are zero
     if set(['x_velocity', 'y_velocity', 'z_velocity']).issubset(npz_data.files):
@@ -19,6 +28,6 @@ def print_npz_info(npz_data):
         zero_velocity_percentage = np.mean(zero_velocity_samples) * 100
         print(f"Percentage of samples with zero velocity: {zero_velocity_percentage:.2f}%")
 
-npz_file_path = "../dataset_graph/original_data/npz_data/test/cyc10_CAD615_Y0_Z0_X0.npz"
+npz_file_path = "../PIV_data/labels_npz/PIV_cyc_10_CAD_625.npz"
 npz_data = load_npz_file(npz_file_path)
 print_npz_info(npz_data)

@@ -271,7 +271,7 @@ def run_GCN(input_file, label_file):
 
         # Print the mean divergence value
         #print("Mean divergence of the graph:", mean_divergence)
-        #node_wise_rmse = rmse_per_node(scaled_output_values, scaled_target_values)
+        node_wise_rmse = rmse_per_node(scaled_output_values, scaled_target_values)
         
         print(f"Node-wise RMSE for channel {i}: {node_wise_rmse}")
 

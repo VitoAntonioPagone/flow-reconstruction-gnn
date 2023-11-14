@@ -178,7 +178,6 @@ def load_checkpoint(model, checkpoint_path):
     model.load_state_dict(new_state_dict)
 
 
-
 def rmse(pred, target):
     """Computes root mean squared error"""
     return torch.sqrt(torch.mean((pred - target) ** 2))
@@ -268,13 +267,13 @@ def run_GCN(input_file, label_file):
     for i in range(3):
         scaled_output_values = diffused_out.cpu()[:, i] * 7.035423
         scaled_target_values = single_graph.y.cpu()[:, i] * 7.035423
-        mean_divergence = calculate_mean_divergence(single_graph.edge_index, diffused_out)
+        #mean_divergence = calculate_mean_divergence(single_graph.edge_index, diffused_out)
 
         # Print the mean divergence value
-        print("Mean divergence of the graph:", mean_divergence)
-        node_wise_rmse = rmse_per_node(scaled_output_values, scaled_target_values)
+        #print("Mean divergence of the graph:", mean_divergence)
+        #node_wise_rmse = rmse_per_node(scaled_output_values, scaled_target_values)
         
-        print(f"Node-wise RMSE for channel {i}: {node_wise_rmse}")
+        #print(f"Node-wise RMSE for channel {i}: {node_wise_rmse}")
 
         input_values = single_graph.x.cpu()[:, i].numpy() * 7.035423
         output_values = diffused_out.cpu()[:, i].numpy() * 7.035423

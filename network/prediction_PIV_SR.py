@@ -26,6 +26,16 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 CHECKPOINT_PATH = '../trained_models_FP_full/FLUID_skip_GAT_8_98_epochs_50_lr_0.0001_batch_1.pth.tar'
 UREF = 7.035423
 
+def compare_positions(graph1, graph2, description):
+    positions1 = graph1.x[:, -2:].cpu().numpy()
+    positions2 = graph2.x[:, -2:].cpu().numpy()
+
+    if positions1.shape != positions2.shape:
+        print(f"Mismatch in the number of nodes between {description}.")
+    else:
+        position_difference = np.abs(positions1 - positions2)
+        max_position_difference = np.max(position_difference)
+        print(f"Maximum difference in node positions between {description}: {max_position_difference}")
 
 def rmse_per_node(pred, target):
     """Computes root mean squared error per node"""
@@ -177,37 +187,38 @@ def run_GCN(input_file, label_file, indices_rp_file):
     print(f'Min y position: {np.min(positions_input[:, 1])}')
     print(f'Max y position: {np.max(positions_input[:, 1])}')
 
-    ######## MODEL ########
-    model = GAT_98_8_SkipConnections()
     ######## MODEL ########
-
+    model = GAT_98_8_SkipConnections()
     model.to(DEVICE)
-
-    # Load trained weights
     load_checkpoint(model, CHECKPOINT_PATH)
-
     model.eval()
 
     # Move data to the correct device
-    single_graph.x = single_graph.x.to(DEVICE)
-    single_graph.edge_index = single_graph.edge_index.to(DEVICE)
-    single_graph.y = single_graph.y.to(DEVICE)
+    single_graph.to(DEVICE)
+
+    # Save original position features (last two features)
+    original_positions = single_graph.x[:, -2:].clone()
 
     # Perform prediction
     with torch.no_grad():
-        out = model(single_graph)
+        predicted_features = model(single_graph)
 
-    # Assuming the indicator is the fourth feature (index 3)
-    indicator = single_graph.x[:, 5] == 1
+    # Replace last two features of the output with original position features
+    predicted_features[:, -2:] = original_positions.to(DEVICE)
 
-    # Clone the original output to create a tensor for the corrected output
-    corrected_output = out.clone()
+    # Create a new graph for output comparison
+    output_graph = single_graph.clone()
+    output_graph.x = predicted_features
+
+    # Compare positions between output and original input graphs
+    print("\nComparing node positions between output and input graphs:")
+    compare_positions(output_graph, single_graph, "output and input graphs")
 
     # Manually overwrite the prediction for nodes with the indicator set to 1
     # corrected_output[~indicator, :2] = single_graph.x[~indicator, :2]
 
     # Now diffusing the corrected output
-    diffused_corrected_output = corrected_output.clone()
+    diffused_corrected_output = predicted_features.clone()
     # diffused_corrected_output[:, :2] = diffuse_graph_signal(single_graph.edge_index, corrected_output[:, :2].cpu())
 
     # Define grid size
@@ -250,9 +261,9 @@ def run_GCN(input_file, label_file, indices_rp_file):
 
         vmin, vmax = target_values.min(), target_values.max()
         # Node wise prediction metrics
-        node_wise_rmse = rmse(out[indices_rp, :], single_graph.y[indices_rp, :])
+        node_wise_rmse = rmse(predicted_features[indices_rp, :], single_graph.y[indices_rp, :])
         print(f"Node-wise RMSE for {channels[i]}: {node_wise_rmse}")
-        node_wise_mae = mae(out[indices_rp, :], single_graph.y[indices_rp, :])
+        node_wise_mae = mae(predicted_features[indices_rp, :], single_graph.y[indices_rp, :])
         print(f"Node-wise MAE for {channels[i]}: {node_wise_mae}")
 
         im = axs[0, i].imshow(grid_input_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower',

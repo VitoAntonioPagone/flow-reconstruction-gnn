@@ -22,7 +22,7 @@ from torch_scatter import scatter_add
 TEST_OUTPUT_FOLDER = "../PIV_data/labels_npz"
 RANDOM_SEED = 1
 VALIDATION_SPLIT = 0.1
-MISSING_PERCENTAGE = 20
+MISSING_PERCENTAGE = 50
 NUM_NEIGHBOURS = 8
 SAVE_GRAPHS_FOLDER = "../PIV_data/test_graphs"
 
@@ -102,6 +102,10 @@ def process_npz_files(folder, percentage):
         features = np.column_stack((velocities, p, viscosity, x, y))
 
         output_file_path = os.path.join(output_folder, os.path.basename(file_path))
+        fname = os.path.splitext(file_path)[0]
+        file_path_rp = fname + '_indices_rp.npy'
+        output_file_path_rp = os.path.join(output_folder, os.path.basename(file_path_rp))
+        np.save(output_file_path_rp, indices_to_remove)
         np.savez(output_file_path, x=features[:, -2], y=features[:, -1],
                  x_velocity=features[:, 0], y_velocity=features[:, 1],
                  z_velocity=features[:, 2], pressure=features[:, 3], viscosity=features[:, 4])
@@ -257,8 +261,6 @@ def create_graphs(data_folder, num_neighbours, save_folder, is_input):
 
 # Main script
 if __name__ == "__main__":
-    # Convert train and test vtp files to npz files
-
     # Split train data into train and validation
     # train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
 

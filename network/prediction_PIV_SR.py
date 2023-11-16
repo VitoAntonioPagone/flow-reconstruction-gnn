@@ -149,9 +149,12 @@ def mae(pred, target):
     return torch.mean(torch.abs(pred - target))
 
 
-def run_GCN(input_file, label_file):
+def run_GCN(input_file, label_file, indices_rp_file):
     # Load dataset
     test_dataset = CustomDataset([input_file], [label_file])
+
+    # Indices of removed points
+    indices_rp = np.load(indices_rp_file)
 
     # Select a single test graph
     single_graph = test_dataset[0]
@@ -246,10 +249,11 @@ def run_GCN(input_file, label_file):
         grid_target_values = griddata(positions_target, target_values, (grid_x_target, grid_y_target), method='nearest')
 
         vmin, vmax = target_values.min(), target_values.max()
-        # pixel_wise_rmse = rmse(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
-        # print(f"Pixel-wise RMSE for {channels[i]}: {pixel_wise_rmse}")
-        # pixel_wise_mae = mae(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
-        # print(f"Pixel-wise MAE for {channels[i]}: {pixel_wise_mae}")
+        # Node wise prediction metrics
+        node_wise_rmse = rmse(out[indices_rp, :], single_graph.y[indices_rp, :])
+        print(f"Node-wise RMSE for {channels[i]}: {node_wise_rmse}")
+        node_wise_mae = mae(out[indices_rp, :], single_graph.y[indices_rp, :])
+        print(f"Node-wise MAE for {channels[i]}: {node_wise_mae}")
 
         im = axs[0, i].imshow(grid_input_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower',
                               cmap='jet', vmin=vmin, vmax=vmax)
@@ -287,5 +291,6 @@ if __name__ == "__main__":
     # Files
     input_file = f'../PIV_data/test_graphs/test_input_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_input_SR.pt'
     label_file = f'../PIV_data/test_graphs/test_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_label_SR.pt'
+    indices_rp_file = f'../PIV_data/labels_npz_inputs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_indices_rp.npy'
 
-    run_GCN(input_file, label_file)
+    run_GCN(input_file, label_file, indices_rp_file)

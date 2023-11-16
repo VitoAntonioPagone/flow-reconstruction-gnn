@@ -26,6 +26,17 @@ MISSING_PERCENTAGE = 98
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 CHECKPOINT_PATH = '../trained_models_FP_full/NOISY_skip_GAT_8_98_epochs_50_lr_0.0001_batch_1.pth.tar' 
 
+def compare_positions(graph1, graph2, description):
+    positions1 = graph1.x[:, -2:].cpu().numpy()
+    positions2 = graph2.x[:, -2:].cpu().numpy()
+
+    if positions1.shape != positions2.shape:
+        print(f"Mismatch in the number of nodes between {description}.")
+    else:
+        position_difference = np.abs(positions1 - positions2)
+        max_position_difference = np.max(position_difference)
+        print(f"Maximum difference in node positions between {description}: {max_position_difference}")
+
 def rmse_per_node(pred, target):
     """Computes root mean squared error per node"""
 
@@ -213,29 +224,38 @@ def run_GCN(input_file, label_file):
     print(f'Min y position: {np.min(positions[:, 1])}')
     print(f'Max y position: {np.max(positions[:, 1])}')
 
-    ######## MODEL ########
     model = GAT_98_8_SkipConnections()
-    ######## MODEL ########
-    
     model.to(DEVICE)
-
-    # Load trained weights
     load_checkpoint(model, CHECKPOINT_PATH)
 
     model.eval()
 
+    # Save original position features
+    original_positions = single_graph.x[:, -2:].clone()
+
     # Move data to the correct device
-    single_graph.x = single_graph.x.to(DEVICE)
-    single_graph.edge_index = single_graph.edge_index.to(DEVICE)
-    single_graph.y = single_graph.y.to(DEVICE)
+    single_graph.to(DEVICE)
 
     # Perform prediction
     with torch.no_grad():
-        out = model(single_graph)
-    diffused_out = out.clone()
-    diffused_out[:, :3] = diffuse_graph_signal(single_graph.edge_index, out[:, :3].cpu())
+        predicted_features = model(single_graph)
+
+    # Replace last two features of the output with original position features
+    predicted_features[:, -2:] = original_positions.to(DEVICE)
+
+    # Create a new graph for output comparison
+    output_graph = single_graph.clone()
+    output_graph.x = predicted_features
+
+    # Compare positions between output and target graphs
+    print("\nComparing node positions between output and target graphs:")
+    compare_positions(output_graph, label_graph, "output and target graphs")
+
     # Check if output is entirely zero
-    print("Output zero check:", torch.all(diffused_out==0).item())
+    print("Output zero check:", torch.all(output_graph.x == 0).item())
+
+    print("\nComparing node positions between input and target graphs:")
+    compare_positions(single_graph, label_graph, "input and target graphs")
 
     # Define grid size
     grid_size = 600   # Increased for a smoother plot
@@ -265,7 +285,7 @@ def run_GCN(input_file, label_file):
     channels = ['x-velocity', 'y-velocity', 'z-velocity']
 
     for i in range(3):
-        scaled_output_values = diffused_out.cpu()[:, i] * 7.035423
+        scaled_output_values = output_graph.x.cpu()[:, i] * 7.035423
         scaled_target_values = single_graph.y.cpu()[:, i] * 7.035423
         #mean_divergence = calculate_mean_divergence(single_graph.edge_index, diffused_out)
 
@@ -276,7 +296,7 @@ def run_GCN(input_file, label_file):
         print(f"Node-wise RMSE for channel {i}: {node_wise_rmse}")
 
         input_values = single_graph.x.cpu()[:, i].numpy() * 7.035423
-        output_values = diffused_out.cpu()[:, i].numpy() * 7.035423
+        output_values = output_graph.x.cpu()[:, i].numpy() * 7.035423
         target_values = single_graph.y.cpu()[:, i].numpy() * 7.035423
 
         # Replace the current interpolation method with griddata
@@ -319,7 +339,8 @@ def run_GCN(input_file, label_file):
 
     for i in range(3):
         # Use the scaled data for calculating the difference
-        scaled_output_values = diffused_out.cpu()[:, i].numpy()
+        scaled_output_values = output_graph.x.cpu()[:, i].numpy()
+
         scaled_target_values = single_graph.y.cpu()[:, i].numpy() 
 
         # Calculate the difference using scaled data
@@ -350,7 +371,7 @@ if __name__ == "__main__":
     #label_file = f'../dataset_graph/training_FP/test_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_label.pt'
     #input_file = f'../PIV_data/test_graphs/test_input_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_input.pt'
     #label_file = f'../PIV_data/test_graphs/test_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_label.pt'
-    label_file  = f'../dataset_graph_full/training_FP/test_graphs_98/cyc11_CAD660_Y7_Z0_X0_label.pt'
-    input_file  = f'../dataset_graph_full/training_FP/test_input_graphs_98/cyc11_CAD660_Y7_Z0_X0_input.pt'
+    label_file  = f'../dataset_graph_full/training_FP/test_graphs_98/cyc09_CAD635_Y8_Z1_X1_label.pt'
+    input_file  = f'../dataset_graph_full/training_FP/test_input_graphs_98/cyc09_CAD635_Y8_Z1_X1_input.pt'
     run_GCN(input_file, label_file)
     

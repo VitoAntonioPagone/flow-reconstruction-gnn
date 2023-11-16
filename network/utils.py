@@ -111,10 +111,11 @@ def check_accuracy(loader, model, alpha, beta, device=None):
     losses = []
     with torch.no_grad():
         for x, y, mask in loader:
-            x = x.to(device)
-            y = y.to(device)
+            x = x.to(device)[:, :3, :, :]  # Keep only the first three channels
+            y = y.to(device)[:, :3, :, :]  # Keep only the first three channels
             mask = mask.to(device)
-            x_with_mask = torch.cat((x, mask), dim=1)
+
+            x_with_mask = torch.cat((x, mask), dim=1)  # Concatenate to get a 4-channel input
             preds = model(x_with_mask)
             masked_loss = loss_fn(preds, y, mask)
             ns_loss_value = ns_loss(preds)
@@ -126,6 +127,7 @@ def check_accuracy(loader, model, alpha, beta, device=None):
     print(f"Validation Loss: {avg_loss:.4f}")
     model.train()
     return avg_loss
+
 
 def plot_losses(train_losses, val_losses, alpha, beta, learning_rate, batch_size, model_name, percentage, epochs):
     import matplotlib.pyplot as plt

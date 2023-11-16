@@ -1,14 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-DATA_FILE = '../dataset/train_data_hole_128x128/flow_reconstruction/PIV_data/labels_npz/PIV_cyc_10_CAD_610.npz' 
+DATA_FILE = '../dataset/train_data_98/train_inputs_98/interpolated_cyc06_CAD625_Y4_Z1_X2_input.npy' 
 
 def plot_npy_file(file_name):
     print(f"Plotting NPY file: {file_name}")
     data = np.load(file_name)
 
     num_channels = data.shape[2]
-    channels = ['x_velocity', 'y_velocity', 'z_velocity']  # Replace with actual channel names if different
+    channels = ['x_velocity', 'y_velocity', 'z_velocity', 'pressure', 'viscosity']  # Replace with actual channel names if different
 
     fig, axs = plt.subplots(num_channels, 1, figsize=(10, 10))
 

@@ -1,14 +1,14 @@
 import os
 import glob
 import numpy as np
-import vtk
+#import vtk
 from scipy.interpolate import griddata
 from pathlib import Path
 import shutil
 from natsort import natsorted
 
 GRID_SIZE = 256
-PERCENT_TO_REMOVE = 50
+PERCENT_TO_REMOVE = 98
 RANDOM_SEED = 1
 TRAIN_SPLIT = 0.9
 
@@ -25,12 +25,26 @@ OUTPUT_TEST_LABELS_DIR = f'../dataset/train_data_{PERCENT_TO_REMOVE}/test_labels
 OUTPUT_VAL_INPUTS_DIR = f'../dataset/train_data_{PERCENT_TO_REMOVE}/val_inputs_{PERCENT_TO_REMOVE}/'
 OUTPUT_VAL_LABELS_DIR = f'../dataset/train_data_{PERCENT_TO_REMOVE}/val_labels_{PERCENT_TO_REMOVE}/'
 
+# Function definitions
+def get_dynamic_viscosity(temp):
+    # Returns dynamic viscosity based on temperature
+    T_ref = 333.15  # reference temperature [K]
+    nu_ref = 1.947959242645e-4  # reference dynamic viscosity [g/cm/s]
+    t = temp * T_ref
+    nu = (2.46317040e-05 +
+          t*(6.10895392e-07 + t*(-3.5394496e-10 + t*(1.75040791e-13 + t*(-4.5734874e-17 + 4.7456719e-21*t)))))
+    nu = nu / nu_ref
+    return nu
+
+'''
 def read_vtp_slice(file_name):
-    print(f"Reading vtp file: {file_name}")
+    print(f"Reading VTP slice from {file_name}...")
     reader = vtk.vtkXMLPolyDataReader()
     reader.SetFileName(file_name)
     reader.Update()
     data_in = reader.GetOutput()
+    temperature = np.array(data_in.GetPointData().GetArray("temperature"))
+    viscosity = get_dynamic_viscosity(temperature)
 
     data_out = {
         'x': np.array(data_in.GetPoints().GetData())[:, 0],
@@ -38,21 +52,27 @@ def read_vtp_slice(file_name):
         'x_velocity': np.array(data_in.GetPointData().GetArray("x_velocity")),
         'y_velocity': np.array(data_in.GetPointData().GetArray("y_velocity")),
         'z_velocity': np.array(data_in.GetPointData().GetArray("z_velocity")),
+        'pressure': np.array(data_in.GetPointData().GetArray("pressure")),
+        'viscosity': viscosity
     }
-    print(f"Finished reading vtp file: {file_name}")
     return data_out
 
 def vtp_to_npz(input_folder, output_folder):
-    print(f"Processing files in folder: {input_folder}")
+    print(f"Converting VTP files in {input_folder} to NPZ format...")
+    
     os.makedirs(output_folder, exist_ok=True)
 
-    for vtp_file in glob.glob(os.path.join(input_folder, "*.vtp")):
-        print(f"Processing file: {vtp_file}")
+    vtp_files = glob.glob(os.path.join(input_folder, "*.vtp"))
+    print(f"Found {len(vtp_files)} .vtp files in {input_folder}")
+
+    for vtp_file in vtp_files:
+        print(f"Processing {vtp_file}...")
         data = read_vtp_slice(vtp_file)
         output_file = os.path.join(output_folder, os.path.splitext(os.path.basename(vtp_file))[0] + ".npz")
         np.savez(output_file, **data)
-
-    print(f"Finished processing files in folder: {input_folder}")
+        print(f"Converted {vtp_file} to {output_file}")
+    print("VTP to NPZ conversion complete.")
+'''
 
 def interpolate_data(input_folder, output_folder):
     print(f"Interpolating files in folder: {input_folder}")
@@ -136,12 +156,12 @@ def tran_val_split(train_dir, val_dir):
 
 if __name__ == "__main__":
     print("Starting to process TRAIN data...")
-    vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
+    #vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
     interpolate_data(TRAIN_OUTPUT_FOLDER, INTERPOLATED_TRAIN_OUTPUT_FOLDER)
     print("Finished processing TRAIN data.")
 
     print("Starting to process TEST data...")
-    vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
+    #vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
     interpolate_data(TEST_OUTPUT_FOLDER, INTERPOLATED_TEST_OUTPUT_FOLDER)
     print("Finished processing TEST data.")
 

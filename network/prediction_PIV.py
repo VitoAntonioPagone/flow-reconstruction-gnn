@@ -198,7 +198,7 @@ def run_GCN(input_file, label_file):
     corrected_output = out.clone()
 
     # Manually overwrite the prediction for nodes with the indicator set to 1
-    #corrected_output[~indicator, :2] = single_graph.x[~indicator, :2]
+    corrected_output[~indicator, :2] = single_graph.x[~indicator, :2]
 
     # Now diffusing the corrected output
     diffused_corrected_output = corrected_output.clone()

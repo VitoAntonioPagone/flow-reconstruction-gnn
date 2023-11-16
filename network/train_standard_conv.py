@@ -22,19 +22,20 @@ from utils import (
     print_autoencoder_dashboard
 )
 from torchsummary import summary
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # Hyper-parameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 NUM_WORKERS = 6
 PIN_MEMORY = True
 LEARNING_RATE = 0.0001
 SHUFFLE = True
-NUM_EPOCHS = 500
+NUM_EPOCHS = 100
 ALPHA = 0.1
 BETA = 0.1
 LOAD_MODEL = False  
-PERCENTAGE_OF_MISSING_POINTS = 50
+PERCENTAGE_OF_MISSING_POINTS = 98
 MODEL_NAME = f"ConvNet_{PERCENTAGE_OF_MISSING_POINTS}"  
 LOAD_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}__alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
 SAVE_CHECKPOINT_FILE = f'../trained_models/{MODEL_NAME}_epochs_{NUM_EPOCHS}__alpha_{ALPHA}_beta_{BETA}_lr_{LEARNING_RATE}_batch_{BATCH_SIZE}.pth.tar'
@@ -52,8 +53,8 @@ def train_fn(loader, model, optimizer, loss_fn, ns_loss, tv_loss, alpha, beta, s
     total_batches = 0
 
     for batch_idx, (inputs, labels, mask) in enumerate(loop):
-        inputs = inputs.to(device=DEVICE)
-        labels = labels.to(device=DEVICE)
+        inputs = inputs.to(device=DEVICE)[:, :3, :, :]  # Keep only the first three channels
+        labels = labels.to(device=DEVICE)[:, :3, :, :]  # Keep only the first three channels for labels
         mask = mask.to(device=DEVICE)
 
         # forward
@@ -84,7 +85,7 @@ def train_fn(loader, model, optimizer, loss_fn, ns_loss, tv_loss, alpha, beta, s
 def train_unet_conv_autoencoder():
     print(f"Selected device: {DEVICE}")
 
-    model = ConvNet_50().to(DEVICE)
+    model = ConvNet_98().to(DEVICE)
 
     # Print model summary
     print("Model Summary:")
@@ -103,6 +104,7 @@ def train_unet_conv_autoencoder():
     print(f"Number of Epochs: {NUM_EPOCHS}")
     initialize_weights(model)
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10)
     loss_fn = MaskedMSELoss(device=DEVICE) 
     ns_loss = NavierStokesLoss(DEVICE)
     tv_loss = TVLoss().to(DEVICE)  # instantiate TVLoss
@@ -139,7 +141,10 @@ def train_unet_conv_autoencoder():
 
         # check accuracy
         val_loss = check_accuracy(val_loader, model, ALPHA, BETA, device=DEVICE)
+        scheduler.step(val_loss)
+
         val_losses.append(val_loss)
+        
         print(f"Training Loss: {train_loss}")
 
     plot_losses(train_losses, val_losses, ALPHA, BETA, LEARNING_RATE, BATCH_SIZE, MODEL_NAME, PERCENTAGE_OF_MISSING_POINTS, NUM_EPOCHS)

@@ -81,24 +81,22 @@ def process_npz_files(folder, percentage):
         indices_to_remove = extract_random_points(velocities, percentage / 100)  # Apply to velocities only
         velocities[indices_to_remove] = 0
 
-        existing_points = len(x)
-
         # Define the number of additional points
-        additional_points = int((1-MISSING_PERCENTAGE/100) * len(x_velocity) * 50 - len(x_velocity))
+        additional_points = int((1-MISSING_PERCENTAGE/100) * len(x) * 50 - len(x))
         # Generate random points within the specified range
         min_x, max_x = min(x), max(x)
         min_y, max_y = min(y), max(y)
         new_x = np.random.uniform(min_x, max_x, additional_points)
         new_y = np.random.uniform(min_y, max_y, additional_points)
-        # Concatenate the new points with the existing arrays
+        # Concatenate the new points with the existing features
         x = np.concatenate((x, new_x))
         y = np.concatenate((y, new_y))
-        new_x_velocity = np.zeros(additional_points)
-        x_velocity = np.concatenate((x_velocity, new_x_velocity))
-        y_velocity = np.concatenate((y_velocity, new_x_velocity))
-        z_velocity = np.concatenate((z_velocity, new_x_velocity))
-        p = np.concatenate((p, new_x_velocity))
-        viscosity = np.concatenate((viscosity, new_x_velocity))
+        new_feature = np.zeros(additional_points)
+        x_velocity = np.concatenate((x_velocity, new_feature))
+        y_velocity = np.concatenate((y_velocity, new_feature))
+        z_velocity = np.concatenate((z_velocity, new_feature))
+        p = np.concatenate((p, new_feature))
+        viscosity = np.concatenate((viscosity, new_feature))
 
         velocities = np.column_stack((x_velocity, y_velocity, z_velocity))
         features = np.column_stack((velocities, p, viscosity, x, y))

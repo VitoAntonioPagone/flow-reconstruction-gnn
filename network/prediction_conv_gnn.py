@@ -273,25 +273,33 @@ def run_GCN(input_file, label_file):
     target_color_ranges = []
     for i in range(2):
         target_values = single_graph.y.cpu()[:, i].numpy() * 7.035423
-        target_color_ranges.append((np.min(target_values), np.max(target_values)))
+        color_range = (np.min(target_values), np.max(target_values))
+        target_color_ranges.append(color_range)
 
-    fig = plt.figure(figsize=(24, 10))
-    gs_main = gridspec.GridSpec(2, 8, width_ratios=[1, 0.05, 1, 0.05, 1, 0.05, 1, 0.05], wspace=0.1, hspace=0.1)
+    fig = plt.figure(figsize=(30, 10))  # Adjusted figure size for additional color bars
+    gs_main = gridspec.GridSpec(2, 10, width_ratios=[1, 0.05, 1, 0.05, 1, 0.05, 1, 0.05, 1, 0.05], wspace=0.1, hspace=0.1)
+
+    # Determine the color range for the target plot
+    target_color_ranges = []
+    for i in range(2):
+        target_values = single_graph.y.cpu()[:, i].numpy() * 7.035423
+        color_range = (np.min(target_values), np.max(target_values))
+        target_color_ranges.append(color_range)
 
     for i in range(2):
         for j in range(4):
             plot_col_index = j * 2
             ax = fig.add_subplot(gs_main[i, plot_col_index])
 
-            if j < 2:
+            if j < 2:  # Input and Output
                 values = single_graph.x.cpu()[:, i].numpy() * 7.035423 if j == 0 else output_graph.x.cpu()[:, i].numpy() * 7.035423
-                vmin, vmax = None, None
-            elif j == 2:
+                vmin, vmax = target_color_ranges[i]  # Use target plot's range
+            elif j == 2:  # Target
                 values = single_graph.y.cpu()[:, i].numpy() * 7.035423
                 vmin, vmax = target_color_ranges[i]
-            else:
-                values = output_graph.x.cpu()[:, i].numpy()  - single_graph.y.cpu()[:, i].numpy()
-                vmin, vmax = np.min(values), np.max(values)
+            elif j == 3:  # Difference
+                values = output_graph.x.cpu()[:, i].numpy() - single_graph.y.cpu()[:, i].numpy()
+                vmin, vmax = np.min(values), np.max(values)  # Separate range for difference plot
 
             grid_values = griddata(positions, values, (grid_x, grid_y), method='nearest')
             cmap = 'jet' if j < 3 else 'RdBu_r'
@@ -301,6 +309,7 @@ def run_GCN(input_file, label_file):
             ax.set_xticks([])
             ax.set_yticks([])
 
+            # Add color bar next to each plot
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="4%", pad=0.05)
             plt.colorbar(im, cax=cax)
@@ -309,6 +318,7 @@ def run_GCN(input_file, label_file):
     fig.savefig(filename, dpi=600, bbox_inches='tight', pad_inches=0.2)
     img = Image.open(filename)
     img.show()
+    
 if __name__ == "__main__":
     #input_file = f'../dataset_graph/original_data/onehundred/test_input_graphs_50/input_interpolated_input_50.pt'
     #label_file = f'../dataset_graph/original_data/onehundred/test_label_graphs_50/label_interpolated_label_50.pt'

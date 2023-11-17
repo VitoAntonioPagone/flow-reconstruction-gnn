@@ -318,7 +318,7 @@ def run_GCN(input_file, label_file):
     fig.savefig(filename, dpi=600, bbox_inches='tight', pad_inches=0.2)
     img = Image.open(filename)
     img.show()
-    
+    #### commit
 if __name__ == "__main__":
     #input_file = f'../dataset_graph/original_data/onehundred/test_input_graphs_50/input_interpolated_input_50.pt'
     #label_file = f'../dataset_graph/original_data/onehundred/test_label_graphs_50/label_interpolated_label_50.pt'

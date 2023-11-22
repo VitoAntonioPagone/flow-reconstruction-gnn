@@ -4,8 +4,7 @@ import h5py
 from math import sin, cos, sqrt, radians
 
 # Mat file name
-in_folder = 'files/'
-in_mat_file = 'OP-C_181114A005.mat'
+in_mat_file = 'files/OP-C_181114A005.mat'
 out_folder = 'out/'
 out_npz_file = 'test.npy'
 out_vtk_file = 'test.vtp'
@@ -47,8 +46,8 @@ def get_piston_vel(CAD):
 # --------------------------------
 
 # Load the .mat file
-# mat_data = scipy.io.loadmat(in_folder + in_mat_file)
-mat_data = h5py.File(in_folder+in_mat_file, 'r')
+# mat_data = scipy.io.loadmat(in_mat_file)
+mat_data = h5py.File(in_mat_file, 'r')
 
 # Structure of mat file
 # print(f"Structure of the mat file: {mat_data['Vel'].dtype}")

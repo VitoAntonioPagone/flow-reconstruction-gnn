@@ -278,9 +278,9 @@ def run_GCN(input_file, label_file, indices_rp_file, mat_file, apply_engine_mask
 
         vmin, vmax = target_values.min(), target_values.max()
         # Node wise prediction metrics
-        node_wise_rmse = rmse(predicted_features[indices_rp, i], single_graph.y[indices_rp, i])
+        node_wise_rmse = rmse(diffused_corrected_output[indices_rp, i] * UREF, single_graph.y[indices_rp, i]* UREF)
         print(f"Node-wise RMSE for {channels[i]}: {node_wise_rmse}")
-        node_wise_mae = mae(predicted_features[indices_rp, i], single_graph.y[indices_rp, i])
+        node_wise_mae = mae(diffused_corrected_output[indices_rp, i] * UREF, single_graph.y[indices_rp, i] * UREF)
         print(f"Node-wise MAE for {channels[i]}: {node_wise_mae}")
 
         im = axs[0, i].imshow(grid_input_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower',

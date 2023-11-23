@@ -4,12 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
-from multiprocessing import Pool
-from scipy.ndimage import gaussian_filter
-from scipy.ndimage import uniform_filter
+import h5py
+from scipy.ndimage import zoom
+
 
 from models import (red_GAT_98_6, GAT_98_8_SkipConnections,
                     GAT_98_3, GAT_98_4, GAT_98_6,
@@ -21,10 +20,11 @@ from models import (red_GAT_98_6, GAT_98_8_SkipConnections,
                     GAT_90_6_2heads
                     )
 
-MISSING_PERCENTAGE = 50
+MISSING_PERCENTAGE = 70
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 CHECKPOINT_PATH = '../trained_models_FP_full/FLUID_skip_GAT_8_98_epochs_50_lr_0.0001_batch_1.pth.tar'
 UREF = 7.035423
+
 
 def compare_positions(graph1, graph2, description):
     positions1 = graph1.x[:, -2:].cpu().numpy()
@@ -36,6 +36,7 @@ def compare_positions(graph1, graph2, description):
         position_difference = np.abs(positions1 - positions2)
         max_position_difference = np.max(position_difference)
         print(f"Maximum difference in node positions between {description}: {max_position_difference}")
+
 
 def rmse_per_node(pred, target):
     """Computes root mean squared error per node"""
@@ -159,7 +160,7 @@ def mae(pred, target):
     return torch.mean(torch.abs(pred - target))
 
 
-def run_GCN(input_file, label_file, indices_rp_file):
+def run_GCN(input_file, label_file, indices_rp_file, mat_file, apply_engine_mask):
     # Load dataset
     test_dataset = CustomDataset([input_file], [label_file])
 
@@ -256,8 +257,24 @@ def run_GCN(input_file, label_file, indices_rp_file):
         # Replace the current interpolation method with griddata
         grid_input_values = griddata(positions_input, input_values, (grid_x_input, grid_y_input), method='nearest')
         grid_output_values = griddata(positions_input, output_values, (grid_x_input, grid_y_input), method='nearest')
-
         grid_target_values = griddata(positions_target, target_values, (grid_x_target, grid_y_target), method='nearest')
+
+        # Apply engine mask
+        if apply_engine_mask:
+            mat_data = h5py.File(mat_file, 'r')
+            mask = mat_data['Vel']['mask']
+            mask_cad = mask[53, :]
+
+            scaling_factor_input = (grid_input_values.shape[0]/mask_cad.shape[0],
+                                    grid_input_values.shape[1]/mask_cad.shape[1])
+            scaling_factor_target = (grid_target_values.shape[0]/mask_cad.shape[0],
+                                     grid_target_values.shape[1]/mask_cad.shape[1])
+            zoom_input_mask_cad = zoom(mask_cad, zoom=scaling_factor_input, order=0, mode='nearest')
+            zoom_target_mask_cad = zoom(mask_cad, zoom=scaling_factor_target, order=0, mode='nearest')
+
+            grid_input_values = np.where(zoom_input_mask_cad[:, ::-1] < 0.99, np.nan, grid_input_values)
+            grid_output_values = np.where(zoom_input_mask_cad[:, ::-1] < 0.99, np.nan, grid_output_values)
+            grid_target_values = np.where(zoom_target_mask_cad[:, ::-1] < 0.99, np.nan, grid_target_values)
 
         vmin, vmax = target_values.min(), target_values.max()
         # Node wise prediction metrics
@@ -266,7 +283,7 @@ def run_GCN(input_file, label_file, indices_rp_file):
         node_wise_mae = mae(predicted_features[indices_rp, i], single_graph.y[indices_rp, i])
         print(f"Node-wise MAE for {channels[i]}: {node_wise_mae}")
 
-        im = axs[0, i].imshow(grid_input_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower',
+        im = axs[0, i].imshow(grid_input_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower',
                               cmap='jet', vmin=vmin, vmax=vmax)
         axs[0, i].set_title(f'Input {channels[i]}')
         axs[0, i].set_xticks([])
@@ -274,7 +291,7 @@ def run_GCN(input_file, label_file, indices_rp_file):
         cbar1 = fig.colorbar(im, ax=axs[0, i])
         cbar1.ax.tick_params(labelsize=8)
 
-        im = axs[1, i].imshow(grid_output_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower',
+        im = axs[1, i].imshow(grid_output_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower',
                               cmap='jet', vmin=vmin, vmax=vmax)
         axs[1, i].set_title(f'Output {channels[i]}')
         axs[1, i].set_xticks([])
@@ -282,7 +299,7 @@ def run_GCN(input_file, label_file, indices_rp_file):
         cbar2 = fig.colorbar(im, ax=axs[1, i])
         cbar2.ax.tick_params(labelsize=8)
 
-        im = axs[2, i].imshow(grid_target_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower',
+        im = axs[2, i].imshow(grid_target_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower',
                               cmap='jet', vmin=vmin, vmax=vmax)
         axs[2, i].set_title(f'Target {channels[i]}')
         axs[2, i].set_xticks([])
@@ -300,8 +317,10 @@ def run_GCN(input_file, label_file, indices_rp_file):
 
 if __name__ == "__main__":
     # Files
-    input_file = f'../PIV_data/test_graphs/test_input_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_input_SR.pt'
-    label_file = f'../PIV_data/test_graphs/test_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_label_SR.pt'
-    indices_rp_file = f'../PIV_data/labels_npz_inputs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_indices_rp.npy'
+    input_file = f'../PIV_data/test_graphs/test_input_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_full_input_SR.pt'
+    label_file = f'../PIV_data/test_graphs/test_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_full_label_SR.pt'
+    indices_rp_file = f'../PIV_data/labels_npz_inputs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_full_indices_rp.npy'
+    mat_file = '../../piv_data/files/OP-C_181114A005.mat'
+    apply_engine_mask = True
 
-    run_GCN(input_file, label_file, indices_rp_file)
+    run_GCN(input_file, label_file, indices_rp_file, mat_file, apply_engine_mask)

@@ -1,6 +1,5 @@
 import sys
 import time
-# Tries
 import numpy as np
 import vtk as vtk
 sys.path.append('../src/')
@@ -12,7 +11,8 @@ fnamevtk = 'slice01.vtp'
 
 # Reference values for conversion:
 xref = 0.086          # [m]
-uref = 11.72571875    # [m/s] max piston speed, 2500 rpm
+uref   = 7.035423     # [m/s] max piston speed at 1500 rpm
+# uref = 11.72571875    # [m/s] max piston speed at 2500 rpm
 tref = 333.15         # [K]
 
 
@@ -30,5 +30,5 @@ points = np.array(data_in.GetPoints().GetData())
 x_vel = np.array(data_in.GetPointData().GetArray("x_velocity"))
 y_vel = np.array(data_in.GetPointData().GetArray("y_velocity"))
 z_vel = np.array(data_in.GetPointData().GetArray("z_velocity"))
+pres = np.array(data_in.GetPointData().GetArray("pressure"))
 temp = np.array(data_in.GetPointData().GetArray("temperature"))
-

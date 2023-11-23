@@ -1,19 +1,51 @@
 import os
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-from models import GAT_98_10,GCN_98_10, GraphSAGE_98_10, GCN_95_8,GraphSAGE_95_8,GCN_90_6_Double,GraphSAGE_90_6_Double, GAT_50, GCN_50, GraphSAGE_95, GraphSAGE_99, GAT_90_6_Double, GAT_95_8, GAT_98_8_Modified, GAT_98_10
-import torch_geometric
+from models import (red_GAT_98_6,GAT_98_8_SkipConnections,
+    GAT_98_3, GAT_98_4,GAT_98_6,
+    GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double, GraphSAGE_90_6_Double,
+    GAT_98_10, GAT_98_8, GAT_90_6_Double, GAT_95_12,
+    GAT_95_10, GAT_95_8, GraphSAGE_90_8, GATv2_90_8, GAT_90_8,
+    GAT_90_8_Increased, GAT_90_3, GAT_90_3_2heads, GAT_50, GCN_50,
+    GAT_90, GraphSAGE_90, GCN_90, GraphSAGE_95, GraphSAGE_99, GAT_90_6,
+    GAT_90_6_2heads
+)
 from torch_geometric.utils import to_networkx
 import networkx as nx
 from collections import defaultdict
 import glob
+import matplotlib.pyplot as plt
+import csv
 
 MISSING_PERCENTAGE = 98
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models_FP/FP_GAT_10_98_epochs_50_lr_0.0001_batch_1.pth.tar' 
+CHECKPOINT_PATH = '../trained_models_FP_full/FLUID_skip_GAT_8_98_epochs_50_lr_0.0001_batch_1.pth.tar' 
+
+def mae_per_component(pred, target):
+    """
+    Computes the node-wise MAE for each component, averaged over all nodes.
+    """
+    # Calculate absolute differences for each node
+    abs_diff_x = torch.abs(pred[:, 0] - target[:, 0])
+    abs_diff_y = torch.abs(pred[:, 1] - target[:, 1])
+
+    # Average over all nodes
+    mae_x = torch.mean(abs_diff_x)
+    mae_y = torch.mean(abs_diff_y)
+
+    return mae_x.item(), mae_y.item()
+
+def compare_positions(graph1, graph2, description):
+    positions1 = graph1.x[:, -2:].cpu().numpy()
+    positions2 = graph2.x[:, -2:].cpu().numpy()
+
+    if positions1.shape != positions2.shape:
+        print(f"Mismatch in the number of nodes between {description}.")
+    else:
+        position_difference = np.abs(positions1 - positions2)
+        max_position_difference = np.max(position_difference)
+        print(f"Maximum difference in node positions between {description}: {max_position_difference}")
 
 def print_graph_info(graph):
     print("Graph Information:")
@@ -73,11 +105,12 @@ def load_checkpoint(model, checkpoint_path):
     
     model.load_state_dict(new_state_dict)
 
+def rmse_per_component(pred, target):
 
+    rmse_x = torch.sqrt(torch.mean((pred[:, 0] - target[:, 0]) ** 2))
+    rmse_y = torch.sqrt(torch.mean((pred[:, 1] - target[:, 1]) ** 2))
 
-def rmse(pred, target):
-    """Computes root mean squared error"""
-    return torch.sqrt(torch.mean((pred - target) ** 2))
+    return rmse_x.item(), rmse_y.item()
 
 
 def mae(pred, target):
@@ -103,159 +136,104 @@ def run_GCN(input_file, label_file):
     # Assuming that the positions are the last 2 features in the feature vector
     positions = single_graph.x[:, -2:].numpy()
 
-    # Print min and max of the positions
-    print(f'Min x position: {np.min(positions[:, 0])}')
-    print(f'Max x position: {np.max(positions[:, 0])}')
-    print(f'Min y position: {np.min(positions[:, 1])}')
-    print(f'Max y position: {np.max(positions[:, 1])}')
-
-    ######## MODEL ########
-    model = GAT_98_10()
-    ######## MODEL ########
-    
+    model = GAT_98_8_SkipConnections()
     model.to(DEVICE)
-
-    # Load trained weights
     load_checkpoint(model, CHECKPOINT_PATH)
 
-    model.eval() 
+    model.eval()
+
+    # Save original position features
+    original_positions = single_graph.x[:, -2:].clone()
 
     # Move data to the correct device
-    single_graph.x = single_graph.x.to(DEVICE)
-    single_graph.edge_index = single_graph.edge_index.to(DEVICE)
-    single_graph.y = single_graph.y.to(DEVICE)
+    single_graph.to(DEVICE)
 
     # Perform prediction
     with torch.no_grad():
-        out = model(single_graph)
+        predicted_features = model(single_graph)
 
-    # Update only nodes where the fourth feature is set to 1.0
-    indicator_nodes = single_graph.x[:, 3] == 1.0
-    out[~indicator_nodes, :3] = single_graph.x[~indicator_nodes, :3]
+    # Replace last two features of the output with original position features
+    predicted_features[:, -2:] = original_positions.to(DEVICE)
 
+    # Create a new graph for output comparison
+    output_graph = single_graph.clone()
+    output_graph.x = predicted_features
+
+
+    print("\nComparing node positions between output and target graphs:")
+    compare_positions(output_graph, label_graph, "output and target graphs")
 
     # Check if output is entirely zero
-    print("Output zero check:", torch.all(out == 0).item())
+    print("Output zero check:", torch.all(output_graph.x == 0).item())
 
-    # Define grid size
-    grid_size = 256   # Increased for a smoother plot
+    print("\nComparing node positions between input and target graphs:")
+    compare_positions(single_graph, label_graph, "input and target graphs")
 
-    # Get minimum and maximum position values
-    min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
-    max_x, max_y = np.max(positions[:, 0]), np.max(positions[:, 1])
+    rmse_values, mae_values = [], []
 
-    # Create the grid
-    grid_x, grid_y = np.mgrid[min_x:max_x:grid_size*1j, min_y:max_y:grid_size*1j]
-
-    def rmse(pred, target):
-        """Computes root mean squared error"""
-        return torch.sqrt(torch.mean((pred - target) ** 2))
-
-    fig, axs = plt.subplots(4, 3, figsize=(10, 10))  # Changed the subplot configuration
-    fig.subplots_adjust(hspace=0.5, wspace=0.5) 
-    
-    def mae(pred, target):
-        """Computes mean absolute error"""
-        return torch.mean(torch.abs(pred - target))
-
-    # Variables to keep track of min and max difference across all channels
-    diff_min = np.inf
-    diff_max = -np.inf
-
-    channels = ['x-velocity', 'y-velocity', 'z-velocity']
-    rmse_values = []
-    mae_values = []
-    for i in range(3):
-        input_values = single_graph.x.cpu()[:, i].numpy() * 7.035423
-        output_values = out.cpu()[:, i].numpy() * 7.035423
+    target_color_ranges = []
+    for i in range(2):
         target_values = single_graph.y.cpu()[:, i].numpy() * 7.035423
-        grid_input_values  = griddata(positions, input_values, (grid_x, grid_y), method='nearest')
-        grid_output_values = griddata(positions, output_values, (grid_x, grid_y), method='nearest')
-        grid_target_values = griddata(positions, target_values, (grid_x, grid_y), method='nearest')
-        vmin, vmax = target_values.min(), target_values.max()
-        pixel_wise_rmse = rmse(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
-        print(f"Pixel-wise RMSE for {channels[i]}: {pixel_wise_rmse}")
-        pixel_wise_mae = mae(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
-        print(f"Pixel-wise MAE for {channels[i]}: {pixel_wise_mae}")
-        
-        pixel_wise_rmse = rmse(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
-        rmse_values.append(pixel_wise_rmse.item())
-        pixel_wise_mae = mae(torch.tensor(grid_output_values), torch.tensor(grid_target_values))
-        mae_values.append(pixel_wise_mae.item())
+        color_range = (np.min(target_values), np.max(target_values))
+        target_color_ranges.append(color_range)
 
-        im = axs[0, i].imshow(grid_input_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
-        axs[0, i].set_title(f'Input {channels[i]}')
-        axs[0, i].set_xticks([])
-        axs[0, i].set_yticks([])
-        cbar1 = fig.colorbar(im, ax=axs[0, i])
-        cbar1.ax.tick_params(labelsize=8)
+        # Calculate RMSE and MAE for both components
+        rmse_x, rmse_y = rmse_per_component(predicted_features[:, :2]*7.035423, single_graph.y[:, :2]*7.035423)
+        mae_x, mae_y = mae_per_component(predicted_features[:, :2]*7.035423, single_graph.y[:, :2]*7.035423)
 
-        im = axs[1, i].imshow(grid_output_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
-        axs[1, i].set_title(f'Output {channels[i]}')
-        axs[1, i].set_xticks([])
-        axs[1, i].set_yticks([])
-        cbar2 = fig.colorbar(im, ax=axs[1, i])
-        cbar2.ax.tick_params(labelsize=8)
+        # Append the values to the respective lists
+        rmse_values.append(rmse_x)
+        rmse_values.append(rmse_y)
+        mae_values.append(mae_x)
+        mae_values.append(mae_y)
 
-        im = axs[2, i].imshow(grid_target_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=vmin, vmax=vmax)
-        axs[2, i].set_title(f'Target {channels[i]}')
-        axs[2, i].set_xticks([])
-        axs[2, i].set_yticks([])
-        cbar3 = fig.colorbar(im, ax=axs[2, i])
-        cbar3.ax.tick_params(labelsize=8)
-
-        diff_min = min(diff_min, np.min(grid_output_values - grid_target_values))
-        diff_max = max(diff_max, np.max(grid_output_values - grid_target_values))
-
-    for i in range(3):
-        # Use the scaled data for calculating the difference
-        scaled_output_values = out.cpu()[:, i].numpy() * 7.035423
-        scaled_target_values = single_graph.y.cpu()[:, i].numpy() * 7.035423
-
-        # Calculate the difference using scaled data
-        diff_values = scaled_output_values - scaled_target_values
-
-        # Then create the grid for this difference
-        grid_diff_values = griddata(positions, diff_values, (grid_x, grid_y), method='nearest')
-
-        im = axs[3, i].imshow(grid_diff_values.T[::-1], extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet', vmin=diff_min, vmax=diff_max)
-        axs[3, i].set_title(f'Difference {channels[i]}')
-        axs[3, i].set_xticks([])
-        axs[3, i].set_yticks([])
-        cbar4 = fig.colorbar(im, ax=axs[3, i], orientation='vertical')
-        cbar4.ax.tick_params(labelsize=8)
-        plt.close(fig)
+        # Corrected print statement
+        print(f"Component {'x-velocity' if i == 0 else 'y-velocity'}: RMSE = {rmse_x if i == 0 else rmse_y}, MAE = {mae_x if i == 0 else mae_y}")
 
     return rmse_values, mae_values
 
 if __name__ == "__main__":
+
+    stats = {
+        'rmse': defaultdict(list),
+        'mae': defaultdict(list)
+            }
+    
     print(f"Missing Data Percentage: {MISSING_PERCENTAGE}%")
     print(f"Checkpoint Name: {os.path.basename(CHECKPOINT_PATH)}")
     print("---------------------------------------------------")
-    # Specify the paths to the two folders containing the input and label files
-    input_folder = f'../dataset_graph/training/test_input_graphs_{MISSING_PERCENTAGE}'
-    label_folder = f'../dataset_graph/training/test_graphs_{MISSING_PERCENTAGE}'
-
+    input_folder = f'../dataset_graph_full/training_FP/test_input_graphs_{MISSING_PERCENTAGE}'
+    label_folder = f'../dataset_graph_full/training_FP/test_graphs_{MISSING_PERCENTAGE}'
 
     input_files = glob.glob(f"{input_folder}/*.pt")
     label_files = glob.glob(f"{label_folder}/*.pt")
-
 
     input_files.sort()
     label_files.sort()
 
     rmse_accumulator = defaultdict(list)
     mae_accumulator = defaultdict(list)
+    results = []
+
     for input_file, label_file in zip(input_files, label_files):
         print(f"Analyzing input file: {input_file} and label file: {label_file}")
         rmse_values, mae_values = run_GCN(input_file, label_file)
-        for i, (rmse_val, mae_val) in enumerate(zip(rmse_values, mae_values)):
-            rmse_accumulator[i].append(rmse_val)
-            mae_accumulator[i].append(mae_val)
+
+        results.append((rmse_values[0], rmse_values[1], mae_values[0], mae_values[1]))
 
 
-    # Compute average RMSE and MAE values
     avg_rmse = {i: sum(vals) / len(vals) for i, vals in rmse_accumulator.items()}
     avg_mae = {i: sum(vals) / len(vals) for i, vals in mae_accumulator.items()}
-    print("Average RMSE:", avg_rmse)
-    print("Average MAE:", avg_mae)
+
+    for component in avg_rmse:
+        component_name = 'x-velocity' if component % 2 == 0 else 'y-velocity'
+        print(f"Average RMSE for {component_name}: {avg_rmse[component]:.4f}")
+        print(f"Average MAE for {component_name}: {avg_mae[component]:.4f}")
+
+    # Write the results to a CSV file
+    with open('velocity_gnn.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['RMSE X Velocity', 'RMSE Y Velocity', 'MAE X Velocity', 'MAE Y Velocity'])
+        writer.writerows(results)
+
+    print("RMSE and MAE values for each input slice saved to 'velocity_errors_gnn.csv'")

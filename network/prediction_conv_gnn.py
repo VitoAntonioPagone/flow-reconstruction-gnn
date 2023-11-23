@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from torch.utils.data import Dataset as TorchDataset
-import torch_geometric
 from torch_geometric.utils import to_networkx
 import networkx as nx
 from multiprocessing import Pool
@@ -40,10 +39,31 @@ def compare_positions(graph1, graph2, description):
         max_position_difference = np.max(position_difference)
         print(f"Maximum difference in node positions between {description}: {max_position_difference}")
 
-def rmse_per_component(pred, target):
+def mae_per_component(pred, target):
+    """
+    Computes the node-wise MAE for each component, averaged over all nodes.
+    """
+    # Calculate absolute differences for each node
+    abs_diff_x = torch.abs(pred[:, 0] - target[:, 0])
+    abs_diff_y = torch.abs(pred[:, 1] - target[:, 1])
 
-    rmse_x = torch.sqrt(torch.mean((pred[:, 0] - target[:, 0]) ** 2))
-    rmse_y = torch.sqrt(torch.mean((pred[:, 1] - target[:, 1]) ** 2))
+    # Average over all nodes
+    mae_x = torch.mean(abs_diff_x)
+    mae_y = torch.mean(abs_diff_y)
+
+    return mae_x.item(), mae_y.item()
+
+def rmse_per_component(pred, target):
+    """
+    Computes the node-wise RMSE for each component, averaged over all nodes.
+    """
+    # Calculate squared differences for each node
+    squared_diff_x = (pred[:, 0] - target[:, 0]) ** 2
+    squared_diff_y = (pred[:, 1] - target[:, 1]) ** 2
+
+    # Average over all nodes and then take the square root
+    rmse_x = torch.sqrt(torch.mean(squared_diff_x))
+    rmse_y = torch.sqrt(torch.mean(squared_diff_y))
 
     return rmse_x.item(), rmse_y.item()
 
@@ -245,10 +265,7 @@ def run_GCN(input_file, label_file):
     output_graph = single_graph.clone()
     output_graph.x = predicted_features
 
-    avg_rmse_x, avg_rmse_y = rmse_per_component(predicted_features[:, :2]*7.035423, single_graph.y[:, :2]*7.035423)
 
-    print(f"Average RMSE for x-velocity: {avg_rmse_x}, y-velocity: {avg_rmse_y}")
-    # Compare positions between output and target graphs
     print("\nComparing node positions between output and target graphs:")
     compare_positions(output_graph, label_graph, "output and target graphs")
 
@@ -259,7 +276,7 @@ def run_GCN(input_file, label_file):
     compare_positions(single_graph, label_graph, "input and target graphs")
 
     # Define grid size
-    grid_size = 700   # Increased for a smoother plot
+    grid_size = 700   
 
     # Get minimum and maximum position values
     min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
@@ -269,22 +286,30 @@ def run_GCN(input_file, label_file):
     grid_x, grid_y = np.mgrid[min_x:max_x:grid_size*1j, min_y:max_y:grid_size*1j]
 
     channels = ['x-velocity', 'y-velocity']
+    rmse_values, mae_values = [], []
 
     target_color_ranges = []
     for i in range(2):
         target_values = single_graph.y.cpu()[:, i].numpy() * 7.035423
         color_range = (np.min(target_values), np.max(target_values))
         target_color_ranges.append(color_range)
+
+        # Calculate RMSE and MAE for both components
+        rmse_x, rmse_y = rmse_per_component(predicted_features[:, :2]*7.035423, single_graph.y[:, :2]*7.035423)
+        mae_x, mae_y = mae_per_component(predicted_features[:, :2]*7.035423, single_graph.y[:, :2]*7.035423)
+
+        # Append the values to the respective lists
+        rmse_values.append(rmse_x)
+        rmse_values.append(rmse_y)
+        mae_values.append(mae_x)
+        mae_values.append(mae_y)
+
+        # Corrected print statement
+        print(f"Component {'x-velocity' if i == 0 else 'y-velocity'}: RMSE = {rmse_x if i == 0 else rmse_y}, MAE = {mae_x if i == 0 else mae_y}")
+
 
     fig = plt.figure(figsize=(30, 10))  # Adjusted figure size for additional color bars
     gs_main = gridspec.GridSpec(2, 10, width_ratios=[1, 0.05, 1, 0.05, 1, 0.05, 1, 0.05, 1, 0.05], wspace=0.1, hspace=0.1)
-
-    # Determine the color range for the target plot
-    target_color_ranges = []
-    for i in range(2):
-        target_values = single_graph.y.cpu()[:, i].numpy() * 7.035423
-        color_range = (np.min(target_values), np.max(target_values))
-        target_color_ranges.append(color_range)
 
     for i in range(2):
         for j in range(4):
@@ -313,11 +338,13 @@ def run_GCN(input_file, label_file):
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="4%", pad=0.05)
             plt.colorbar(im, cax=cax)
-
+    
     filename = '../results/{}_plot.png'.format(os.path.basename(CHECKPOINT_PATH).split('.')[0])
     fig.savefig(filename, dpi=600, bbox_inches='tight', pad_inches=0.2)
     img = Image.open(filename)
     img.show()
+
+    return rmse_values, mae_values
     #### commit
 if __name__ == "__main__":
     #input_file = f'../dataset_graph/original_data/onehundred/test_input_graphs_50/input_interpolated_input_50.pt'

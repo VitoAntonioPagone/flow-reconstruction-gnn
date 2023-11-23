@@ -1,7 +1,7 @@
 import os
 import glob
 import numpy as np
-#import vtk
+import vtk
 from scipy.interpolate import griddata
 from pathlib import Path
 import shutil
@@ -36,7 +36,6 @@ def get_dynamic_viscosity(temp):
     nu = nu / nu_ref
     return nu
 
-'''
 def read_vtp_slice(file_name):
     print(f"Reading VTP slice from {file_name}...")
     reader = vtk.vtkXMLPolyDataReader()
@@ -72,7 +71,6 @@ def vtp_to_npz(input_folder, output_folder):
         np.savez(output_file, **data)
         print(f"Converted {vtp_file} to {output_file}")
     print("VTP to NPZ conversion complete.")
-'''
 
 def interpolate_data(input_folder, output_folder):
     print(f"Interpolating files in folder: {input_folder}")
@@ -155,25 +153,27 @@ def tran_val_split(train_dir, val_dir):
     print(f"Finished splitting training and validation data for folder: {train_dir}")
 
 if __name__ == "__main__":
+    '''
     print("Starting to process TRAIN data...")
-    #vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
+    vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
     interpolate_data(TRAIN_OUTPUT_FOLDER, INTERPOLATED_TRAIN_OUTPUT_FOLDER)
     print("Finished processing TRAIN data.")
-
+    '''
     print("Starting to process TEST data...")
     #vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
     interpolate_data(TEST_OUTPUT_FOLDER, INTERPOLATED_TEST_OUTPUT_FOLDER)
     print("Finished processing TEST data.")
-
+    '''
     print("Starting to create inputs and labels for TRAIN data...")
     create_inputs_labels(INTERPOLATED_TRAIN_OUTPUT_FOLDER, OUTPUT_TRAIN_INPUTS_DIR, OUTPUT_TRAIN_LABELS_DIR, PERCENT_TO_REMOVE)
     print("Finished creating inputs and labels for TRAIN data.")
-
+    '''
     print("Starting to create inputs and labels for TEST data...")
     create_inputs_labels(INTERPOLATED_TEST_OUTPUT_FOLDER, OUTPUT_TEST_INPUTS_DIR, OUTPUT_TEST_LABELS_DIR, PERCENT_TO_REMOVE)
     print("Finished creating inputs and labels for TEST data.")
-
+    '''
     print("Starting to split TRAIN and VAL data...")
     tran_val_split(OUTPUT_TRAIN_INPUTS_DIR, OUTPUT_VAL_INPUTS_DIR)
     tran_val_split(OUTPUT_TRAIN_LABELS_DIR, OUTPUT_VAL_LABELS_DIR)
-    print("Finished splitting TRAIN and VAL data.")
+    print("Finished splitting TRAIN and VAL data.") 
+    '''

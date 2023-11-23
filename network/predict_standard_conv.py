@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset as TorchDataset
 
-MISSING_PERCENTAGE = 95
+MISSING_PERCENTAGE = 98
 
 
 class FlowDataset(TorchDataset):
@@ -53,9 +53,8 @@ def calculate_mae(pred, target):
 
 def run_autoencoder(input_file, label_file):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    CHECKPOINT_FILE = '../trained_models/ConvNet_95_epochs_500__alpha_0.1_beta_0.1_lr_0.0001_batch_64.pth.tar'
-    TEST_INPUT_FILE = input_file
-    TEST_LABEL_FILE = label_file
+    CHECKPOINT_FILE = '../trained_models/ConvNet_98_epochs_100__alpha_0.1_beta_0.1_lr_0.0001_batch_32.pth.tar'
+
 
     def reconstruct_flow(model, input_tensor, missing_mask_tensor):
         with torch.no_grad():
@@ -80,7 +79,7 @@ def run_autoencoder(input_file, label_file):
         # Load pre-trained model 
 
         ####### MODEL #######
-        model = ConvNet_95().to(DEVICE)
+        model = ConvNet_98().to(DEVICE)
         ####### MODEL #######
         
         load_checkpoint(torch.load(CHECKPOINT_FILE, map_location=torch.device(DEVICE)), model)
@@ -90,13 +89,13 @@ def run_autoencoder(input_file, label_file):
         fig, axes = plt.subplots(4, 3, figsize=(10, 10))  # Changed the subplot configuration
         fig.subplots_adjust(hspace=0.5, wspace=0.5) 
 
-        channel_names = ['x-velocity', 'y-velocity', 'z-velocity']
+        channel_names = ['x-velocity', 'y-velocity']
 
         # Initialize lists to store the RMSEs and MAEs
         rmses = []
         maes = []
         
-        for i in range(3):
+        for i in range(2):
             reconstructed_flow_tensor_denorm = reconstructed_flow_tensor[0, i] * 7.035423
             test_label_tensor_denorm = test_label_tensor[0, i] * 7.035423
             test_input_tensor_denorm = test_input_tensor[0, i] * 7.035423

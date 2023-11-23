@@ -2,7 +2,7 @@ import os
 import glob
 import shutil
 import numpy as np
-import vtk
+#import vtk
 import random
 from torch import Tensor
 import torch
@@ -28,7 +28,7 @@ RANDOM_SEED = 1
 VALIDATION_SPLIT = 0.1
 MISSING_PERCENTAGE = 98
 NUM_NEIGHBOURS = 8
-SAVE_GRAPHS_FOLDER = "../dataset_graph_full/training_FP_noisy"
+SAVE_GRAPHS_FOLDER = "../dataset_graph_full/training_FP"
 
 # Gaussian noise parameters
 mean = 0
@@ -51,7 +51,7 @@ def get_dynamic_viscosity(temp):
     nu = nu / nu_ref
     return nu
 
-
+'''
 def read_vtp_slice(file_name):
     print(f"Reading VTP slice from {file_name}...")
     reader = vtk.vtkXMLPolyDataReader()
@@ -71,7 +71,8 @@ def read_vtp_slice(file_name):
         'viscosity': viscosity
     }
     return data_out
-
+'''
+'''
 def vtp_to_npz(input_folder, output_folder):
     print(f"Converting VTP files in {input_folder} to NPZ format...")
     
@@ -87,7 +88,7 @@ def vtp_to_npz(input_folder, output_folder):
         np.savez(output_file, **data)
         print(f"Converted {vtp_file} to {output_file}")
     print("VTP to NPZ conversion complete.")
-
+'''
 def train_validation_split(train_dir, validation_dir):
     _, _, files = next(os.walk(train_dir))
     files = natsorted([f for f in files if f.endswith('.npz')])
@@ -192,7 +193,7 @@ def create_and_save_graph(features, coordinates, num_neighbours, folder, file_ba
     # Only propagate features for input data, not for labels
     if is_input:
 
-        features[:, :3] = add_gaussian_noise_to_features(features[:, :3], mean, std_dev)
+        #features[:, :3] = add_gaussian_noise_to_features(features[:, :3], mean, std_dev)
 
         velocity_features = features[:, :3]  # Assuming velocity features are the first 3
         other_features = features[:, 3:]
@@ -282,7 +283,7 @@ def propagate_features(graph, features, num_iterations):
 
     print("Feature propagation complete.")
     return propagated_features
-'''
+
 def create_graphs(data_folder, num_neighbours, save_folder, is_input):
     for i, file in enumerate(os.listdir(data_folder)):
         if file.endswith(".npz"):
@@ -304,12 +305,12 @@ def create_graphs(data_folder, num_neighbours, save_folder, is_input):
             print(f"Creating graphs from file: {file_path}")
             features, coordinates = load_npz_data(file_path)
             create_and_save_graph(features, coordinates, num_neighbours, save_folder, file_base, is_input)
-
+'''
 # Main script
 if __name__ == "__main__":
     # Convert train and test vtp files to npz files
     #vtp_to_npz(TRAIN_INPUT_FOLDER, TRAIN_OUTPUT_FOLDER)
-    vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
+    #vtp_to_npz(TEST_INPUT_FOLDER, TEST_OUTPUT_FOLDER)
     # Split train data into train and validation
     #train_validation_split(TRAIN_OUTPUT_FOLDER, VALIDATION_DIR_INPUT)
     # Process npz files

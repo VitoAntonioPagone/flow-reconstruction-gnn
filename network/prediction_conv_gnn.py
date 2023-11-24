@@ -13,7 +13,7 @@ from scipy.ndimage import uniform_filter
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from PIL import Image
-
+import scienceplots
 from models import (red_GAT_98_6,GAT_98_8_SkipConnections,
     GAT_98_3, GAT_98_4,GAT_98_6,
     GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double, GraphSAGE_90_6_Double,
@@ -23,6 +23,8 @@ from models import (red_GAT_98_6,GAT_98_8_SkipConnections,
     GAT_90, GraphSAGE_90, GCN_90, GraphSAGE_95, GraphSAGE_99, GAT_90_6,
     GAT_90_6_2heads
 )
+plt.style.use('science')
+
 ##commit
 MISSING_PERCENTAGE = 98
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

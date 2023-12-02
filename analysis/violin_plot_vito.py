@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import scienceplots
-
+##commits
 plt.style.use('science')
 data = pd.read_csv('../network/velocity_errors_cnn.csv', delim_whitespace=True)
 colors = ['blue', 'green', 'orange', 'red']

@@ -2,8 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn import MultiheadAttention, Module, Linear, ReLU, Dropout
 import torchvision.transforms.functional as TF
-from torch_geometric.nn import (GCNConv, SAGEConv, GATConv, GravNetConv, 
-                                GINConv, PNAConv, ChebConv, AGNNConv, ARMAConv)
+from torch_geometric.nn import GATConv
 from torch_geometric.data import Data
 from torch_geometric.data import Batch
 from torch_geometric.nn import conv

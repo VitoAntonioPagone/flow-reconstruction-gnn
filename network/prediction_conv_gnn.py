@@ -14,18 +14,10 @@ import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from PIL import Image
 import scienceplots
-from models import (red_GAT_98_6,GAT_98_8_SkipConnections,
-    GAT_98_3, GAT_98_4,GAT_98_6,
-    GCN_95_8, GraphSAGE_95_8, GCN_90_6_Double, GraphSAGE_90_6_Double,
-    GAT_98_10, GAT_98_8, GAT_90_6_Double, GAT_95_12,
-    GAT_95_10, GAT_95_8, GraphSAGE_90_8, GATv2_90_8, GAT_90_8,
-    GAT_90_8_Increased, GAT_90_3, GAT_90_3_2heads, GAT_50, GCN_50,
-    GAT_90, GraphSAGE_90, GCN_90, GraphSAGE_95, GraphSAGE_99, GAT_90_6,
-    GAT_90_6_2heads
+from models import (GAT_98_8_SkipConnections
 )
 plt.style.use('science')
 
-##commit
 MISSING_PERCENTAGE = 98
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 CHECKPOINT_PATH = '../trained_models_FP_full/FLUID_skip_GAT_8_98_epochs_50_lr_0.0001_batch_1.pth.tar' 
@@ -347,15 +339,9 @@ def run_GCN(input_file, label_file):
     img.show()
 
     return rmse_values, mae_values
-    #### commit
+
 if __name__ == "__main__":
-    #input_file = f'../dataset_graph/original_data/onehundred/test_input_graphs_50/input_interpolated_input_50.pt'
-    #label_file = f'../dataset_graph/original_data/onehundred/test_label_graphs_50/label_interpolated_label_50.pt'
-    #input_file = f'../dataset_graph/training_FP/test_input_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_input.pt'
-    #label_file = f'../dataset_graph/training_FP/test_graphs_{MISSING_PERCENTAGE}/cyc11_CAD618_Y18_Z0_X1_label.pt'
-    #input_file = f'../PIV_data/test_graphs/test_input_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_input.pt'
-    #label_file = f'../PIV_data/test_graphs/test_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_label.pt'
-    label_file  = f'../dataset_graph_full/training_FP/test_graphs_98/cyc09_CAD635_Y8_Z1_X1_label.pt'
-    input_file  = f'../dataset_graph_full/training_FP/test_input_graphs_98/cyc09_CAD635_Y8_Z1_X1_input.pt'
+    label_file  = f'../dataset_graph_full/training_FP/test_graphs_98/cyc11_CAD660_Y7_Z0_X0_label.pt'
+    input_file  = f'../dataset_graph_full/training_FP/test_input_graphs_98/cyc11_CAD660_Y7_Z0_X0_input.pt'
     run_GCN(input_file, label_file)
     

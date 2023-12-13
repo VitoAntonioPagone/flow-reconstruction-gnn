@@ -3,6 +3,8 @@ from torch.nn import Module
 import torch.nn as nn
 import torch.nn.functional as F
 import torch_scatter
+from torch_geometric.utils import get_laplacian
+from torch_scatter import scatter_add
 
 class TVLoss(nn.Module):
     def __init__(self, TVLoss_weight=1):
@@ -67,11 +69,6 @@ class NavierStokesLoss(nn.Module):
         continuity = torch.abs(du_dx + dv_dy)
 
         return (continuity + momentum_u + momentum_v).mean()
-
-import torch
-import torch_scatter
-from torch_geometric.utils import get_laplacian
-from torch_scatter import scatter_add
 
 class GraphNavierStokesLoss(torch.nn.Module):
     def __init__(self):

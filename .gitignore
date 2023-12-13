@@ -28,3 +28,7 @@ network/network_images.py
 /PIV_data
 /dataset_graph_full
 *.csv
+*.txt
+*.jpg
+*.npy
+*.pt

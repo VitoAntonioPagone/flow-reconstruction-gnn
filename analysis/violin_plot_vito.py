@@ -1,16 +1,29 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import scienceplots
-##commits
+
 plt.style.use('science')
-data = pd.read_csv('../network/velocity_errors_cnn.csv', delim_whitespace=True)
-colors = ['blue', 'green', 'orange', 'red']
-fig, ax = plt.subplots(figsize=(10, 6))
-box = ax.boxplot([data['x_rmse'], data['x_mae'], data['y_rmse'], data['y_mae']],
-                 labels=['x_rmse', 'x_mae', 'y_rmse', 'y_mae'],
+
+data_cnn = pd.read_csv('L2velocity_errors_gnn.csv')
+
+fig, ax = plt.subplots(figsize=(6, 6))
+
+box = ax.boxplot(data_cnn['MAE Velocity Magnitude'],
+                 labels=['GACN (L2)'],
                  patch_artist=True)
-ax.set_title('Box Plots for Each Metric', fontsize=16)
-ax.set_ylabel('Prediction error [m/s]', fontsize=16)
-for patch, color in zip(box['boxes'], colors):
-    patch.set_facecolor(color)
+
+ax.set_ylabel(r'Mean absolute error $|\vec{V}|$ [m/s]', fontsize=18)
+ax.tick_params(axis='x', labelsize=14)
+ax.tick_params(axis='y', labelsize=14)
+box['boxes'][0].set_facecolor('blue')
+box['medians'][0].set(color='red')
+
+mean_val = data_cnn['MAE Velocity Magnitude'].mean()
+ax.scatter(1, mean_val, marker='*', color='yellow', edgecolors='black', s=200, zorder=5, label='Mean')
+ax.grid(color='k', linestyle='--', linewidth=0.2)
+ax.set_ylim(0, 0.9)
+ax.set_xlim(0.5, 1.5)
+
 plt.show()
+
+fig.savefig('L2ONly.jpg', dpi=800)

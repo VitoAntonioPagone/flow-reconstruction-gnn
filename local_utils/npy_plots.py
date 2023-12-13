@@ -1,33 +1,41 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-DATA_FILE = '../dataset/train_data_98/train_inputs_98/interpolated_cyc06_CAD625_Y4_Z1_X2_input.npy' 
+DATA_FILES = [
+    '../results/CNN_ground_truth_label.npy',
+    '../results/CNN_predictions.npy',
+    '../results/GNNinterpolated_velocity_magnitude_GT.npy',
+    '../results/GNNinterpolated_velocity_magnitude.npy'
+]
 
-def plot_npy_file(file_name):
+def plot_npy_file(file_name, ax):
     print(f"Plotting NPY file: {file_name}")
     data = np.load(file_name)
 
-    num_channels = data.shape[2]
-    channels = ['x_velocity', 'y_velocity', 'z_velocity', 'pressure', 'viscosity']  # Replace with actual channel names if different
+    print(f"Data Shape: {data.shape}")
+    print(f"Data Type: {data.dtype}")
 
-    fig, axs = plt.subplots(num_channels, 1, figsize=(10, 10))
-
-    for i in range(num_channels):
-        channel_data = data[:,:,i]
-        num_zeros = np.count_nonzero(channel_data == 0)
-        total_elements = channel_data.size
-        percent_zeros = num_zeros / total_elements * 100
-        print(f"Channel {channels[i]} has {percent_zeros:.2f}% zero features.")
-
-        im = axs[i].imshow(channel_data, cmap='jet')
-        axs[i].set_title(f'{channels[i]}')
-        axs[i].axis('off')
-        fig.colorbar(im, ax=axs[i], orientation='vertical', fraction=0.046, pad=0.04)
-
-    plt.tight_layout()
-    plt.show()
+    if len(data.shape) == 2:
+        im = ax.imshow(data, cmap='jet')
+        ax.set_title(file_name.split('/')[-1])
+        ax.axis('off')
+        return im
+    else:
+        print("Unexpected data dimensions. Unable to plot.")
+        return None
 
 if __name__ == "__main__":
     print("Starting main script execution...")
-    plot_npy_file(DATA_FILE)
+
+    fig, axs = plt.subplots(2, 2, figsize=(12, 12))  
+
+    axs = axs.flatten()
+
+    for i, data_file in enumerate(DATA_FILES):
+        im = plot_npy_file(data_file, axs[i])
+        if im:
+            fig.colorbar(im, ax=axs[i], orientation='vertical', fraction=0.046, pad=0.04)
+
+    plt.tight_layout()
+    plt.show()  
     print("Finished main script execution.")

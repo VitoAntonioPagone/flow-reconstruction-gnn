@@ -3,68 +3,78 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import griddata
+
+import torch
+
+def calculate_mean_divergence_sparse(edge_index, node_features, edge_distance):
+    """
+    Calculate the mean divergence for the entire graph using a single edge distance feature.
+    This implementation uses sparse tensor operations for efficiency.
+
+    Parameters:
+    - edge_index (LongTensor): The edge indices of the graph.
+    - node_features (Tensor): Node features (velocity components).
+    - edge_distance (Tensor): Edge feature representing the distance between nodes.
+    
+    Returns:
+    - float: Mean divergence of the graph.
+    """
+    num_nodes = node_features.size(0)
+    u, v = node_features[:, 0], node_features[:, 1]  # Velocity components
+
+    # Create a sparse tensor for edge distances
+    indices = edge_index
+    values = edge_distance
+    size = torch.Size([num_nodes, num_nodes])
+    edge_distance_matrix = torch.sparse.FloatTensor(indices, values, size)
+
+    # Use sparse matrix multiplication to compute the sum of distances for each node
+    sum_distances = torch.sparse.sum(edge_distance_matrix, dim=1).to_dense()
+
+    # Avoid division by zero
+    sum_distances[sum_distances == 0] = 1
+
+    # Compute derivatives using sparse matrix operations
+    du = torch.sparse.mm(edge_distance_matrix, u.unsqueeze(1)).to_dense().squeeze() - u * sum_distances
+    dv = torch.sparse.mm(edge_distance_matrix, v.unsqueeze(1)).to_dense().squeeze() - v * sum_distances
+
+    # Calculate divergence at each node and then compute the mean
+    du_dx = du / sum_distances
+    dv_dy = dv / sum_distances
+    divergence = du_dx + dv_dy
+
+    mean_divergence = torch.abs(torch.mean(divergence)).item()
+
+    return mean_divergence
+
 # Load the .pt file
-#graph = torch.load("../dataset_graph/training/validation_input_graphs_box_90.0/cyc11_CAD605_Y3_Z1_X1_input.pt")
-#graph = torch.load("../dataset_graph_full/training_FP/train_input_graphs_98/cyc04_CAD605_Y13_Z0_X1_input.pt")
-graph = torch.load("../PIV_data/test_graphs/test_graphs_90/PIV_cyc_10_CAD_625_label.pt")
+graph = torch.load("../dataset_graph_full/training_FP/test_graphs_98/cyc09_CAD615_Y6_Z1_X1_label.pt")
 
-# Get node features
+# Extract node features and edge index
 node_features = graph.x
+edge_index = graph.edge_index
+edge_distance = graph.edge_attr  # Assuming edge_attr contains the edge distances
 
-# Check the shape of the loaded tensor
-print(f"Loaded node features shape: {node_features.shape}")
+# Assuming the first 2 features are the x and y components of the velocity
+u_velocity = node_features[:, 0].numpy()  # x component of velocity
+v_velocity = node_features[:, 1].numpy()  # y component of velocity
 
-# Assuming the first 3 features are velocities
-velocities = node_features[:, :3].numpy()
-
-# Calculate number of zero-velocity nodes and their percentage
-zero_velocity_nodes = np.all(velocities == 0, axis=1)
-percentage_zero_velocity_nodes = np.mean(zero_velocity_nodes) * 100
-
-# Print the results
-print(f"Percentage of nodes with zero velocity: {percentage_zero_velocity_nodes:.2f}%")
+# Calculate velocity magnitude for each node
+velocity_magnitude = np.sqrt(u_velocity**2 + v_velocity**2) * 7.035423
 
 # Assuming that the positions are the last 2 features in the feature vector
 positions = node_features[:, -2:].numpy()
 
-# Print the features for 5 random nodes
-random_indices = np.random.choice(node_features.shape[0], 5, replace=False)
-print("Features for 5 random nodes:")
-for idx in random_indices:
-    print(f"Node {idx}: {node_features[idx].numpy()}")
-
-# Check if the graph has edges
-if hasattr(graph, 'edge_index'):
-    num_edges = graph.edge_index.shape[1]
-    print(f"Number of edges: {num_edges}")
-else:
-    print("No edges found in the graph.")
-
-# Check if the graph has edge attributes (weights)
-if hasattr(graph, 'edge_attr'):
-    edge_weights = graph.edge_attr.numpy()
-    num_edge_weights = edge_weights.shape[0]  # Assuming edge weights are a 1D array
-    print(f"Number of edge weights: {num_edge_weights}")
-
-    # Check if the number of edge weights is equal to the number of edges
-    if num_edge_weights == num_edges:
-        print("The number of edge weights is equal to the number of edges.")
-    else:
-        print("The number of edge weights is NOT equal to the number of edges. There might be an issue.")
-
-    # The rest of your code for processing and plotting...
-else:
-    print("No edge weights found in the graph.")
-
-# Print the dimensionality of the graph
-if hasattr(graph, 'edge_index'):
-    num_edges = graph.edge_index.shape[1]
-    print(f"Dimensionality of the graph: Nodes={node_features.shape[0]}, Edges={num_edges}")
-else:
-    print(f"Dimensionality of the graph: Nodes={node_features.shape[0]}")
+# Calculate mean divergence using the function
+mean_divergence = calculate_mean_divergence_sparse(edge_index, node_features, edge_distance)
+print(f"Mean divergence of the graph: {mean_divergence}")
 
 # Define grid size
-grid_size = 256  # Increased for a smoother plot
+grid_size = 256  # Adjust the grid size as needed
 
 # Get minimum and maximum position values
 min_x, min_y = np.min(positions[:, 0]), np.min(positions[:, 1])
@@ -73,46 +83,17 @@ max_x, max_y = np.max(positions[:, 0]), np.max(positions[:, 1])
 # Create the grid
 grid_x, grid_y = np.mgrid[min_x:max_x:grid_size*1j, min_y:max_y:grid_size*1j]
 
-fig, axs = plt.subplots(1, 3, figsize=(18, 6))  # 1 row for 3 channels (velocities)
+# Interpolate the velocity magnitude onto the regular grid
+grid_velocity_magnitude = griddata(positions, velocity_magnitude, (grid_x, grid_y), method='nearest')
 
-for i in range(3):  # iterate over velocity channels
-    velocities = node_features[:, i].numpy()  # Retrieve the velocity for the current channel
-
-    # Interpolate the values onto the regular grid
-    grid_velocities = griddata(positions, velocities, (grid_x, grid_y), method='nearest')
-
-    # Plotting the grid
-    im = axs[i].imshow(grid_velocities.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet')
-    axs[i].set_xlim(min_x, max_x)
-    axs[i].set_ylim(min_y, max_y)
-    axs[i].set_title(f'Interpolated Velocity Channel {i+1}')
-    fig.colorbar(im, ax=axs[i], orientation='vertical')
-# Check if the graph has edge attributes (weights)
-if hasattr(graph, 'edge_attr'):
-    edge_weights = graph.edge_attr.numpy()
-    print(f"Loaded edge weights shape: {edge_weights.shape}")
-
-    # Calculate and print statistics about edge weights
-    min_edge_weight = np.min(edge_weights)
-    max_edge_weight = np.max(edge_weights)
-    mean_edge_weight = np.mean(edge_weights)
-    std_edge_weight = np.std(edge_weights)
-
-    print(f"Edge Weight Statistics:\n"
-          f"Min: {min_edge_weight:.4f}\n"
-          f"Max: {max_edge_weight:.4f}\n"
-          f"Mean: {mean_edge_weight:.4f}\n"
-          f"Std: {std_edge_weight:.4f}")
-
-    # Plot a histogram of edge weights
-    plt.figure(figsize=(10, 6))
-    plt.hist(edge_weights, bins=50, color='blue', alpha=0.7)
-    plt.title('Histogram of Edge Weights')
-    plt.xlabel('Edge Weight')
-    plt.ylabel('Frequency')
-    plt.grid(True)
-    plt.show()
-else:
-    print("No edge weights found in the graph.")
+# Plotting the interpolated velocity magnitude
+plt.figure(figsize=(8, 8))
+plt.imshow(grid_velocity_magnitude.T, extent=(min_x, max_x, min_y, max_y), origin='lower', cmap='jet')
+plt.colorbar(label='Velocity Magnitude')
+plt.title('Interpolated Velocity Magnitude')
+plt.xlabel('X Position')
+plt.ylabel('Y Position')
 plt.tight_layout()
+plt.savefig('interpolated_velocity_magnitude.png', dpi=1200)
+
 plt.show()

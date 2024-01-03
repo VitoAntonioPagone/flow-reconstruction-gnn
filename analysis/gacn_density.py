@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
 from torch.utils.data import Dataset as TorchDataset
 import random
-from models import GAT_98_8_SkipConnections
+from network.models import GAT_98_8_SkipConnections
 
 def calculate_velocity_magnitude(velocities):
     print("Calculating velocity magnitude...")

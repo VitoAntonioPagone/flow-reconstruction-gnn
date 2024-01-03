@@ -30,13 +30,13 @@ if not HOLE:
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     LOAD_MODEL = False  
     MODEL_NAME = f"ONLYL2_{PERCENTAGE_OF_MISSING_POINTS}"  
-    LOAD_CHECKPOINT_FILE = f'../trained_models_FP_full/NOISY_skip_GAT_8_98_epochs_50_lr_0.0001_batch_1.pth.tar'
-    SAVE_CHECKPOINT_FILE = f'../trained_models_FP_full/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
+    LOAD_CHECKPOINT_FILE = f'../gacn_trained_models/NOISY_skip_GAT_8_98_epochs_50_lr_0.0001_batch_1.pth.tar'
+    SAVE_CHECKPOINT_FILE = f'../gacn_trained_models/{MODEL_NAME}_epochs_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.pth.tar'
     LOSS_PLOT_DIR = f'../losses_plot_full/{MODEL_NAME}_losses_plot_{EPOCHS}_lr_{LR}_batch_{BATCH_SIZE}.jpg'
-    TRAIN_INPUT_DIR = f'../dataset_graph_full/training_FP/train_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
-    TRAIN_TARGET_DIR = f'../dataset_graph_full/training_FP/train_graphs_{PERCENTAGE_OF_MISSING_POINTS}/' 
-    VALID_INPUT_DIR = f'../dataset_graph_full/training_FP/validation_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
-    VALID_TARGET_DIR = f'../dataset_graph_full/training_FP/validation_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'
+    TRAIN_INPUT_DIR = f'../gacn_dataset_graph/training_FP/train_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
+    TRAIN_TARGET_DIR = f'../gacn_dataset_graph/training_FP/train_graphs_{PERCENTAGE_OF_MISSING_POINTS}/' 
+    VALID_INPUT_DIR = f'../gacn_dataset_graph/training_FP/validation_input_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'  
+    VALID_TARGET_DIR = f'../gacn_dataset_graph/training_FP/validation_graphs_{PERCENTAGE_OF_MISSING_POINTS}/'
 else:
     ALPHA = 1e-4  
     BATCH_SIZE = 1

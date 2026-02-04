@@ -12,7 +12,9 @@ from models import GAT_98_8_SkipConnections
 
 MISSING_PERCENTAGE = 70
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-CHECKPOINT_PATH = '../trained_models_FP_full/FLUID_skip_GAT_8_98_epochs_50_lr_0.0001_batch_1.pth.tar'
+CHECKPOINT_PATH = (
+    "../trained_models_FP_full/FLUID_skip_GAT_8_98_epochs_50_lr_0.0001_batch_1.pth.tar"
+)
 UREF = 7.035423
 
 
@@ -25,7 +27,9 @@ def compare_positions(graph1, graph2, description):
     else:
         position_difference = np.abs(positions1 - positions2)
         max_position_difference = np.max(position_difference)
-        print(f"Maximum difference in node positions between {description}: {max_position_difference}")
+        print(
+            f"Maximum difference in node positions between {description}: {max_position_difference}"
+        )
 
 
 def rmse_per_node(pred, target):
@@ -39,31 +43,31 @@ def rmse_per_node(pred, target):
 def get_adj_list(edge_index, num_nodes):
     """
     Convert edge_index to an adjacency list representation.
-    
+
     Parameters:
     - edge_index (LongTensor): The edge indices.
     - num_nodes (int): Total number of nodes in the graph.
-    
+
     Returns:
     - List[List[int]]: Adjacency list of the graph.
     """
     adj_list = [[] for _ in range(num_nodes)]
     for i, j in edge_index.t().tolist():
         adj_list[i].append(j)
-        adj_list[j].append(i)  # since the graph is undirected
+        adj_list[j].append(i)
     return adj_list
 
 
 def diffuse_graph_signal(edge_index, x, num_iterations=0, alpha=0.2):
     """
     Perform heat-based graph signal diffusion using adjacency list.
-    
+
     Parameters:
     - edge_index (LongTensor): The edge indices.
     - x (Tensor): Node features to be diffused.
     - num_iterations (int): Number of diffusion iterations.
-    - alpha (float): Diffusion coefficient. Determines the rate of diffusion.
-    
+    - alpha (float): Diffusion coefficient.
+
     Returns:
     - Tensor: Diffused node features.
     """
@@ -93,25 +97,22 @@ def print_graph_info(graph):
     print("Contains Self-loops:", graph.has_self_loops())
     print("Is Undirected:", graph.is_undirected())
 
-    # Convert the graph to a networkx graph for additional analysis
     g = to_networkx(graph, to_undirected=True)
 
-    # Degree Distribution
     degrees = [g.degree(n) for n in g.nodes()]
     print("Average Degree:", np.mean(degrees))
     print("Minimum Degree:", np.min(degrees))
     print("Maximum Degree:", np.max(degrees))
 
-    # Check if the graph is connected
     print("Is Connected:", nx.is_connected(g))
 
-    # Get the number of connected components
     print("Number of Connected Components:", nx.number_connected_components(g))
 
-    # Percentage of the first three features which are set to zero
     first_three_features_zero = torch.norm(graph.x[:, :3], p=2, dim=1) == 0
     percentage_zero = torch.mean(first_three_features_zero.float()) * 100
-    print(f"Percentage of the first three features set to zero: {percentage_zero.item():.2f}%")
+    print(
+        f"Percentage of the first three features set to zero: {percentage_zero.item():.2f}%"
+    )
 
 
 class CustomDataset(TorchDataset):
@@ -132,9 +133,8 @@ class CustomDataset(TorchDataset):
 
 def load_checkpoint(model, checkpoint_path):
     checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
-    state_dict = checkpoint['state_dict']
+    state_dict = checkpoint["state_dict"]
 
-    # Remove the "module." prefix
     new_state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
 
     model.load_state_dict(new_state_dict)
@@ -151,166 +151,190 @@ def mae(pred, target):
 
 
 def run_GCN(input_file, label_file, indices_rp_file, mat_file, apply_engine_mask):
-    # Load dataset
     test_dataset = CustomDataset([input_file], [label_file])
 
-    # Indices of removed points
     indices_rp = np.load(indices_rp_file)
 
-    # Select a single test graph
     single_graph = test_dataset[0]
 
     print("Input Graph:")
     print_graph_info(single_graph)
 
-    # Print information about the label graph
     label_graph = torch.load(label_file)
     print("Label Graph:")
     print_graph_info(label_graph)
 
-    # Assuming that the positions are the last 2 features in the feature vector
     positions_input = single_graph.x[:, -2:].numpy()
     positions_target = single_graph.y[:, -2:].numpy()
 
-    # Print min and max of the positions
-    print(f'Min x position: {np.min(positions_input[:, 0])}')
-    print(f'Max x position: {np.max(positions_input[:, 0])}')
-    print(f'Min y position: {np.min(positions_input[:, 1])}')
-    print(f'Max y position: {np.max(positions_input[:, 1])}')
+    print(f"Min x position: {np.min(positions_input[:, 0])}")
+    print(f"Max x position: {np.max(positions_input[:, 0])}")
+    print(f"Min y position: {np.min(positions_input[:, 1])}")
+    print(f"Max y position: {np.max(positions_input[:, 1])}")
 
-    ######## MODEL ########
     model = GAT_98_8_SkipConnections()
     model.to(DEVICE)
     load_checkpoint(model, CHECKPOINT_PATH)
     model.eval()
 
-    # Move data to the correct device
     single_graph.to(DEVICE)
 
-    # Save original position features (last two features)
     original_positions = single_graph.x[:, -2:].clone()
 
-    # Perform prediction
     with torch.no_grad():
         predicted_features = model(single_graph)
 
-    # Replace last two features of the output with original position features
     predicted_features[:, -2:] = original_positions.to(DEVICE)
 
-    # Create a new graph for output comparison
     output_graph = single_graph.clone()
     output_graph.x = predicted_features
 
-    # Compare positions between output and original input graphs
     print("\nComparing node positions between output and input graphs:")
     compare_positions(output_graph, single_graph, "output and input graphs")
 
-    # Manually overwrite the prediction for nodes with the indicator set to 1
-    # corrected_output[~indicator, :2] = single_graph.x[~indicator, :2]
-
-    # Now diffusing the corrected output
     diffused_corrected_output = predicted_features.clone()
-    # diffused_corrected_output[:, :2] = diffuse_graph_signal(single_graph.edge_index, corrected_output[:, :2].cpu())
 
-    # Define grid size
-    grid_size_input = int(np.sqrt(len(single_graph.x)))  # Increased for a smoother plot
+    grid_size_input = int(np.sqrt(len(single_graph.x)))
     grid_size_target = int(np.sqrt(len(single_graph.y)))
 
-    # Get minimum and maximum position values
     min_x, min_y = np.min(positions_input[:, 0]), np.min(positions_input[:, 1])
     max_x, max_y = np.max(positions_input[:, 0]), np.max(positions_input[:, 1])
 
-    # Create the grid
-    grid_x_input, grid_y_input = np.mgrid[min_x:max_x:grid_size_input * 1j, min_y:max_y:grid_size_input * 1j]
-    grid_x_target, grid_y_target = np.mgrid[min_x:max_x:grid_size_target * 1j, min_y:max_y:grid_size_target * 1j]
+    grid_x_input, grid_y_input = np.mgrid[
+        min_x : max_x : grid_size_input * 1j, min_y : max_y : grid_size_input * 1j
+    ]
+    grid_x_target, grid_y_target = np.mgrid[
+        min_x : max_x : grid_size_target * 1j, min_y : max_y : grid_size_target * 1j
+    ]
 
-    fig, axs = plt.subplots(3, 2, figsize=(10, 10))  # Changed the subplot configuration
+    fig, axs = plt.subplots(3, 2, figsize=(10, 10))
     fig.subplots_adjust(hspace=0.5, wspace=0.5)
 
-    # Variables to keep track of min and max difference across all channels
-    # diff_min = np.inf
-    # diff_max = -np.inf
-
-    channels = ['x-velocity', 'y-velocity']
+    channels = ["x-velocity", "y-velocity"]
 
     for i in range(2):
-        # scaled_output_values = diffused_corrected_output.cpu()[:, i] * UREF
-        # scaled_target_values = single_graph.y.cpu()[:, i] * UREF
-
-        # node_wise_rmse = rmse_per_node(scaled_output_values, scaled_target_values)
-        # print(f"Node-wise RMSE for channel {i}: {node_wise_rmse}")
-
         input_values = single_graph.x.cpu()[:, i].numpy() * UREF
         output_values = diffused_corrected_output.cpu()[:, i].numpy() * UREF
         target_values = single_graph.y.cpu()[:, i].numpy() * UREF
 
-        # Replace the current interpolation method with griddata
-        grid_input_values = griddata(positions_input, input_values, (grid_x_input, grid_y_input), method='nearest')
-        grid_output_values = griddata(positions_input, output_values, (grid_x_input, grid_y_input), method='nearest')
-        grid_target_values = griddata(positions_target, target_values, (grid_x_target, grid_y_target), method='nearest')
+        grid_input_values = griddata(
+            positions_input,
+            input_values,
+            (grid_x_input, grid_y_input),
+            method="nearest",
+        )
+        grid_output_values = griddata(
+            positions_input,
+            output_values,
+            (grid_x_input, grid_y_input),
+            method="nearest",
+        )
+        grid_target_values = griddata(
+            positions_target,
+            target_values,
+            (grid_x_target, grid_y_target),
+            method="nearest",
+        )
 
-        # Apply engine mask
         if apply_engine_mask:
-            mat_data = h5py.File(mat_file, 'r')
-            mask = mat_data['Vel']['mask']
+            mat_data = h5py.File(mat_file, "r")
+            mask = mat_data["Vel"]["mask"]
             mask_cad = mask[53, :]
 
-            scaling_factor_input = (grid_input_values.shape[0]/mask_cad.shape[0],
-                                    grid_input_values.shape[1]/mask_cad.shape[1])
-            scaling_factor_target = (grid_target_values.shape[0]/mask_cad.shape[0],
-                                     grid_target_values.shape[1]/mask_cad.shape[1])
-            zoom_input_mask_cad = zoom(mask_cad, zoom=scaling_factor_input, order=0, mode='nearest')
-            zoom_target_mask_cad = zoom(mask_cad, zoom=scaling_factor_target, order=0, mode='nearest')
+            scaling_factor_input = (
+                grid_input_values.shape[0] / mask_cad.shape[0],
+                grid_input_values.shape[1] / mask_cad.shape[1],
+            )
+            scaling_factor_target = (
+                grid_target_values.shape[0] / mask_cad.shape[0],
+                grid_target_values.shape[1] / mask_cad.shape[1],
+            )
+            zoom_input_mask_cad = zoom(
+                mask_cad, zoom=scaling_factor_input, order=0, mode="nearest"
+            )
+            zoom_target_mask_cad = zoom(
+                mask_cad, zoom=scaling_factor_target, order=0, mode="nearest"
+            )
 
-            grid_input_values = np.where(zoom_input_mask_cad[:, ::-1] < 0.99, np.nan, grid_input_values)
-            grid_output_values = np.where(zoom_input_mask_cad[:, ::-1] < 0.99, np.nan, grid_output_values)
-            grid_target_values = np.where(zoom_target_mask_cad[:, ::-1] < 0.99, np.nan, grid_target_values)
+            grid_input_values = np.where(
+                zoom_input_mask_cad[:, ::-1] < 0.99, np.nan, grid_input_values
+            )
+            grid_output_values = np.where(
+                zoom_input_mask_cad[:, ::-1] < 0.99, np.nan, grid_output_values
+            )
+            grid_target_values = np.where(
+                zoom_target_mask_cad[:, ::-1] < 0.99, np.nan, grid_target_values
+            )
 
         vmin, vmax = target_values.min(), target_values.max()
-        # Node wise prediction metrics
-        node_wise_rmse = rmse(diffused_corrected_output[indices_rp, i] * UREF, single_graph.y[indices_rp, i]* UREF)
+        node_wise_rmse = rmse(
+            diffused_corrected_output[indices_rp, i] * UREF,
+            single_graph.y[indices_rp, i] * UREF,
+        )
         print(f"Node-wise RMSE for {channels[i]}: {node_wise_rmse}")
-        node_wise_mae = mae(diffused_corrected_output[indices_rp, i] * UREF, single_graph.y[indices_rp, i] * UREF)
+        node_wise_mae = mae(
+            diffused_corrected_output[indices_rp, i] * UREF,
+            single_graph.y[indices_rp, i] * UREF,
+        )
         print(f"Node-wise MAE for {channels[i]}: {node_wise_mae}")
 
-        im = axs[0, i].imshow(grid_input_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower',
-                              cmap='jet', vmin=vmin, vmax=vmax)
-        axs[0, i].set_title(f'Input {channels[i]}')
+        im = axs[0, i].imshow(
+            grid_input_values.T,
+            extent=(min_x, max_x, min_y, max_y),
+            origin="lower",
+            cmap="jet",
+            vmin=vmin,
+            vmax=vmax,
+        )
+        axs[0, i].set_title(f"Input {channels[i]}")
         axs[0, i].set_xticks([])
         axs[0, i].set_yticks([])
         cbar1 = fig.colorbar(im, ax=axs[0, i])
         cbar1.ax.tick_params(labelsize=8)
 
-        im = axs[1, i].imshow(grid_output_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower',
-                              cmap='jet', vmin=vmin, vmax=vmax)
-        axs[1, i].set_title(f'Output {channels[i]}')
+        im = axs[1, i].imshow(
+            grid_output_values.T,
+            extent=(min_x, max_x, min_y, max_y),
+            origin="lower",
+            cmap="jet",
+            vmin=vmin,
+            vmax=vmax,
+        )
+        axs[1, i].set_title(f"Output {channels[i]}")
         axs[1, i].set_xticks([])
         axs[1, i].set_yticks([])
         cbar2 = fig.colorbar(im, ax=axs[1, i])
         cbar2.ax.tick_params(labelsize=8)
 
-        im = axs[2, i].imshow(grid_target_values.T, extent=(min_x, max_x, min_y, max_y), origin='lower',
-                              cmap='jet', vmin=vmin, vmax=vmax)
-        axs[2, i].set_title(f'Target {channels[i]}')
+        im = axs[2, i].imshow(
+            grid_target_values.T,
+            extent=(min_x, max_x, min_y, max_y),
+            origin="lower",
+            cmap="jet",
+            vmin=vmin,
+            vmax=vmax,
+        )
+        axs[2, i].set_title(f"Target {channels[i]}")
         axs[2, i].set_xticks([])
         axs[2, i].set_yticks([])
         cbar3 = fig.colorbar(im, ax=axs[2, i])
         cbar3.ax.tick_params(labelsize=8)
 
-        # diff_min = min(diff_min, np.min(grid_output_values - grid_target_values))
-        # diff_max = max(diff_max, np.max(grid_output_values - grid_target_values))
-
     plt.tight_layout()
-    fig.savefig('../results/{}_plot_SR.png'.format(os.path.basename(CHECKPOINT_PATH).split('.')[0]), dpi=600)
+    fig.savefig(
+        "../results/{}_plot_SR.png".format(
+            os.path.basename(CHECKPOINT_PATH).split(".")[0]
+        ),
+        dpi=600,
+    )
     plt.show()
 
 
 if __name__ == "__main__":
-    # Files
-    input_file = f'../PIV_data/test_graphs/test_input_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_full_input_SR.pt'
-    label_file = f'../PIV_data/test_graphs/test_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_full_label_SR.pt'
-    indices_rp_file = f'../PIV_data/labels_npz_inputs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_full_indices_rp.npy'
-    mat_file = '../../piv_data/files/OP-C_181114A005.mat'
+    input_file = f"../PIV_data/test_graphs/test_input_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_full_input_SR.pt"
+    label_file = f"../PIV_data/test_graphs/test_graphs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_full_label_SR.pt"
+    indices_rp_file = f"../PIV_data/labels_npz_inputs_{MISSING_PERCENTAGE}/PIV_cyc_10_CAD_625_full_indices_rp.npy"
+    mat_file = "../../piv_data/files/OP-C_181114A005.mat"
     apply_engine_mask = True
 
     run_GCN(input_file, label_file, indices_rp_file, mat_file, apply_engine_mask)

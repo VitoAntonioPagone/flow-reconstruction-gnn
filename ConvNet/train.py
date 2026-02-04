@@ -2,23 +2,12 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from models import ConvNet_98
-from losses import (
-    MaskedMSELoss, 
-    NavierStokesLoss,
-    TVLoss)
+from losses import MaskedMSELoss, NavierStokesLoss, TVLoss
 from tqdm import tqdm
-from utils import (
-    load_checkpoint,
-    save_checkpoint,
-    get_loaders,
-    check_accuracy,
-    plot_losses,
-    initialize_weights,
-)
+from utils import load_checkpoint, save_checkpoint, get_loaders, check_accuracy, plot_losses, initialize_weights
 from torchsummary import summary
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-# Hyper-parameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 32
 NUM_WORKERS = 6
@@ -39,57 +28,42 @@ TRAIN_LABELS_DIR = f'../dataset_convnet/train_data_{PERCENTAGE_OF_MISSING_POINTS
 VAL_INPUTS_DIR   = f'../dataset_convnet/train_data_{PERCENTAGE_OF_MISSING_POINTS}/val_inputs_{PERCENTAGE_OF_MISSING_POINTS}'
 VAL_LABELS_DIR   = f'../dataset_convnet/train_data_{PERCENTAGE_OF_MISSING_POINTS}/val_labels_{PERCENTAGE_OF_MISSING_POINTS}'
 
-
 def train_fn(loader, model, optimizer, loss_fn, ns_loss, tv_loss, alpha, beta, scaler):
+    """Training function for one epoch."""
     loop = tqdm(loader, leave=True)
-
     total_loss = 0
     total_batches = 0
-
     for batch_idx, (inputs, labels, mask) in enumerate(loop):
-        inputs = inputs.to(device=DEVICE)[:, :3, :, :]  # Keep only the first three channels
-        labels = labels.to(device=DEVICE)[:, :3, :, :]  # Keep only the first three channels for labels
+        inputs = inputs.to(device=DEVICE)[:, :3, :, :]
+        labels = labels.to(device=DEVICE)[:, :3, :, :]
         mask = mask.to(device=DEVICE)
-
-        # forward
         with torch.cuda.amp.autocast():
             inputs_with_mask = torch.cat((inputs, mask), dim=1)
             outputs = model(inputs_with_mask)
             masked_loss = loss_fn(outputs, labels, mask)
             ns_loss_value = ns_loss(outputs)
-            tv_loss_value = tv_loss(outputs) # calculate TV loss
-            loss = masked_loss + alpha * ns_loss_value + beta * tv_loss_value  # added TV loss to total loss
-
-        # backward
+            tv_loss_value = tv_loss(outputs)
+            loss = masked_loss + alpha * ns_loss_value + beta * tv_loss_value
         optimizer.zero_grad()
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
-
-        # update tqdm loop
         loop.set_description(f"Iter [{batch_idx}/{len(loader)}]")
-        loop.set_postfix(loss=loss.item(), NSLoss=ns_loss_value.item(), MaskedL2Loss=masked_loss.item(), TVLoss=tv_loss_value.item())  # added TV loss to logging
-        
+        loop.set_postfix(loss=loss.item(), NSLoss=ns_loss_value.item(), MaskedL2Loss=masked_loss.item(), TVLoss=tv_loss_value.item())
         total_loss += loss.item()
         total_batches += 1
-
     avg_loss = total_loss / total_batches
     return avg_loss
 
 def train_unet_conv_autoencoder():
+    """Main training function."""
     print(f"Selected device: {DEVICE}")
-
     model = ConvNet_98().to(DEVICE)
-
-    # Print model summary
     print("Model Summary:")
     summary(model, input_size=(4, 256, 256))
-
-    # Check for multiple GPUs and wrap model
     if torch.cuda.device_count() > 1:
         print(f"Using {torch.cuda.device_count()} GPUs for training")
         model = nn.DataParallel(model)
-
     print(f"\nHyperparameters:")
     print(f"Learning Rate: {LEARNING_RATE}")
     print(f"Batch Size: {BATCH_SIZE}")
@@ -101,8 +75,7 @@ def train_unet_conv_autoencoder():
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10)
     loss_fn = MaskedMSELoss(device=DEVICE) 
     ns_loss = NavierStokesLoss(DEVICE)
-    tv_loss = TVLoss().to(DEVICE)  # instantiate TVLoss
-
+    tv_loss = TVLoss().to(DEVICE)
     train_loader, val_loader = get_loaders(
         TRAIN_INPUTS_DIR,
         TRAIN_LABELS_DIR,
@@ -112,35 +85,25 @@ def train_unet_conv_autoencoder():
         NUM_WORKERS,
         PIN_MEMORY,
     )
-
     if LOAD_MODEL:
         load_checkpoint(torch.load(LOAD_CHECKPOINT_FILE), model)
     check_accuracy(val_loader, model, ALPHA, BETA, device=DEVICE)
     scaler = torch.cuda.amp.GradScaler()
-
     train_losses = []
     val_losses = []
-
     for epoch in range(NUM_EPOCHS):
         print(f"Starting Epoch {epoch+1}/{NUM_EPOCHS}")
-        train_loss = train_fn(train_loader, model, optimizer, loss_fn, ns_loss, tv_loss, ALPHA, BETA, scaler) # added tv_loss
+        train_loss = train_fn(train_loader, model, optimizer, loss_fn, ns_loss, tv_loss, ALPHA, BETA, scaler)
         train_losses.append(train_loss)
-
-        # save model
         checkpoint_state = {
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict(),
         }
         save_checkpoint(checkpoint_state, SAVE_CHECKPOINT_FILE)
-
-        # check accuracy
         val_loss = check_accuracy(val_loader, model, ALPHA, BETA, device=DEVICE)
         scheduler.step(val_loss)
-
         val_losses.append(val_loss)
-        
         print(f"Training Loss: {train_loss}")
-
     plot_losses(train_losses, val_losses, ALPHA, BETA, LEARNING_RATE, BATCH_SIZE, MODEL_NAME, PERCENTAGE_OF_MISSING_POINTS, NUM_EPOCHS)
 
 if __name__ == "__main__":

@@ -3,32 +3,98 @@ __pycache__/
 *.py[cod]
 
 # Distribution / packaging
-build
+build/
+dist/
+*.egg-info/
 
-# Visual studio and InteliJ
-.vscode
-.idea
+# Visual studio and IntelliJ
+.vscode/
+.idea/
+
+# Jupyter Notebook
+.ipynb_checkpoints
 
 # Network states
 *.tar
+*.pth.tar
+*.pth
+*.ckpt
 network/__pycache__/
 
 # NEK files
 *.f000*
 
+# Images and plots
 *.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.pdf
+
 # MAC
 .DS_Store
 
-#Folder
-/losses_plot
-/trained_models
-network/network_images.py
-/dataset
-/PIV_data
-/dataset_graph_full
+# Data files
 *.csv
 *.txt
-*.jpg
+*.npy
+*.npz
+*.pt
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.mat
+
+# VTK files
+*.vtp
+*.vtu
+*.vtk
+
+# Dataset directories
+/dataset/
+/dataset_graph/
+/dataset_graph_full/
+/dataset_convnet/
+/gacn_dataset_graph/
+/PIV_data/
+
+# Results and outputs
+/results/
+/losses_plot/
+/losses_plot_full/
+/pics/
+/out/
+/trained_models/
+/trained_models_FP/
+/trained_models_FP_full/
+/gacn_trained_models/
+/convnet_trained_models/
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Model files (keep structure but ignore large files)
+*.pth.tar
+*.pth
+*.h5
+*.onnx
+
+# Generated files
+velocity_errors_*.csv
+L2*.csv
 *.npy
 *.pt
+
+# IDE
+*.swp
+*.swo
+*~

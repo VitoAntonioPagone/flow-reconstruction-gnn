@@ -1,20 +1,17 @@
 import numpy as np
 
-# ---------------------------------------------------------
-databasesPath = "/p/scratch/dems/bdanciu/nekRS/TUD/1500rpm/cyc08/grid1_600CAD/tud.nek5000"
+databasesPath = (
+    "/p/scratch/dems/bdanciu/nekRS/TUD/1500rpm/cyc08/grid1_600CAD/tud.nek5000"
+)
 
 timeStartDatabase = 4
 
-# Output directory
 outputPath = "/p/scratch/dems/bdanciu/ML/2D_slices_new/train"
 
-# Cycle number
 cycle = "cyc08"
 
-# Reference dimensions
-xref = 86  # [mm]
+xref = 86
 
-# ---------------------------------------------------------
 OpenDatabase(databasesPath, timeStartDatabase)
 
 AddPlot("Pseudocolor", "velocity_magnitude")
@@ -22,12 +19,11 @@ AddOperator("Slice", 1)
 DrawPlots()
 
 for state in range(timeStartDatabase, TimeSliderGetNStates(), 5):
-    # Iterate through CADs
     TimeSliderSetState(state)
 
-    Query('Time')
+    Query("Time")
     t = GetQueryOutputValue()
-    t = t / 9.0897044574E-03
+    t = t / 9.0897044574e-03
     cad = round(t + 600)
 
     y_slice = np.arange(38, -39, -4)
@@ -54,20 +50,19 @@ for state in range(timeStartDatabase, TimeSliderGetNStates(), 5):
         x_len = len(x_range) - 1
         x_range = np.divide(x_range, xref)
 
-        # Change y slice
         SetActivePlots(0)
         RemoveOperator(1, 1)
         RemoveOperator(0, 1)
         AddOperator("Slice", 1)
         SliceAtts = SliceAttributes()
-        SliceAtts.originType = SliceAtts.Intercept  # Point, Intercept, Percent, Zone, Node
+        SliceAtts.originType = SliceAtts.Intercept
         SliceAtts.originPoint = (0, 0, 0)
         SliceAtts.originIntercept = y_slice[i]
         SliceAtts.originPercent = 0
         SliceAtts.originZone = 0
         SliceAtts.originNode = 0
         SliceAtts.normal = (0, -1, 0)
-        SliceAtts.axisType = SliceAtts.YAxis  # XAxis, YAxis, ZAxis, Arbitrary, ThetaPhi
+        SliceAtts.axisType = SliceAtts.YAxis
         SliceAtts.upAxis = (0, 0, 1)
         SliceAtts.project2d = 1
         SliceAtts.interactive = 1
@@ -85,7 +80,7 @@ for state in range(timeStartDatabase, TimeSliderGetNStates(), 5):
                 RemoveOperator(1, 1)
                 AddOperator("Box", 1)
                 BoxAtts = BoxAttributes()
-                BoxAtts.amount = BoxAtts.Some  # Some, All
+                BoxAtts.amount = BoxAtts.Some
                 BoxAtts.minx = x_range[k]
                 BoxAtts.maxx = x_range[k + 1]
                 BoxAtts.miny = y_slice[i]
@@ -96,15 +91,28 @@ for state in range(timeStartDatabase, TimeSliderGetNStates(), 5):
                 SetOperatorOptions(BoxAtts, 0, 1)
                 DrawPlots()
 
-                # Set the export database attributes.
                 e = ExportDBAttributes()
                 e.db_type = "VTK"
-                e.variables = ("x_velocity", "y_velocity", "z_velocity", "pressure", "temperature")
-                e.filename = cycle + "_" + "CAD" + str(cad) + "_Y" + str(i) + "_Z" + \
-                             str(j) + "_X" + str(k)
-                # Set the export directory
+                e.variables = (
+                    "x_velocity",
+                    "y_velocity",
+                    "z_velocity",
+                    "pressure",
+                    "temperature",
+                )
+                e.filename = (
+                    cycle
+                    + "_"
+                    + "CAD"
+                    + str(cad)
+                    + "_Y"
+                    + str(i)
+                    + "_Z"
+                    + str(j)
+                    + "_X"
+                    + str(k)
+                )
                 e.dirname = outputPath
                 opts = GetExportOptions("VTK")
-                opts['FileFormat'] = "XML Binary"
+                opts["FileFormat"] = "XML Binary"
                 ExportDatabase(e, opts)
-

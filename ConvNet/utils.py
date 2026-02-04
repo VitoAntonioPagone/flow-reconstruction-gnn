@@ -6,25 +6,23 @@ from collections import OrderedDict
 from torch_geometric.loader import DataLoader
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
+    """Save model checkpoint."""
     print("=> Saving checkpoint")
     torch.save(state, filename)
 
-
 def load_checkpoint(checkpoint, model):
+    """Load model checkpoint."""
     state_dict = checkpoint['state_dict']
     new_state_dict = OrderedDict()
     for k, v in state_dict.items():
-        name = k[7:]  # remove 'module.' from the key
+        name = k[7:]
         new_state_dict[name] = v
-
-    # Load the modified state_dict to the model
     model.load_state_dict(new_state_dict)
 
-
 def check_accuracy_graphs(loader, model, criterion, device=None):
+    """Check model accuracy on graph data."""
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
-    
     model.eval()
     losses = []
     with torch.no_grad():
@@ -34,16 +32,12 @@ def check_accuracy_graphs(loader, model, criterion, device=None):
             loss = criterion(preds, batch.x)
             losses.append(loss.item())
     avg_rmse = torch.sqrt(torch.tensor(losses).mean()).item()
-    
     model.train()
-    
     return avg_rmse
 
 def get_loaders_graphs(input_dir, target_dir, batch_size, num_workers=4, pin_memory=True):
-    # Create a dataset
+    """Create data loaders for graph data."""
     ds = CustomDataset(input_dir, target_dir)
-    
-    # Create a DataLoader
     loader = DataLoader(
         ds,
         batch_size=batch_size,
@@ -51,7 +45,6 @@ def get_loaders_graphs(input_dir, target_dir, batch_size, num_workers=4, pin_mem
         pin_memory=pin_memory,
         shuffle=True,
     )
-    
     return loader
 
 def get_loaders(
@@ -63,11 +56,11 @@ def get_loaders(
     num_workers=4,
     pin_memory=True,
 ):
+    """Create training and validation data loaders."""
     train_ds = FlowDataset(
         input_dir=train_inputs_dir,
         label_dir=train_labels_dir,
     )
-
     train_loader = DataLoader(
         train_ds,
         batch_size=batch_size,
@@ -75,12 +68,10 @@ def get_loaders(
         pin_memory=pin_memory,
         shuffle=True,
     )
-
     val_ds = FlowDataset(
         input_dir=val_inputs_dir,
         label_dir=val_labels_dir,
     )
-
     val_loader = DataLoader(
         val_ds,
         batch_size=batch_size,
@@ -88,69 +79,57 @@ def get_loaders(
         pin_memory=pin_memory,
         shuffle=False,
     )
-
     return train_loader, val_loader
 
-
-
 def check_accuracy(loader, model, alpha, beta, device=None):
+    """Check model accuracy on validation data."""
     model.eval()
-
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
-
     loss_fn = MaskedMSELoss(device)
     ns_loss = NavierStokesLoss(device)
-    tv_loss = TVLoss().to(device)  # instantiate TVLoss
-
+    tv_loss = TVLoss().to(device)
     losses = []
     with torch.no_grad():
         for x, y, mask in loader:
-            x = x.to(device)[:, :3, :, :]  # Keep only the first three channels
-            y = y.to(device)[:, :3, :, :]  # Keep only the first three channels
+            x = x.to(device)[:, :3, :, :]
+            y = y.to(device)[:, :3, :, :]
             mask = mask.to(device)
-
-            x_with_mask = torch.cat((x, mask), dim=1)  # Concatenate to get a 4-channel input
+            x_with_mask = torch.cat((x, mask), dim=1)
             preds = model(x_with_mask)
             masked_loss = loss_fn(preds, y, mask)
             ns_loss_value = ns_loss(preds)
-            tv_loss_value = tv_loss(preds)  # calculate TV loss
-            total_loss = masked_loss + alpha * ns_loss_value + beta * tv_loss_value  # added TV loss to total loss
+            tv_loss_value = tv_loss(preds)
+            total_loss = masked_loss + alpha * ns_loss_value + beta * tv_loss_value
             losses.append(total_loss.item())
-
     avg_loss = sum(losses) / len(losses)
     print(f"Validation Loss: {avg_loss:.4f}")
     model.train()
     return avg_loss
 
-
 def plot_losses(train_losses, val_losses, alpha, beta, learning_rate, batch_size, model_name, percentage, epochs):
+    """Plot training and validation losses."""
     import matplotlib.pyplot as plt
-    plt.figure(figsize=(10, 7))  # Set a larger figure size
+    plt.figure(figsize=(10, 7))
     plt.plot(train_losses, label="Training Loss")
     plt.plot(val_losses, label="Validation Loss")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
-
-    # Generate the plot filename based on the hyperparameters and the model name
     plot_filename = f'../losses_plot/{model_name}_losses_plot_{epochs}_alpha_{alpha}_beta_{beta}_lr_{learning_rate}_batch_{batch_size}.jpg'
-
     plt.savefig(plot_filename, format='jpg', dpi=500)
 
-
-
 def graph_initialize_weights(model):
+    """Initialize weights using Xavier initialization."""
     for module in model.modules():
         if isinstance(module, (torch.nn.Linear)):
             torch.nn.init.xavier_uniform_(module.weight)
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
-
     return print('Weights initialized with Glorot (Xavier) initializer')
 
-
 def initialize_weights(model):
+    """Initialize weights using Xavier initialization."""
     for module in model.modules():
         if isinstance(module, (torch.nn.Conv2d, torch.nn.Linear)):
             torch.nn.init.xavier_uniform_(module.weight)
@@ -159,10 +138,7 @@ def initialize_weights(model):
     return print('Weights initialized with Glorot (Xavier) initializer, bias initialized to zero')
 
 def print_autoencoder_dashboard(model):
+    """Print model architecture."""
     print("ConvAutoEncoder Architecture:\n")
-
     for name, module in model.named_children():
         print(f"{name}: {module}\n")
-
-
-

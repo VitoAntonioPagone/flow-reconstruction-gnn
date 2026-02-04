@@ -31,6 +31,8 @@ network/__pycache__/
 *.gif
 *.svg
 *.pdf
+!docs/images/
+!docs/images/gacn_architecture.png
 
 # MAC
 .DS_Store

@@ -32,7 +32,7 @@ network/__pycache__/
 *.svg
 *.pdf
 !docs/images/
-!docs/images/gacn_architecture.png
+!docs/images/**
 
 # MAC
 .DS_Store
